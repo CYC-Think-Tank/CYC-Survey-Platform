@@ -57,6 +57,109 @@ export default function EditSurvey() {
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [language, setLanguage] = useState<'en' | 'fr' | 'zh'>('en');
   const [isLocked, setIsLocked] = useState(false);
+  const [translationUploading, setTranslationUploading] = useState(false);
+  const [translationUploadError, setTranslationUploadError] = useState('');
+  const [translationUploadSuccess, setTranslationUploadSuccess] = useState('');
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setTranslationUploadError('Please select a PDF file');
+      return;
+    }
+    
+    setTranslationUploading(true);
+    setTranslationUploadError('');
+    setTranslationUploadSuccess('');
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const isDev = process.env.NODE_ENV === 'development';
+      const baseUrl = isDev ? 'http://localhost:8000' : '';
+      const url = `${baseUrl}/api/surveys/${params.id}/translation/upload?language=${language}`;
+      
+      let res: Response | null = null;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
+        res = await fetch(url, { method: 'POST', body: formData, signal: controller.signal });
+        clearTimeout(timeoutId);
+      } catch (fetchErr: any) {
+        if (fetchErr.name === 'AbortError') {
+          setTranslationUploadError('Upload timed out after 3 minutes — the server may still be processing. Try refreshing the page to see if translations were saved.');
+        } else {
+          setTranslationUploadError(`Connection lost — the server may still be processing. Try refreshing the page to see if translations were saved.`);
+        }
+        setTranslationUploading(false);
+        e.target.value = '';
+        return;
+      }
+      
+      if (res && !res.ok) {
+        const text = await res.text();
+        let errMsg = `Upload failed (HTTP ${res.status})`;
+        try {
+          const err = JSON.parse(text);
+          errMsg = err.detail || errMsg;
+        } catch {
+          errMsg += ' — ' + (text?.substring(0, 200) || res.statusText || '');
+        }
+        throw new Error(errMsg);
+      }
+      
+      if (res) {
+        await res.json();
+      }
+      
+      await populateTranslations();
+      setTranslationUploadSuccess('Translations loaded from PDF — review and save to confirm');
+    } catch (err: any) {
+      setTranslationUploadError(err.message || 'Failed to parse PDF');
+    } finally {
+      setTranslationUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const populateTranslations = async () => {
+    const transRes = await fetch(`/api/surveys/${params.id}/translation`);
+    if (transRes.ok) {
+      const transData = await transRes.json();
+      
+      if (language === 'fr') {
+        setTitleFr(transData.title_fr || '');
+        setDescriptionFr(transData.description_fr || '');
+        setQuestions(prev => prev.map((q, idx) => {
+          const translated = transData.questions_fr?.[idx];
+          if (!translated) return q;
+          return {
+            ...q,
+            question_text_fr: translated.question_text || '',
+            options_fr: translated.options?.choices || null,
+            section_description_fr: translated.options?.description || '',
+          };
+        }));
+      } else if (language === 'zh') {
+        setTitleZh(transData.title_zh || '');
+        setDescriptionZh(transData.description_zh || '');
+        setQuestions(prev => prev.map((q, idx) => {
+          const translated = transData.questions_zh?.[idx];
+          if (!translated) return q;
+          return {
+            ...q,
+            question_text_zh: translated.question_text || '',
+            options_zh: translated.options?.choices || null,
+            section_description_zh: translated.options?.description || '',
+          };
+        }));
+      }
+    }
+  };
+
   useEffect(() => {
     Promise.all([
       fetch(`/api/surveys/${params.id}`).then(res => {
@@ -658,9 +761,32 @@ export default function EditSurvey() {
           </div>
           
           {language !== 'en' && (
-            <div className="bg-blue-50 dark:bg-slate-800/50 text-blue-600 dark:text-blue-400 p-3 rounded-lg text-sm flex items-start">
-              <FileText className="w-5 h-5 mr-2 flex-shrink-0" />
-              <p><strong>Translation Mode:</strong> Structural changes (adding/deleting questions or options) are disabled while translating. Switch back to English to modify the survey structure.</p>
+            <div className="bg-blue-50 dark:bg-slate-800/50 text-blue-600 dark:text-blue-400 p-3 rounded-lg text-sm">
+              <div className="flex items-start">
+                <FileText className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p><strong>Translation Mode:</strong> Structural changes (adding/deleting questions or options) are disabled while translating. Switch back to English to modify the survey structure.</p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                <label className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${translationUploading ? 'bg-blue-200 dark:bg-blue-800 text-blue-400 dark:text-blue-300 cursor-not-allowed' : 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-600 border border-blue-200 dark:border-blue-700'}`}>
+                  <Upload className="w-4 h-4 mr-1.5" />
+                  {translationUploading ? 'Parsing...' : 'Upload PDF'}
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="hidden"
+                    onChange={handlePdfUpload}
+                    disabled={translationUploading}
+                  />
+                </label>
+                {translationUploadSuccess && (
+                  <span className="text-green-600 dark:text-green-400">{translationUploadSuccess}</span>
+                )}
+                {translationUploadError && (
+                  <span className="text-red-600 dark:text-red-400">{translationUploadError}</span>
+                )}
+              </div>
             </div>
           )}
 
