@@ -7,6 +7,7 @@ import os
 import uuid
 import string
 import random
+import re
 from datetime import datetime
 import io
 import traceback
@@ -759,9 +760,8 @@ async def upsert_answer(session_id: str, body: AnswerUpsert):
                         raise HTTPException(status_code=422, detail=f"Answer exceeds maximum length of {max_len}")
 
                     if val and regex_str:
-                        import re
                         if not re.match(regex_str, val):
-                            raise HTTPException(status_code=422, detail="Answer does not match required format")
+                            raise HTTPException(status_code=422, detail=f"Answer must match pattern: {regex_str}")
 
         supabase.table("answers").upsert({
             "session_id": session_id,
