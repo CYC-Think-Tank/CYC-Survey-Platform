@@ -146,8 +146,8 @@ const translations: Record<Language, Record<string, string>> = {
     'True': 'Vrai',
     'False': 'Faux',
     'out of': 'sur',
-    'Please enter exactly 3 characters in the format A1A (letter, number, letter).': 'Veuillez entrer exactement 3 caracteres au format A1A (lettre, chiffre, lettre).',
-    'Enter the first 3 characters of your postal code (e.g. M5V).': 'Entrez les 3 premiers caracteres de votre code postal (ex. M5V).',
+    'Please enter exactly 3 characters in the format A1A (letter, number, letter).': 'Veuillez entrer exactement 3 caractères au format A1A (lettre, chiffre, lettre).',
+    'Enter the first 3 characters of your postal code (e.g. M5V).': 'Entrez les 3 premiers caractères de votre code postal (ex. M5V).',
   },
   zh: {
     'Admin': '管理',
