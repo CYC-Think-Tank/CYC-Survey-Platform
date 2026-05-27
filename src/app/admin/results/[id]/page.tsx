@@ -334,14 +334,22 @@ export default function ResultsPage() {
 
     if (q.type === 'short_answer') {
       const texts = stat.texts || [];
+      const validationType = q.options?.validation?.type;
       return (
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {texts.map((t: string, i: number) => (
-            <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
-              {t}
+        <div>
+          {validationType && validationType !== 'none' && (
+            <div className="mb-2 inline-block px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs rounded-full">
+              Validation: {validationType.replace(/_/g, ' ')}
             </div>
-          ))}
-          {texts.length === 0 && <span className="text-gray-400 italic">No responses</span>}
+          )}
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {texts.map((t: string, i: number) => (
+              <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700">
+                {t}
+              </div>
+            ))}
+            {texts.length === 0 && <span className="text-gray-400 italic">No responses</span>}
+          </div>
         </div>
       );
     }
@@ -438,6 +446,9 @@ export default function ResultsPage() {
                     <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1">
                       {idx + 1}. {q.question_text}
                     </h3>
+                    {q.options?.description && (
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">{q.options.description}</p>
+                    )}
                     <p className="text-xs text-gray-400 mb-4 capitalize">{q.type.replace('_', ' ')}</p>
                     {renderSummaryForQuestion(q)}
                   </div>
@@ -536,6 +547,9 @@ export default function ResultsPage() {
                       <h4 className="text-sm font-bold text-[var(--color-cyc-secondary)] mb-1">
                         {idx + 1}. {q.question_text}
                       </h4>
+                      {q.options?.description && (
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">{q.options.description}</p>
+                      )}
                       <p className="text-base text-gray-700">
                         {displayValue}
                         {answer?.time_spent !== undefined && (
