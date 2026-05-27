@@ -350,8 +350,8 @@ export default function SurveyPage() {
 
   // Helper to get options config
   function getOpts(q: any) {
-    if (!q?.options) return { choices: [], has_other: false, max_selections: undefined, has_calculator: false, description: '', attachments: [], randomize_options: false, locked_choices: [], description_alignment: 'left', definitions: [] };
-    if (Array.isArray(q.options)) return { choices: q.options, has_other: false, max_selections: undefined, has_calculator: false, description: '', attachments: [], randomize_options: false, locked_choices: [], description_alignment: 'left', definitions: [] };
+    if (!q?.options) return { choices: [], has_other: false, max_selections: undefined, has_calculator: false, description: '', attachments: [], randomize_options: false, locked_choices: [], description_alignment: 'left', definitions: [], validation: undefined };
+    if (Array.isArray(q.options)) return { choices: q.options, has_other: false, max_selections: undefined, has_calculator: false, description: '', attachments: [], randomize_options: false, locked_choices: [], description_alignment: 'left', definitions: [], validation: undefined };
     return {
       choices: q.options.choices || [],
       has_other: q.options.has_other || false,
@@ -362,7 +362,8 @@ export default function SurveyPage() {
       randomize_options: q.options.randomize_options || false,
       locked_choices: q.options.locked_choices || [],
       description_alignment: q.options.description_alignment || 'left',
-      definitions: q.options.definitions || []
+      definitions: q.options.definitions || [],
+      validation: q.options.validation || undefined,
     };
   };
 
@@ -552,6 +553,37 @@ export default function SurveyPage() {
         }
       }
 
+      // Validate short_answer format
+      if (currentQuestion.type === 'short_answer' && answers[currentQuestion.id]) {
+        const v = opts.validation;
+        if (v && v.type && v.type !== 'none') {
+          let val = answers[currentQuestion.id];
+          
+          // Normalize before validation
+          if (v.normalize_uppercase && typeof val === 'string') {
+            val = val.toUpperCase();
+            setAnswers({...answers, [currentQuestion.id]: val});
+          }
+          
+          if (v.max_length && typeof val === 'string' && val.length > v.max_length) {
+            alert(`Answer must be ${v.max_length} characters or fewer.`);
+            return;
+          }
+          
+          if (v.regex && typeof val === 'string') {
+            try {
+              const regex = new RegExp(v.regex);
+              if (!regex.test(val)) {
+                alert(t('Please enter exactly 3 characters in the format A1A (letter, number, letter).'));
+                return;
+              }
+            } catch {
+              console.error('Invalid regex:', v.regex);
+            }
+          }
+        }
+      }
+
       const qId = currentQuestion.id;
       setTimeSpentAccumulator((prev: any) => ({ ...prev, [qId]: (prev[qId] || 0) + (Date.now() - questionEnterTime) }));
       
@@ -713,6 +745,14 @@ export default function SurveyPage() {
             <div className="mb-6 sm:mb-8 text-center pt-4 text-xl sm:text-2xl md:text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 leading-snug [&_p]:mb-4 last:[&_p]:mb-0">
               <RichTextRenderer text={(currentQuestion.question_text || '').replace(/\n\n/g, '<br/><br/>')} definitions={opts.definitions} />
             </div>
+
+            {opts.description && (
+              <div className="mb-4 text-center">
+                <p className="text-sm text-gray-500 dark:text-slate-400 italic leading-relaxed max-w-xl mx-auto">
+                  {opts.description}
+                </p>
+              </div>
+            )}
             
             <div className="w-full">
               {/* SECTION HEADER */}
@@ -941,11 +981,38 @@ export default function SurveyPage() {
 
               {/* SHORT ANSWER */}
               {currentQuestion.type === 'short_answer' && (
-                <textarea rows={4}
-                  className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all resize-none text-base sm:text-lg"
-                  placeholder={t('Share your thoughts here...')}
-                  value={answers[currentQuestion.id] || ''}
-                  onChange={(e) => setAnswers({...answers, [currentQuestion.id]: e.target.value})} />
+                <div>
+                  {opts.validation?.type && opts.validation.type !== 'none' ? (
+                    <>
+                      <input
+                        type="text"
+                        maxLength={opts.validation.max_length || undefined}
+                        className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all text-base sm:text-lg"
+                        placeholder={opts.validation.type === 'postal_code_prefix' ? 'e.g. M5V' : 'Share your thoughts here...'}
+                        value={answers[currentQuestion.id] || ''}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          if (opts.validation?.normalize_uppercase) {
+                            val = val.toUpperCase();
+                          }
+                          setAnswers({...answers, [currentQuestion.id]: val});
+                        }}
+                      />
+                      {opts.validation.type === 'postal_code_prefix' && (
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
+                          Enter the first 3 characters of your postal code (e.g. M5V).
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <textarea rows={4}
+                      className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all resize-none text-base sm:text-lg"
+                      placeholder={t('Share your thoughts here...')}
+                      value={answers[currentQuestion.id] || ''}
+                      onChange={(e) => setAnswers({...answers, [currentQuestion.id]: e.target.value})}
+                    />
+                  )}
+                </div>
               )}
             </div>
             </>
