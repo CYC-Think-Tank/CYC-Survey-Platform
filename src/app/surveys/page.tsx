@@ -69,7 +69,7 @@ export default function SurveysPage() {
               transition={{ duration: 0.5, delay: 0.1 + idx * 0.1, ease: "easeOut" }}
             >
               <h2 className="text-xl font-extrabold text-[#04377E] mb-3 leading-snug">{displayTitle}</h2>
-              <p className="text-sm text-slate-500 mb-8 flex-1 leading-relaxed">{displayDescription || t('Share your perspective on issues that matter.')}</p>
+              <p className="text-sm text-slate-500 mb-8 flex-1 leading-relaxed">{displayDescription?.replace(/<[^>]*>?/gm, '') || t('Share your perspective on issues that matter.')}</p>
               
               <div className="flex items-center justify-between mt-auto pt-2">
                 <span className="flex items-center text-xs text-slate-400 font-semibold tracking-wide">
