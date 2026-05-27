@@ -77,6 +77,8 @@ const translations: Record<Language, Record<string, string>> = {
     'True': 'True',
     'False': 'False',
     'out of': 'out of',
+    'Please enter exactly 3 characters in the format A1A (letter, number, letter).': 'Please enter exactly 3 characters in the format A1A (letter, number, letter).',
+    'Enter the first 3 characters of your postal code (e.g. M5V).': 'Enter the first 3 characters of your postal code (e.g. M5V).',
   },
   fr: {
     'Admin': 'Administrateur',
@@ -144,6 +146,8 @@ const translations: Record<Language, Record<string, string>> = {
     'True': 'Vrai',
     'False': 'Faux',
     'out of': 'sur',
+    'Please enter exactly 3 characters in the format A1A (letter, number, letter).': 'Veuillez entrer exactement 3 caracteres au format A1A (lettre, chiffre, lettre).',
+    'Enter the first 3 characters of your postal code (e.g. M5V).': 'Entrez les 3 premiers caracteres de votre code postal (ex. M5V).',
   },
   zh: {
     'Admin': '管理',
@@ -211,6 +215,8 @@ const translations: Record<Language, Record<string, string>> = {
     'True': '正确',
     'False': '错误',
     'out of': '/',
+    'Please enter exactly 3 characters in the format A1A (letter, number, letter).': '请输入恰好3个字符，格式为A1A（字母、数字、字母）。',
+    'Enter the first 3 characters of your postal code (e.g. M5V).': '请输入您邮政编码的前3个字符（例如M5V）。',
   }
 };
 
