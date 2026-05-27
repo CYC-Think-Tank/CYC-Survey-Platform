@@ -42,6 +42,12 @@ interface QuestionDraft {
   definitions_zh?: {term: string; definition: string}[];
 }
 
+const VALIDATION_PRESETS: Record<string, { regex: string; max_length?: number; normalize_uppercase?: boolean }> = {
+  none: { regex: '', max_length: undefined, normalize_uppercase: false },
+  email: { regex: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$', max_length: 254, normalize_uppercase: false },
+  postal_code_prefix: { regex: '^[A-Z][0-9][A-Z]$', max_length: 3, normalize_uppercase: true },
+};
+
 export default function CreateSurvey() {
   const router = useRouter();
   const [title, setTitle] = useState('');
@@ -90,19 +96,13 @@ export default function CreateSurvey() {
     }
   };
 
-  const VALIDATION_PRESETS: Record<string, { regex: string; max_length?: number; normalize_uppercase?: boolean }> = {
-    none: { regex: '', max_length: undefined, normalize_uppercase: false },
-    email: { regex: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$', max_length: 254, normalize_uppercase: false },
-    postal_code_prefix: { regex: '^[A-Z][0-9][A-Z]$', max_length: 3, normalize_uppercase: true },
-  };
-
   const updateValidationType = (qId: string, type: string) => {
     setQuestions(questions.map(q => {
       if (q.id !== qId) return q;
       const preset = type !== 'regex' ? (VALIDATION_PRESETS[type] || VALIDATION_PRESETS.none) : VALIDATION_PRESETS.none;
       return {
         ...q,
-        validation_type: type as any,
+        validation_type: type as QuestionDraft['validation_type'],
         validation_regex: type === 'regex' ? q.validation_regex : (preset.regex || ''),
         validation_max_length: type === 'regex' ? q.validation_max_length : (preset.max_length),
         validation_normalize_uppercase: type === 'regex' ? q.validation_normalize_uppercase : (preset.normalize_uppercase ?? false),
@@ -638,7 +638,8 @@ export default function CreateSurvey() {
                 </div>
               </div>
 
-              {/* Question Description (all types) */}
+              {/* Question Description (short_answer only) */}
+              {q.type === 'short_answer' && (
               <div className="ml-10 mb-4">
                 <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Helper Text / Description (Optional)</label>
                 {(language === 'fr' || language === 'zh') && (
@@ -654,6 +655,7 @@ export default function CreateSurvey() {
                   className="w-full p-2 border border-gray-200 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
               </div>
+              )}
 
               {/* Short Answer Validation Config */}
               {q.type === 'short_answer' && (
