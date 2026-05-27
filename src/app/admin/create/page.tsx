@@ -641,15 +641,15 @@ export default function CreateSurvey() {
               {/* Question Description (all types) */}
               <div className="ml-10 mb-4">
                 <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Helper Text / Description (Optional)</label>
-                {language === 'fr' && (
+                {(language === 'fr' || language === 'zh') && (
                   <div className="text-xs text-gray-400 dark:text-slate-500 mb-1 px-2 border-l-2 border-gray-200 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-r">
                     {q.question_description || "No English description provided"}
                   </div>
                 )}
                 <input
                   type="text"
-                  value={language === 'en' ? (q.question_description || '') : (q.question_description_fr || '')}
-                  onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_description' : 'question_description_fr', e.target.value)}
+                  value={language === 'en' ? (q.question_description || '') : language === 'fr' ? (q.question_description_fr || '') : (q.question_description_zh || '')}
+                  onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_description' : language === 'fr' ? 'question_description_fr' : 'question_description_zh', e.target.value)}
                   placeholder="e.g. We ask for the first three characters of your postal code to get a general sense of where responses are coming from."
                   className="w-full p-2 border border-gray-200 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
