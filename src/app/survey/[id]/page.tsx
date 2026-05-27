@@ -746,7 +746,7 @@ export default function SurveyPage() {
               <RichTextRenderer text={(currentQuestion.question_text || '').replace(/\n\n/g, '<br/><br/>')} definitions={opts.definitions} />
             </div>
 
-            {opts.description && (
+            {opts.description && currentQuestion.type !== 'section_header' && (
               <div className="mb-4 text-center">
                 <p className="text-sm text-gray-500 dark:text-slate-400 italic leading-relaxed max-w-xl mx-auto">
                   {opts.description}

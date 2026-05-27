@@ -447,7 +447,7 @@ export default function ResultsPage() {
                       {idx + 1}. {q.question_text}
                     </h3>
                     {q.options?.description && (
-                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">{q.options.description}</p>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">{q.options.description.replace(/<[^>]*>?/gm, '')}</p>
                     )}
                     <p className="text-xs text-gray-400 mb-4 capitalize">{q.type.replace('_', ' ')}</p>
                     {renderSummaryForQuestion(q)}
@@ -548,7 +548,7 @@ export default function ResultsPage() {
                         {idx + 1}. {q.question_text}
                       </h4>
                       {q.options?.description && (
-                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">{q.options.description}</p>
+                        <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">{q.options.description.replace(/<[^>]*>?/gm, '')}</p>
                       )}
                       <p className="text-base text-gray-700">
                         {displayValue}
