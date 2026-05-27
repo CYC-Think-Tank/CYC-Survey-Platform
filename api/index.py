@@ -739,6 +739,30 @@ async def create_session(survey_id: str, body: SessionCreate):
 async def upsert_answer(session_id: str, body: AnswerUpsert):
     """Save or update a single answer for a session (auto-save on Next)."""
     try:
+        q_res = supabase.table("questions").select("options, is_required").eq("id", body.question_id).execute()
+        if q_res.data:
+            q = q_res.data[0]
+            opts = q.get("options")
+            if isinstance(opts, dict):
+                validation = opts.get("validation")
+                if validation and isinstance(validation, dict) and validation.get("type") != "none":
+                    val = body.answer_text
+                    max_len = validation.get("max_length")
+                    regex_str = validation.get("regex")
+                    normalize_upper = validation.get("normalize_uppercase")
+
+                    if val and normalize_upper:
+                        val = val.upper()
+                        body.answer_text = val
+
+                    if val and max_len and len(val) > max_len:
+                        raise HTTPException(status_code=422, detail=f"Answer exceeds maximum length of {max_len}")
+
+                    if val and regex_str:
+                        import re
+                        if not re.match(regex_str, val):
+                            raise HTTPException(status_code=422, detail="Answer does not match required format")
+
         supabase.table("answers").upsert({
             "session_id": session_id,
             "question_id": body.question_id,
@@ -749,6 +773,8 @@ async def upsert_answer(session_id: str, body: AnswerUpsert):
         }, on_conflict="session_id,question_id").execute()
 
         return {"status": "saved"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
