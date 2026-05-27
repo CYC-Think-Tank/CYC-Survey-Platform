@@ -97,7 +97,7 @@ export default function ThankYouPage() {
                         {displayTitle}
                       </h3>
                       <p className="text-gray-500 dark:text-slate-500 text-base mb-6 line-clamp-2 flex-grow leading-relaxed">
-                        {displayDescription || t('Participate in this survey to share your perspectives.')}
+                        {displayDescription?.replace(/<[^>]*>?/gm, '') || t('Participate in this survey to share your perspectives.')}
                       </p>
                       <div className="flex items-center justify-between text-sm font-semibold text-gray-500 dark:text-slate-500 mt-auto pt-5 border-t border-gray-100">
                         <span className="flex items-center text-[var(--color-cyc-primary)] bg-teal-50 px-3 py-1.5 rounded-lg">

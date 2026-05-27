@@ -684,9 +684,9 @@ export default function SurveyPage() {
       <div className="flex-1 flex flex-col justify-center items-center px-4 w-full max-w-3xl mx-auto text-center h-full">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="w-full">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-6 leading-tight">{displayTitle}</h1>
-          <p className={`text-lg sm:text-xl text-gray-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed text-${survey.description_alignment || 'left'}`}>
-            {displayDescription || t('Share your voice and help empower Canadian youth.')}
-          </p>
+          <div className={`text-lg sm:text-xl text-gray-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed text-${survey.description_alignment || 'left'} [&_p]:mb-4 last:[&_p]:mb-0`}>
+            {displayDescription ? <RichTextRenderer text={displayDescription} /> : t('Share your voice and help empower Canadian youth.')}
+          </div>
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setHasStarted(true)}
             className="btn-primary text-xl px-10 py-4 rounded-full shadow-md shadow-teal-500/5 dark:shadow-teal-400/5 hover:shadow-lg transition-all flex items-center justify-center mx-auto">
             {t('Start Survey')} <ArrowRight className="w-6 h-6 ml-3" />

@@ -194,7 +194,7 @@ export default function AdminDashboard() {
               <tr key={survey.id} className="hover:bg-gray-50 dark:bg-slate-900/50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">{survey.title}</div>
-                  <div className="text-sm text-gray-500 dark:text-slate-500 line-clamp-1">{survey.description}</div>
+                  <div className="text-sm text-gray-500 dark:text-slate-500 line-clamp-1">{survey.description?.replace(/<[^>]*>?/gm, '')}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${survey.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200'}`}>

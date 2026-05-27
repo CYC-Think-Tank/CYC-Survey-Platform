@@ -551,11 +551,9 @@ export default function CreateSurvey() {
                 {description || "No English description provided"}
               </div>
             )}
-            <textarea
+            <RichTextEditor
               value={language === 'en' ? description : descriptionFr}
-              onChange={(e) => language === 'en' ? setDescription(e.target.value) : setDescriptionFr(e.target.value)}
-              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:border-transparent transition-all"
-              rows={4}
+              onChange={(val) => language === 'en' ? setDescription(val) : setDescriptionFr(val)}
               placeholder={language === 'fr' ? "De quoi s'agit-il?" : "What is this survey about?"}
             />
           </div>
