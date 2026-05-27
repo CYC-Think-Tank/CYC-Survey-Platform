@@ -379,7 +379,7 @@ export default function Home() {
                     </div>
                     <h2 className="text-lg sm:text-2xl md:text-4xl font-extrabold mb-1.5 sm:mb-3 leading-tight line-clamp-2 md:line-clamp-3 text-[#1a1a1a] drop-shadow-sm">{item.displayTitle || item.title}</h2>
                     <p className="text-[11px] sm:text-sm md:text-base leading-relaxed line-clamp-2 sm:line-clamp-3 md:line-clamp-4 text-gray-500">
-                      {item.displayDescription || item.description || t('Share your perspective on issues that matter.')}
+                      {(item.displayDescription || item.description)?.replace(/<[^>]*>?/gm, '') || t('Share your perspective on issues that matter.')}
                     </p>
                   </div>
                   <div className="mt-auto flex items-center justify-end">
