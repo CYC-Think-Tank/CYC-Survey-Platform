@@ -33,7 +33,20 @@ interface QuestionDraft {
   options_zh?: any;
   section_description_zh?: string;
   definitions_zh?: {term: string; definition: string}[];
+  question_description?: string;
+  question_description_fr?: string;
+  question_description_zh?: string;
+  validation_type?: 'none' | 'email' | 'postal_code_prefix' | 'regex';
+  validation_regex?: string;
+  validation_max_length?: number;
+  validation_normalize_uppercase?: boolean;
 }
+
+const VALIDATION_PRESETS: Record<string, { regex: string; max_length?: number; normalize_uppercase?: boolean }> = {
+  none: { regex: '', max_length: undefined, normalize_uppercase: false },
+  email: { regex: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$', max_length: 254, normalize_uppercase: false },
+  postal_code_prefix: { regex: '^[A-Z][0-9][A-Z]$', max_length: 3, normalize_uppercase: true },
+};
 
 export default function EditSurvey() {
   const router = useRouter();
@@ -211,18 +224,25 @@ export default function EditSurvey() {
             attachments: !isArr ? q.options.attachments : undefined,
             reference_number: (!isArr && q.options.has_calculator) ? 1 : undefined,
             definitions: !isArr ? q.options.definitions : undefined,
+            question_description: (q.type === 'short_answer' && !isArr) ? (q.options.description || '') : '',
+            validation_type: (q.type === 'short_answer' && !isArr && q.options.validation) ? (q.options.validation.type || 'none') : 'none',
+            validation_regex: (q.type === 'short_answer' && !isArr && q.options.validation) ? (q.options.validation.regex || '') : '',
+            validation_max_length: (q.type === 'short_answer' && !isArr && q.options.validation) ? q.options.validation.max_length : undefined,
+            validation_normalize_uppercase: (q.type === 'short_answer' && !isArr && q.options.validation) ? (q.options.validation.normalize_uppercase || false) : false,
             
             // French fields
             question_text_fr: frQ.question_text || '',
             options_fr: isFrArr ? (frQ.options || []) : (frQ.options?.choices || []),
             section_description_fr: (!isFrArr && frQ.options?.description) ? frQ.options.description : '',
             definitions_fr: !isFrArr ? frQ.options?.definitions : undefined,
+            question_description_fr: (q.type === 'short_answer' && !isFrArr && frQ.options?.description) ? frQ.options.description : '',
             
             // Chinese fields
             question_text_zh: zhQ.question_text || '',
             options_zh: isZhArr ? (zhQ.options || []) : (zhQ.options?.choices || []),
             section_description_zh: (!isZhArr && zhQ.options?.description) ? zhQ.options.description : '',
-            definitions_zh: !isZhArr ? zhQ.options?.definitions : undefined
+            definitions_zh: !isZhArr ? zhQ.options?.definitions : undefined,
+            question_description_zh: (q.type === 'short_answer' && !isZhArr && zhQ.options?.description) ? zhQ.options.description : '',
           };
         });
         setQuestions(loadedQuestions);
@@ -268,7 +288,14 @@ export default function EditSurvey() {
       section_description: type === 'section_header' ? '' : undefined,
       description_alignment: type === 'section_header' ? 'left' : undefined,
       attachments: type === 'section_header' ? [] : undefined,
-      reference_number: type === 'rating_scale' ? undefined : undefined
+      reference_number: type === 'rating_scale' ? undefined : undefined,
+      question_description: '',
+      question_description_fr: '',
+      question_description_zh: '',
+      validation_type: 'none',
+      validation_regex: '',
+      validation_max_length: undefined,
+      validation_normalize_uppercase: false,
     };
     setQuestions([...questions, newQ]);
   };
@@ -335,6 +362,20 @@ export default function EditSurvey() {
       const newAttachments = [...(q.attachments || [])];
       newAttachments.splice(index, 1);
       return { ...q, attachments: newAttachments };
+    }));
+  };
+
+  const updateValidationType = (qId: string, type: string) => {
+    setQuestions(questions.map(q => {
+      if (q.id !== qId) return q;
+      const preset = type !== 'regex' ? (VALIDATION_PRESETS[type] || VALIDATION_PRESETS.none) : VALIDATION_PRESETS.none;
+      return {
+        ...q,
+        validation_type: type as QuestionDraft['validation_type'],
+        validation_regex: type === 'regex' ? q.validation_regex : (preset.regex || ''),
+        validation_max_length: type === 'regex' ? q.validation_max_length : (preset.max_length),
+        validation_normalize_uppercase: type === 'regex' ? q.validation_normalize_uppercase : (preset.normalize_uppercase ?? false),
+      };
     }));
   };
 
@@ -480,6 +521,17 @@ export default function EditSurvey() {
             optionsPayload = { has_calculator: true };
           } else if (q.type === 'section_header') {
             optionsPayload = { description: q.section_description || '', attachments: q.attachments || [], description_alignment: q.description_alignment || 'left' };
+          } else if (q.type === 'short_answer') {
+            const validation = q.validation_type && q.validation_type !== 'none' ? {
+              type: q.validation_type,
+              regex: q.validation_regex || '',
+              max_length: q.validation_max_length,
+              normalize_uppercase: q.validation_normalize_uppercase || false,
+            } : undefined;
+            optionsPayload = {
+              description: q.question_description || '',
+              ...(validation ? { validation } : {}),
+            };
           }
           if (q.definitions && q.definitions.length > 0) {
             if (!optionsPayload) optionsPayload = {};
@@ -529,6 +581,17 @@ export default function EditSurvey() {
           optionsFr = { has_calculator: true };
         } else if (q.type === 'section_header') {
           optionsFr = { description: draftQ.section_description_fr || draftQ.section_description || '', attachments: draftQ.attachments || [], description_alignment: draftQ.description_alignment || 'left' };
+        } else if (q.type === 'short_answer') {
+          const validation = draftQ.validation_type && draftQ.validation_type !== 'none' ? {
+            type: draftQ.validation_type,
+            regex: draftQ.validation_regex || '',
+            max_length: draftQ.validation_max_length,
+            normalize_uppercase: draftQ.validation_normalize_uppercase || false,
+          } : undefined;
+          optionsFr = {
+            description: draftQ.question_description_fr || draftQ.question_description || '',
+            ...(validation ? { validation } : {}),
+          };
         }
         if (draftQ.definitions_fr && draftQ.definitions_fr.length > 0) {
           if (!optionsFr) optionsFr = {};
@@ -559,6 +622,17 @@ export default function EditSurvey() {
           optionsZh = { has_calculator: true };
         } else if (q.type === 'section_header') {
           optionsZh = { description: draftQ.section_description_zh || draftQ.section_description || '', attachments: draftQ.attachments || [], description_alignment: draftQ.description_alignment || 'left' };
+        } else if (q.type === 'short_answer') {
+          const validation = draftQ.validation_type && draftQ.validation_type !== 'none' ? {
+            type: draftQ.validation_type,
+            regex: draftQ.validation_regex || '',
+            max_length: draftQ.validation_max_length,
+            normalize_uppercase: draftQ.validation_normalize_uppercase || false,
+          } : undefined;
+          optionsZh = {
+            description: draftQ.question_description_zh || draftQ.question_description || '',
+            ...(validation ? { validation } : {}),
+          };
         }
         if (draftQ.definitions_zh && draftQ.definitions_zh.length > 0) {
           if (!optionsZh) optionsZh = {};
@@ -825,6 +899,97 @@ export default function EditSurvey() {
                     />
                   </div>
                 </div>
+
+              {/* Question Description (short_answer only) */}
+              {q.type === 'short_answer' && (
+              <div className="ml-10 mb-4">
+                <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Helper Text / Description (Optional)</label>
+                {(language === 'fr' || language === 'zh') && (
+                  <div className="text-xs text-gray-400 dark:text-slate-500 mb-1 px-2 border-l-2 border-gray-200 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-r">
+                    {q.question_description || "No English description provided"}
+                  </div>
+                )}
+                <input
+                  type="text"
+                  value={language === 'en' ? (q.question_description || '') : language === 'fr' ? (q.question_description_fr || '') : (q.question_description_zh || '')}
+                  onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_description' : language === 'fr' ? 'question_description_fr' : 'question_description_zh', e.target.value)}
+                  disabled={isLocked && language === 'en'}
+                  placeholder="e.g. We ask for the first three characters of your postal code to get a general sense of where responses are coming from."
+                  className="w-full p-2 border border-gray-200 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                />
+              </div>
+              )}
+
+              {/* Short Answer Validation Config */}
+              {q.type === 'short_answer' && (
+                <div className="ml-10 mb-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Validation Settings</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Validation Type</label>
+                      <select
+                        value={q.validation_type || 'none'}
+                        onChange={(e) => updateValidationType(q.id, e.target.value)}
+                        disabled={isLocked && language === 'en'}
+                        className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                      >
+                        <option value="none">None</option>
+                        <option value="email">Email</option>
+                        <option value="postal_code_prefix">Postal Code Prefix (A1A)</option>
+                        <option value="regex">Custom Regex</option>
+                      </select>
+                    </div>
+                    {q.validation_type && q.validation_type !== 'none' && (
+                      <>
+                        {(q.validation_type === 'regex') ? (
+                          <>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Max Length</label>
+                              <input type="number" min={1}
+                                value={q.validation_max_length || ''}
+                                onChange={(e) => updateQuestion(q.id, 'validation_max_length', e.target.value ? parseInt(e.target.value) : undefined)}
+                                disabled={isLocked && language === 'en'}
+                                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                                placeholder="e.g. 3"
+                              />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Regex Pattern</label>
+                              <input type="text"
+                                value={q.validation_regex || ''}
+                                onChange={(e) => updateQuestion(q.id, 'validation_regex', e.target.value)}
+                                disabled={isLocked && language === 'en'}
+                                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                                placeholder="^[A-Z][0-9][A-Z]$"
+                              />
+                            </div>
+                            <div className="flex items-center">
+                              <label className="flex items-center cursor-pointer">
+                                <input type="checkbox"
+                                  checked={q.validation_normalize_uppercase || false}
+                                  onChange={(e) => updateQuestion(q.id, 'validation_normalize_uppercase', e.target.checked)}
+                                  disabled={isLocked && language === 'en'}
+                                  className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
+                                />
+                                <span className="text-sm text-gray-700 dark:text-slate-300">Normalize to uppercase</span>
+                              </label>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="sm:col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
+                            {q.validation_type === 'email' && (
+                              <><strong>Email rules:</strong> Must contain @ and a domain. Max 254 characters.</>
+                            )}
+                            {q.validation_type === 'postal_code_prefix' && (
+                              <><strong>Postal code prefix rules:</strong> Max 3 characters. Format: letter, number, letter (e.g. M5V). Input is automatically normalized to uppercase.</>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
                 <div className={`flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4 text-sm text-gray-600 dark:text-slate-400 ${language !== 'en' || isLocked ? 'hidden' : ''}`}>
                   
