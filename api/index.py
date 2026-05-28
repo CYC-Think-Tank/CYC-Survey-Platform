@@ -1,3 +1,5 @@
+from urllib import response
+
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -999,6 +1001,56 @@ def calculate_mode(counts):
         elif v == max_val and max_val > 0:
             modes.append(k)
     return {"modes": modes, "count": max_val} if modes else None
+
+async def _get_random_email_position(num_emails: int = 5) -> list:
+    """
+    Returns a randomly generated list of integers `x` such that 0 <= x <= length of collection of emails
+    without replacement.
+
+    Raises an exception if the collection of emails is empty or if any error occurs during the
+    retrieval of total number of emails from the database.
+    """
+    try:
+        # Queries the database to get the total count of emails in the response_sessions table
+        count_res = supabase.table("response_sessions").select("id", count="exact").execute()
+        total_emails = getattr(count_res, "count", None)
+        if total_emails is None:
+            total_emails = len(count_res.data) if count_res.data else 0
+
+        if total_emails == 0:
+            raise ValueError("No emails found in response_sessions for raffle selection.")
+
+        return random.sample(range(total_emails), num_emails)
+    #    return random.randint(0, total_emails - 1)
+    except Exception as e:
+        raise Exception(f"Failed to determine raffle position: {e}")
+
+
+@app.get("/api/admin/raffle-email")
+async def get_raffle_email():
+    """
+    Returns a list of randomly selected email from the response_sessions table for raffle purposes.
+    Handles any exceptions that may occur during the database query.
+    """
+    try:
+        print("in try")
+        positions = await _get_random_email_position()
+        emails = []
+        for position in positions: 
+            response = supabase.table("response_sessions").select("email").order("id").range(position, position).execute()
+            if not response.data or not response.data[0]:
+                raise ValueError("No email row returned for raffle selection.")
+
+            email = response.data[0].get("email")
+            if not email:
+                raise ValueError("Selected raffle row does not contain an email.")
+
+            emails.append(email)
+
+        return {"emails": emails}
+    except Exception as e:
+        raise Exception(f"Failed to select raffle email: {e}")
+
 
 @app.get("/api/surveys/{survey_id}/results")
 async def get_survey_results(survey_id: str):
