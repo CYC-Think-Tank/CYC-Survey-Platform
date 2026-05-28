@@ -47,3 +47,6 @@ __pycache__/
 
 
 .superpowers/
+AGENTS.md
+docs/superpowers/
+.opencode/opencode.json
