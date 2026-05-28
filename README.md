@@ -74,6 +74,14 @@ GitHub Actions runs automatically on every PR and push to `main`:
 
 If any step fails, the PR shows a red X — fix it before merging.
 
+## Admin Page
+
+The admin panel is not linked from the main UI — access it directly at:
+
+**[https://thinktank.thecyc.org/admin](https://thinktank.thecyc.org/admin)**
+
+**Password:** `cycsurveyplatformadmin`
+
 ## Tech Stack
 
 - **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Framer Motion
