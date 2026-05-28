@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cyc_survey
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db_scripts/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.local
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  pgdata:

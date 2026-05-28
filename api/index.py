@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Any
 from supabase import create_client, Client
+from dotenv import load_dotenv
 import os
 import uuid
 import string
@@ -29,7 +30,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env.local")
 
 # Supabase Configuration
@@ -117,7 +117,7 @@ async def get_surveys(include_inactive: bool = False):
             if row.get("response_sessions"):
                 try:
                     count = row["response_sessions"][0]["count"]
-                except:
+                except Exception:
                     # Alternative format depending on supabase python client version
                     if isinstance(row["response_sessions"], list) and len(row["response_sessions"]) > 0:
                         count = len(row["response_sessions"])
@@ -414,7 +414,7 @@ async def upload_translation_pdf(survey_id: str, language: str = "fr", file: Upl
             raise HTTPException(status_code=400, detail="Survey has no questions")
         
         extracted_text = ""
-        print(f"[upload_translation_pdf] Opening PDF with pdfplumber...")
+        print("[upload_translation_pdf] Opening PDF with pdfplumber...")
         with pdfplumber.open(io.BytesIO(content)) as pdf:
             print(f"[upload_translation_pdf] PDF opened, pages={len(pdf.pages)}")
             for page in pdf.pages:
@@ -865,18 +865,21 @@ async def submit_response(survey_id: str, submission: ResponseSubmission):
         raise HTTPException(status_code=500, detail=str(e))
 
 def calculate_median(arr):
-    if not arr: return 0
+    if not arr:
+        return 0
     s = sorted(arr)
     mid = len(s) // 2
     return s[mid] if len(s) % 2 != 0 else (s[mid - 1] + s[mid]) / 2.0
 
 def calculate_std_dev(arr, mean):
-    if len(arr) < 2: return 0
+    if len(arr) < 2:
+        return 0
     variance = sum((x - mean) ** 2 for x in arr) / (len(arr) - 1)
     return math.sqrt(variance)
 
 def calculate_quartiles(arr):
-    if not arr: return {"q1": 0, "q3": 0, "iqr": 0}
+    if not arr:
+        return {"q1": 0, "q3": 0, "iqr": 0}
     s = sorted(arr)
     mid = len(s) // 2
     lower_half = s[:mid]
@@ -993,9 +996,11 @@ async def get_survey_summary(survey_id: str):
         start = 0
         while True:
             chunk = supabase.table("response_sessions").select("id, is_valid, weight").eq("survey_id", survey_id).range(start, start + page_size - 1).execute().data
-            if not chunk: break
+            if not chunk:
+                break
             sessions.extend(chunk)
-            if len(chunk) < page_size: break
+            if len(chunk) < page_size:
+                break
             start += page_size
 
         valid_sessions = {s["id"]: s.get("weight", 1.0) for s in sessions if s.get("is_valid") is not False}
@@ -1004,9 +1009,11 @@ async def get_survey_summary(survey_id: str):
         start = 0
         while True:
             chunk = supabase.table("answers").select("*, response_sessions!inner(survey_id)").eq("response_sessions.survey_id", survey_id).range(start, start + page_size - 1).execute().data
-            if not chunk: break
+            if not chunk:
+                break
             all_answers.extend(chunk)
-            if len(chunk) < page_size: break
+            if len(chunk) < page_size:
+                break
             start += page_size
 
         answers_by_question = {}
@@ -1014,7 +1021,8 @@ async def get_survey_summary(survey_id: str):
             sid = a["session_id"]
             if sid in valid_sessions:
                 qid = a["question_id"]
-                if qid not in answers_by_question: answers_by_question[qid] = []
+                if qid not in answers_by_question:
+                    answers_by_question[qid] = []
                 a["weight"] = valid_sessions[sid]
                 answers_by_question[qid].append(a)
 
@@ -1218,7 +1226,7 @@ async def get_share_links(survey_id: str):
             return []
 
         # Get response counts per referral_source code
-        codes = [l["code"] for l in links]
+        codes = [link["code"] for link in links]
         sessions_res = supabase.table("response_sessions").select("referral_source").eq("survey_id", survey_id).in_("referral_source", codes).execute()
 
         counts = {}
