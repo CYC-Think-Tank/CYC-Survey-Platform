@@ -62,31 +62,6 @@ export function Header() {
                 中文
               </button>
             )}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-1 text-gray-700 hover:text-[var(--color-cyc-secondary)] transition-colors"
-            >
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-            <AnimatePresence>
-              {menuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="absolute top-12 right-0 w-48 bg-white border border-gray-200 rounded-xl shadow-xl flex flex-col py-2 z-50 overflow-hidden origin-top-right"
-                >
-                  <Link
-                    href="/admin"
-                    onClick={() => setMenuOpen(false)}
-                    className="px-4 py-3 text-gray-700 hover:text-[var(--color-cyc-secondary)] hover:bg-gray-50 text-sm font-semibold transition-colors"
-                  >
-                    {t('Admin')}
-                  </Link>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </nav>
         </div>
       </div>
