@@ -79,6 +79,10 @@ const translations: Record<Language, Record<string, string>> = {
     'out of': 'out of',
     'Please enter exactly 3 characters in the format A1A (letter, number, letter).': 'Please enter exactly 3 characters in the format A1A (letter, number, letter).',
     'Enter the first 3 characters of your postal code (e.g. M5V).': 'Enter the first 3 characters of your postal code (e.g. M5V).',
+    'Follow Us!': 'Follow Us!',
+    'Stay In Touch': 'Stay In Touch',
+    'For CYC program updates and upcoming university admission sessions, please sign-up for our mailing list:': 'For CYC program updates and upcoming university admission sessions, please sign-up for our mailing list:',
+    'Copyright © 2021. All rights reserved.': 'Copyright © 2021. All rights reserved.',
   },
   fr: {
     'Admin': 'Administrateur',
@@ -148,6 +152,10 @@ const translations: Record<Language, Record<string, string>> = {
     'out of': 'sur',
     'Please enter exactly 3 characters in the format A1A (letter, number, letter).': 'Veuillez entrer exactement 3 caractères au format A1A (lettre, chiffre, lettre).',
     'Enter the first 3 characters of your postal code (e.g. M5V).': 'Entrez les 3 premiers caractères de votre code postal (ex. M5V).',
+    'Follow Us!': 'Suivez-Nous !',
+    'Stay In Touch': 'Restez en Contact',
+    'For CYC program updates and upcoming university admission sessions, please sign-up for our mailing list:': 'Pour les mises à jour du programme CYC et les prochaines sessions d\'admission universitaire, veuillez vous inscrire à notre liste de diffusion :',
+    'Copyright © 2021. All rights reserved.': 'Droits d\'auteur © 2021. Tous droits réservés.',
   },
   zh: {
     'Admin': '管理',
@@ -217,6 +225,10 @@ const translations: Record<Language, Record<string, string>> = {
     'out of': '/',
     'Please enter exactly 3 characters in the format A1A (letter, number, letter).': '请输入恰好3个字符，格式为A1A（字母、数字、字母）。',
     'Enter the first 3 characters of your postal code (e.g. M5V).': '请输入您邮政编码的前3个字符（例如M5V）。',
+    'Follow Us!': '关注我们！',
+    'Stay In Touch': '保持联系',
+    'For CYC program updates and upcoming university admission sessions, please sign-up for our mailing list:': '获取CYC项目更新和即将到来的大学招生讲座信息，请注册我们的邮件列表：',
+    'Copyright © 2021. All rights reserved.': '版权所有 © 2021。保留所有权利。',
   }
 };
 
