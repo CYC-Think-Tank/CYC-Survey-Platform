@@ -543,6 +543,7 @@ export default function EditSurvey() {
             optionsPayload.logic_gate_match_type = q.logic_gate_match_type || 'all';
           }
           return {
+            id: q.id,
             question_text: q.question_text,
             type: q.type,
             order_index: idx + 1,
@@ -603,8 +604,8 @@ export default function EditSurvey() {
           optionsFr.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
         }
         return {
-          id: updatedQ?.id,
           ...q,
+          id: updatedQ?.id || q.id,
           question_text: draftQ.question_text_fr || draftQ.question_text || '',
           options: optionsFr
         };
@@ -644,8 +645,8 @@ export default function EditSurvey() {
           optionsZh.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
         }
         return {
-          id: updatedQ?.id,
           ...q,
+          id: updatedQ?.id || q.id,
           question_text: draftQ.question_text_zh || draftQ.question_text || '',
           options: optionsZh
         };

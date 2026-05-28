@@ -351,6 +351,7 @@ export default function CreateSurvey() {
             optionsPayload.logic_gate_match_type = q.logic_gate_match_type || 'all';
           }
           return {
+            id: q.id,
             question_text: q.question_text,
             type: q.type,
             order_index: idx + 1,
@@ -404,8 +405,8 @@ export default function CreateSurvey() {
           optionsFr.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
         }
         return {
-          id: createdQ?.id,
           ...q,
+          id: createdQ?.id || q.id,
           question_text: draftQ.question_text_fr || draftQ.question_text || '',
           options: optionsFr
         };
@@ -454,9 +455,14 @@ export default function CreateSurvey() {
           if (!optionsZh) optionsZh = {};
           optionsZh.definitions = draftQ.definitions_zh;
         }
+        if (draftQ.logic_gates && draftQ.logic_gates.length > 0) {
+          if (!optionsZh) optionsZh = {};
+          optionsZh.logic_gates = draftQ.logic_gates;
+          optionsZh.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
+        }
         return {
-          id: createdQ?.id,
           ...q,
+          id: createdQ?.id || q.id,
           question_text: draftQ.question_text_zh || draftQ.question_text || '',
           options: optionsZh
         };

@@ -285,9 +285,87 @@ export default function SurveyPage() {
     }
   }, [answers, sessionId, currentStep, survey, questionEnterTime, timeSpentAccumulator]);
 
+  const getNextVisibleStep = (startIdx: number, forward: boolean, pData = profileData) => {
+    let idx = startIdx;
+    while (idx >= 0 && idx < survey.questions.length) {
+      const q = survey.questions[idx];
+      let shouldSkip = false;
+
+      if (q && q.is_conditional && pData[q.question_text]) {
+        shouldSkip = true;
+      }
+
+      if (!shouldSkip && q && q.options?.logic_gates && q.options.logic_gates.length > 0) {
+        const matchType = q.options.logic_gate_match_type || 'all';
+        const logicGates = q.options.logic_gates;
+        
+        const gateResults = logicGates.map((gate: any) => {
+          if (!gate.question_id || !gate.value) return true;
+          const answer = answers[gate.question_id];
+          
+          const dependencyQ = survey.questions.find((x: any) => x.id === gate.question_id);
+          let targetValue = gate.value;
+          if (dependencyQ && language !== 'en') {
+             const enOptions = Array.isArray(dependencyQ.options) ? dependencyQ.options : (dependencyQ.options?.choices || []);
+             const optIndex = enOptions.indexOf(gate.value);
+             if (optIndex !== -1) {
+                 if (language === 'fr' && survey.questions_fr) {
+                     const frQ = survey.questions_fr.find((x: any) => x.id === gate.question_id);
+                     const frOpts = Array.isArray(frQ?.options) ? frQ.options : (frQ?.options?.choices || []);
+                     if (frOpts[optIndex]) targetValue = frOpts[optIndex];
+                 } else if (language === 'zh' && survey.questions_zh) {
+                     const zhQ = survey.questions_zh.find((x: any) => x.id === gate.question_id);
+                     const zhOpts = Array.isArray(zhQ?.options) ? zhQ.options : (zhQ?.options?.choices || []);
+                     if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
+                 }
+             }
+          }
+          
+          if (Array.isArray(answer)) {
+              return answer.includes(targetValue);
+          } else {
+              return answer === targetValue;
+          }
+        });
+        
+        const matched = matchType === 'any' ? gateResults.some((res: boolean) => res) : gateResults.every((res: boolean) => res);
+        if (!matched) shouldSkip = true;
+      }
+
+      if (shouldSkip) {
+        idx = forward ? idx + 1 : idx - 1;
+      } else {
+        break;
+      }
+    }
+    return idx;
+  };
+
   // --- Derived State (Must be before early returns for hooks) ---
   const totalSteps = survey ? survey.questions.length + 1 : 0;
   const isEmailStep = survey ? currentStep === survey.questions.length : false;
+
+  // Walks forward through all questions with getNextVisibleStep to collect
+  // the indices of non-gated questions. O(n^2) worst-case but surveys are small.
+  const visibleQuestionIndices = useMemo(() => {
+    if (!survey) return [] as number[];
+    const indices: number[] = [];
+    let idx = getNextVisibleStep(0, true);
+    while (idx >= 0 && idx < survey.questions.length) {
+      indices.push(idx);
+      idx = getNextVisibleStep(idx + 1, true);
+    }
+    return indices;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [survey, answers, language]);
+
+  const visibleCount = visibleQuestionIndices.length;
+  const visiblePosition = visibleQuestionIndices.indexOf(currentStep);
+  const safeVisiblePosition = visiblePosition >= 0 ? visiblePosition : visibleCount - 1;
+  const visibleQuestionIds = useMemo(() => {
+    if (!survey) return new Set<string>();
+    return new Set(visibleQuestionIndices.map(i => survey.questions[i]?.id).filter(Boolean));
+  }, [survey, visibleQuestionIndices]);
   
   const currentQuestionRaw = survey && !isEmailStep ? survey.questions[currentStep] : null;
   const currentQuestion = useMemo(() => {
@@ -333,7 +411,7 @@ export default function SurveyPage() {
     return finalQ;
   }, [currentQuestionRaw, language, survey]);
 
-  const progress = survey && totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0;
+  const progress = isEmailStep ? 100 : survey && visibleCount > 0 ? (safeVisiblePosition / Math.max(1, visibleCount - 1)) * 100 : 0;
   const displayTitle = language === 'fr' && survey?.title_fr ? survey.title_fr : language === 'zh' && survey?.title_zh ? survey.title_zh : survey?.title;
   const displayDescription = language === 'fr' && survey?.description_fr ? survey.description_fr : language === 'zh' && survey?.description_zh ? survey.description_zh : survey?.description;
 
@@ -445,62 +523,6 @@ export default function SurveyPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     }).catch(() => {});
-  };
-
-  const getNextVisibleStep = (startStep: number, forward: boolean, pData = profileData) => {
-    let next = startStep;
-    while (next > 0 && next <= survey.questions.length) {
-      const q = survey.questions[next - 1];
-      let shouldSkip = false;
-
-      if (q && q.is_conditional && pData[q.question_text]) {
-        shouldSkip = true;
-      }
-
-      if (!shouldSkip && q && q.options?.logic_gates && q.options.logic_gates.length > 0) {
-        const matchType = q.options.logic_gate_match_type || 'all';
-        const logicGates = q.options.logic_gates;
-        
-        const gateResults = logicGates.map((gate: any) => {
-          if (!gate.question_id || !gate.value) return true; // Invalid gates are ignored
-          const answer = answers[gate.question_id];
-          
-          const dependencyQ = survey.questions.find((x: any) => x.id === gate.question_id);
-          let targetValue = gate.value;
-          if (dependencyQ && language !== 'en') {
-             const enOptions = Array.isArray(dependencyQ.options) ? dependencyQ.options : (dependencyQ.options?.choices || []);
-             const optIndex = enOptions.indexOf(gate.value);
-             if (optIndex !== -1) {
-                 if (language === 'fr' && survey.questions_fr) {
-                     const frQ = survey.questions_fr.find((x: any) => x.id === gate.question_id);
-                     const frOpts = Array.isArray(frQ?.options) ? frQ.options : (frQ?.options?.choices || []);
-                     if (frOpts[optIndex]) targetValue = frOpts[optIndex];
-                 } else if (language === 'zh' && survey.questions_zh) {
-                     const zhQ = survey.questions_zh.find((x: any) => x.id === gate.question_id);
-                     const zhOpts = Array.isArray(zhQ?.options) ? zhQ.options : (zhQ?.options?.choices || []);
-                     if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
-                 }
-             }
-          }
-          
-          if (Array.isArray(answer)) {
-              return answer.includes(targetValue);
-          } else {
-              return answer === targetValue;
-          }
-        });
-        
-        const matched = matchType === 'any' ? gateResults.some((res: boolean) => res) : gateResults.every((res: boolean) => res);
-        if (!matched) shouldSkip = true;
-      }
-
-      if (shouldSkip) {
-        next = forward ? next + 1 : next - 1;
-      } else {
-        break;
-      }
-    }
-    return next;
   };
 
   async function handleNext() {
@@ -629,9 +651,10 @@ export default function SurveyPage() {
       // Save to global email memory
       localStorage.setItem('cyc_global_email', email);
 
-      // Build answers payload
+      // Build answers payload (exclude answers for gated-out questions)
       const submissionAnswers = [];
       for (const [qId, val] of Object.entries(answers)) {
+        if (!visibleQuestionIds.has(qId)) continue;
         const q = survey.questions.find((x: any) => x.id === qId);
         if (!q || q.type === 'section_header' || q.id.startsWith('attn-')) continue;
         
@@ -705,7 +728,7 @@ export default function SurveyPage() {
           <motion.div className="bg-[var(--color-cyc-primary)] h-full" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
         <p className="text-xs sm:text-sm font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mt-3">
-          {isEmailStep ? t('Almost Done!') : (currentQuestion?.type === 'section_header' ? t('Information') : `${t('Question')} ${currentStep + 1} ${t('of')} ${survey.questions.length}`)}
+          {isEmailStep ? t('Almost Done!') : (currentQuestion?.type === 'section_header' ? t('Information') : visibleCount > 0 ? `${t('Question')} ${safeVisiblePosition + 1} ${t('of')} ${visibleCount}` : '')}
         </p>
       </motion.div>
 

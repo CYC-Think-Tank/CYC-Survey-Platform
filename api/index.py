@@ -155,6 +155,7 @@ async def get_survey(survey_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 class QuestionCreate(BaseModel):
+    id: Optional[str] = None
     question_text: str
     type: str
     order_index: int
@@ -206,7 +207,34 @@ async def create_survey(survey: SurveyCreate):
                 })
             
             questions_res = supabase.table("questions").insert(questions_to_insert).execute()
-            created_survey["questions"] = questions_res.data
+            created_questions = questions_res.data
+
+            # Build mapping from frontend temp IDs to real UUIDs
+            req_sorted = sorted(survey.questions, key=lambda q: q.order_index)
+            created_sorted = sorted(created_questions, key=lambda q: q["order_index"])
+            temp_to_real = {}
+            for req_q, created_q in zip(req_sorted, created_sorted):
+                if req_q.id:
+                    temp_to_real[req_q.id] = created_q["id"]
+
+            # Remap logic_gates question_ids from temp IDs to real UUIDs
+            if temp_to_real:
+                for new_q in created_questions:
+                    opts = new_q.get("options")
+                    if isinstance(opts, dict) and opts.get("logic_gates"):
+                        remapped = False
+                        for gate in opts["logic_gates"]:
+                            old_id = gate.get("question_id")
+                            if old_id and old_id in temp_to_real:
+                                gate["question_id"] = temp_to_real[old_id]
+                                remapped = True
+                        if remapped:
+                            supabase.table("questions").update({
+                                "options": json_module.loads(json_module.dumps(opts))
+                            }).eq("id", new_q["id"]).execute()
+                            new_q["options"] = json_module.loads(json_module.dumps(opts))
+
+            created_survey["questions"] = created_questions
         else:
             created_survey["questions"] = []
             
@@ -247,20 +275,54 @@ async def duplicate_survey(survey_id: str):
         
         # 4. Duplicate questions
         if original_questions:
+            original_sorted = sorted(original_questions, key=lambda q: q["order_index"])
             questions_to_insert = []
-            for q in original_questions:
+            for q in original_sorted:
+                new_opts = json_module.loads(json_module.dumps(q["options"])) if q.get("options") else None
                 questions_to_insert.append({
                     "survey_id": new_survey["id"],
                     "question_text": q["question_text"],
                     "type": q["type"],
                     "order_index": q["order_index"],
-                    "options": q["options"],
+                    "options": new_opts,
                     "is_required": q["is_required"],
                     "is_conditional": q.get("is_conditional", False)
                 })
-            
+
             new_questions_res = supabase.table("questions").insert(questions_to_insert).execute()
-            new_survey["questions"] = new_questions_res.data
+            new_questions = sorted(new_questions_res.data, key=lambda q: q["order_index"])
+
+            # Build old-to-new UUID mapping and remap logic_gates
+            old_to_new = {}
+            for old_q, new_q in zip(original_sorted, new_questions):
+                old_to_new[old_q["id"]] = new_q["id"]
+
+            updates_needed = []
+            for new_q in new_questions:
+                opts = new_q.get("options")
+                if isinstance(opts, dict) and opts.get("logic_gates"):
+                    remapped = False
+                    for gate in opts["logic_gates"]:
+                        old_id = gate.get("question_id")
+                        if old_id and old_id in old_to_new:
+                            gate["question_id"] = old_to_new[old_id]
+                            remapped = True
+                    if remapped:
+                        updates_needed.append({
+                            "id": new_q["id"],
+                            "options": json_module.loads(json_module.dumps(opts))
+                        })
+
+            if updates_needed:
+                for update in updates_needed:
+                    supabase.table("questions").update({
+                        "options": update["options"]
+                    }).eq("id", update["id"]).execute()
+                    for new_q in new_questions:
+                        if new_q["id"] == update["id"]:
+                            new_q["options"] = update["options"]
+
+            new_survey["questions"] = new_questions
         else:
             new_survey["questions"] = []
             
@@ -628,8 +690,9 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
         # 4. Insert new questions
         if survey.questions:
             questions_to_insert = []
+            temp_to_real = {}
             for q in survey.questions:
-                questions_to_insert.append({
+                new_q = {
                     "survey_id": updated_survey["id"],
                     "question_text": q.question_text,
                     "type": q.type,
@@ -637,10 +700,43 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                     "options": q.options,
                     "is_required": q.is_required,
                     "is_conditional": q.is_conditional
-                })
-            
+                }
+                got_id = False
+                if q.id:
+                    try:
+                        uuid.UUID(q.id)
+                        new_q["id"] = q.id
+                        got_id = True
+                    except ValueError:
+                        pass
+                if not got_id:
+                    gen_id = str(uuid.uuid4())
+                    new_q["id"] = gen_id
+                    if q.id:
+                        temp_to_real[q.id] = gen_id
+                questions_to_insert.append(new_q)
+
             questions_res = supabase.table("questions").insert(questions_to_insert).execute()
-            updated_survey["questions"] = questions_res.data
+            inserted = questions_res.data
+
+            # Remap logic_gates that reference temp IDs
+            if temp_to_real:
+                for new_q in inserted:
+                    opts = new_q.get("options")
+                    if isinstance(opts, dict) and opts.get("logic_gates"):
+                        remapped = False
+                        for gate in opts["logic_gates"]:
+                            old_id = gate.get("question_id")
+                            if old_id and old_id in temp_to_real:
+                                gate["question_id"] = temp_to_real[old_id]
+                                remapped = True
+                        if remapped:
+                            supabase.table("questions").update({
+                                "options": json_module.loads(json_module.dumps(opts))
+                            }).eq("id", new_q["id"]).execute()
+                            new_q["options"] = json_module.loads(json_module.dumps(opts))
+
+            updated_survey["questions"] = inserted
         else:
             updated_survey["questions"] = []
             
