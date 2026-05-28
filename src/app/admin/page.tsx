@@ -12,6 +12,9 @@ export default function AdminDashboard() {
   const [shareLabel, setShareLabel] = useState('');
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [raffleEmails, setRaffleEmails] = useState<string[] | null>(null);
+  const [raffleError, setRaffleError] = useState<string | null>(null);
+  const [raffleLoading, setRaffleLoading] = useState(false);
   const router = useRouter();
 
   const fetchSurveys = () => {
@@ -51,6 +54,24 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       alert("An error occurred while toggling.");
+    }
+  };
+
+  const handleRandomEmailGeneration = async () => {
+    setRaffleError(null);
+    setRaffleLoading(true);
+    try {
+      const res = await fetch(`/api/admin/raffle-email`);
+      const data = await res.json();
+      // alert(`Randomly selected email(s) for raffle: ${data.emails}`);
+      setRaffleEmails(data.emails);
+    } catch (err) {
+      console.error(err);
+      setRaffleEmails(null);
+      setRaffleError("An error occurred while generating random emails.");
+      alert("An error occurred while generating random emails.");
+    } finally {
+      setRaffleLoading(false);
     }
   };
 
@@ -171,12 +192,65 @@ export default function AdminDashboard() {
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
           </Link>
+
+          <button
+            onClick={() => handleRandomEmailGeneration()}
+            className="text-indigo-600 hover:text-indigo-800 flex items-center"
+          >
+            <Users className="w-4 h-4 mr-1" />
+            Randomly generate emails
+          </button>
           <button onClick={handleLogout} className="px-4 py-2 text-red-600 hover:bg-red-50 rounded flex items-center transition-colors">
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out
           </button>
         </div>
       </div>
+      {raffleLoading && (
+        <p className="text-sm text-gray-500">Generating raffle emails...</p>
+      )}
+
+      {raffleError && (
+        <div className="text-sm text-red-600 dark:text-red-400">
+          <span className="font-semibold">Raffle error:</span> {raffleError}
+        </div>
+      )}
+
+      {raffleEmails && (
+        <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+          <h3 className="font-semibold mb-2">Raffle Emails:</h3>
+          <ul className="list-disc ml-5">
+            {raffleEmails.map((email, idx) => (
+              <li key={idx}>{email}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* {(raffleEmails || raffleError || raffleLoading) && (
+        <div className="mb-6 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 p-4">
+          {raffleEmails && (
+            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+              <h3 className="font-semibold mb-2">Raffle Emails:</h3>
+              <ul className="list-disc ml-5">
+              {raffleEmails.map((email, idx) => (
+                <li key={idx}>{email}</li>
+              ))}
+              </ul>
+            </div>
+)}
+          {raffleError && (
+            <div className="text-sm test-red-600 dark:text-red-400">
+              <span className="font-semibold">Raffle error:</span> {raffleError}
+            </div>
+          )}
+
+          {raffleLoading && (
+            <p className="text-sm text-gray-500">Generating raffle emails...</p>
+          )}
+          
+        </div>
+      )} */}
 
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow border border-gray-200 dark:border-slate-700 overflow-x-auto overflow-y-hidden">
         <table className="min-w-full divide-y divide-gray-200">
