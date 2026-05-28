@@ -345,6 +345,8 @@ export default function SurveyPage() {
   const totalSteps = survey ? survey.questions.length + 1 : 0;
   const isEmailStep = survey ? currentStep === survey.questions.length : false;
 
+  // Walks forward through all questions with getNextVisibleStep to collect
+  // the indices of non-gated questions. O(n^2) worst-case but surveys are small.
   const visibleQuestionIndices = useMemo(() => {
     if (!survey) return [] as number[];
     const indices: number[] = [];
@@ -355,10 +357,11 @@ export default function SurveyPage() {
     }
     return indices;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [survey, answers]);
+  }, [survey, answers, language]);
 
   const visibleCount = visibleQuestionIndices.length;
   const visiblePosition = visibleQuestionIndices.indexOf(currentStep);
+  const safeVisiblePosition = visiblePosition >= 0 ? visiblePosition : visibleCount - 1;
   const visibleQuestionIds = useMemo(() => {
     if (!survey) return new Set<string>();
     return new Set(visibleQuestionIndices.map(i => survey.questions[i]?.id).filter(Boolean));
@@ -408,7 +411,7 @@ export default function SurveyPage() {
     return finalQ;
   }, [currentQuestionRaw, language, survey]);
 
-  const progress = isEmailStep ? 100 : survey && visibleCount > 0 ? (visiblePosition / Math.max(1, visibleCount - 1)) * 100 : 0;
+  const progress = isEmailStep ? 100 : survey && visibleCount > 0 ? (safeVisiblePosition / Math.max(1, visibleCount - 1)) * 100 : 0;
   const displayTitle = language === 'fr' && survey?.title_fr ? survey.title_fr : language === 'zh' && survey?.title_zh ? survey.title_zh : survey?.title;
   const displayDescription = language === 'fr' && survey?.description_fr ? survey.description_fr : language === 'zh' && survey?.description_zh ? survey.description_zh : survey?.description;
 
@@ -725,7 +728,7 @@ export default function SurveyPage() {
           <motion.div className="bg-[var(--color-cyc-primary)] h-full" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.5, ease: "easeOut" }} />
         </div>
         <p className="text-xs sm:text-sm font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mt-3">
-          {isEmailStep ? t('Almost Done!') : (currentQuestion?.type === 'section_header' ? t('Information') : `${t('Question')} ${visiblePosition + 1} ${t('of')} ${visibleCount}`)}
+          {isEmailStep ? t('Almost Done!') : (currentQuestion?.type === 'section_header' ? t('Information') : visibleCount > 0 ? `${t('Question')} ${safeVisiblePosition + 1} ${t('of')} ${visibleCount}` : '')}
         </p>
       </motion.div>
 
