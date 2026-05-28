@@ -44,7 +44,7 @@ export default function SurveysPage() {
   );
 
   return (
-    <div className="flex-1 w-full max-w-5xl mx-auto px-6 py-12 bg-slate-50 overflow-hidden">
+    <div className="flex-1 w-full max-w-5xl mx-auto px-6 py-12 bg-slate-50">
       <motion.div 
         className="text-center mb-12"
         initial={{ opacity: 0, y: -20 }}

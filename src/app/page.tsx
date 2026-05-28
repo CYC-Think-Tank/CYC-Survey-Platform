@@ -221,7 +221,7 @@ export default function Home() {
   ];
 
   return (
-    <div className={`flex-1 w-full flex flex-col items-center px-6 relative bg-slate-50 overflow-x-hidden -mb-10 pb-10 ${showIntro ? 'overflow-hidden' : ''}`}>
+    <div className={`flex-1 w-full flex flex-col items-center px-6 relative bg-slate-50 pb-10 ${showIntro ? 'overflow-hidden' : ''}`}>
 
       {/* Background decorations */}
       {decos.map((d, i) => (
