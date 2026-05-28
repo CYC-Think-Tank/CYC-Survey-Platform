@@ -1,5 +1,4 @@
-from urllib import response
-
+# from urllib import response
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
