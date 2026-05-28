@@ -82,7 +82,7 @@ export function Footer() {
               {t('Stay In Touch')}
             </h4>
             <p className="text-sm text-slate-500 leading-relaxed">
-              {t('For CYC program updates and upcoming university admission sessions, please sign-up for our mailing list:')}{' '}
+              {t('For CYC program updates, please sign-up for our mailing list:')}{' '}
               <a
                 href="https://www.thecyc.org/stay-in-touch"
                 target="_blank"
