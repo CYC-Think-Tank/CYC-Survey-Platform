@@ -78,3 +78,4 @@ zstandard==0.25.0
 python-dotenv
 json-repair==0.59.10
 pdfplumber==0.11.8
+ruff==0.14.10
