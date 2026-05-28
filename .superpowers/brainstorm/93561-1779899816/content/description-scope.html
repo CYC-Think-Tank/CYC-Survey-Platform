@@ -1,0 +1,29 @@
+<h2>Description Field Scope</h2>
+<p class="subtitle">Where should the description/helper-text field be available?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>All question types (Recommended)</h3>
+      <p>Add <code>description</code> to every question type's options. Useful for multiple choice instructions, section header clarifications, etc. The postal code privacy disclaimer is just the first use case. Unified data model — one field on every question.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Short answer only</h3>
+      <p>Add <code>description</code> only to <code>short_answer</code> type's options. Keeps the change minimal — only touches what's needed for the postal code use case. Other question types can add descriptions later if needed.</p>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top: 2rem;">
+  <div class="mockup-header">Admin UI — Question Editor (with description field)</div>
+  <div class="mockup-body" style="padding: 16px;">
+    <div style="font-weight: 600; margin-bottom: 4px;">Question 3 - Short Answer</div>
+    <div class="mock-input" style="min-height: 40px; margin-bottom: 8px;">What are the first three characters of your postal code?</div>
+    <div class="mock-input" style="min-height: 32px; font-size: 13px; color: #666;">We ask for the first three characters of your postal code to get a general sense of where responses are coming from. This does not reveal your exact address and is only used for overall geographic analysis.</div>
+    <div style="font-size: 11px; color: #999; margin-top: 4px;">Helper text / description</div>
+  </div>
+</div>

@@ -1,0 +1,297 @@
+{
+  "/Users/rsxing/CYC-Survey-Platform/vercel.json": {
+    "mtime": 1779725813.0012252,
+    "ast_hash": "214184d08237b5ce9871d12f89bf117f",
+    "semantic_hash": "214184d08237b5ce9871d12f89bf117f"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/patch_survey.py": {
+    "mtime": 1779725812.9943185,
+    "ast_hash": "f13c7fd9338e899f98eb36f914ef5efa",
+    "semantic_hash": "f13c7fd9338e899f98eb36f914ef5efa"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/postcss.config.mjs": {
+    "mtime": 1779725812.9944072,
+    "ast_hash": "239f3ebf717465dc636818a1a619398d",
+    "semantic_hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/test_fast.py": {
+    "mtime": 1779823608.812724,
+    "ast_hash": "1e167ae079e9dac8a76ec1be009e7e28",
+    "semantic_hash": "1e167ae079e9dac8a76ec1be009e7e28"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/test_endpoints.py": {
+    "mtime": 1779823608.8126168,
+    "ast_hash": "6504b693a3abf18c1d94eb4318423384",
+    "semantic_hash": "6504b693a3abf18c1d94eb4318423384"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/list_questions.py": {
+    "mtime": 1779823608.8091784,
+    "ast_hash": "0f231a8b91073270af2018b8e42bdc72",
+    "semantic_hash": "0f231a8b91073270af2018b8e42bdc72"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/list_surveys.py": {
+    "mtime": 1779823608.8093107,
+    "ast_hash": "df1047919999ae0ed9d6fb5c9523cbed",
+    "semantic_hash": "df1047919999ae0ed9d6fb5c9523cbed"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/test_short_answer_validation.py": {
+    "mtime": 1779901982.8137052,
+    "ast_hash": "a96dc8aa2f055f7c69d8c9544ae8ab79",
+    "semantic_hash": "a96dc8aa2f055f7c69d8c9544ae8ab79"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/check_db.py": {
+    "mtime": 1779823608.8084068,
+    "ast_hash": "fb20142a9aa0b945220b313ad702da47",
+    "semantic_hash": "fb20142a9aa0b945220b313ad702da47"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/package.json": {
+    "mtime": 1779725812.993921,
+    "ast_hash": "3cec6b01ef14c1e3523b3413c7677d6f",
+    "semantic_hash": "3cec6b01ef14c1e3523b3413c7677d6f"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/test_query.py": {
+    "mtime": 1779823608.813058,
+    "ast_hash": "39c17ae1bbd95a0909da34244c6f0e3e",
+    "semantic_hash": "39c17ae1bbd95a0909da34244c6f0e3e"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/seed_1000.py": {
+    "mtime": 1779823608.8094385,
+    "ast_hash": "a7c58d44a363153bd10da98fe6908adb",
+    "semantic_hash": "a7c58d44a363153bd10da98fe6908adb"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/tsconfig.json": {
+    "mtime": 1779725813.0011382,
+    "ast_hash": "ee17fd1c97c735e9f3564e3f5251f125",
+    "semantic_hash": "ee17fd1c97c735e9f3564e3f5251f125"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/check_insert.py": {
+    "mtime": 1779823608.8085148,
+    "ast_hash": "fdfa0295fe596b5009775ad8a3496660",
+    "semantic_hash": "fdfa0295fe596b5009775ad8a3496660"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/eslint.config.mjs": {
+    "mtime": 1779725812.9908512,
+    "ast_hash": "629dd2dcc15970b63a72bcd36468ae82",
+    "semantic_hash": "629dd2dcc15970b63a72bcd36468ae82"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/seed_2000.py": {
+    "mtime": 1779823608.809533,
+    "ast_hash": "af32bca06a7021d53a77a281a273ebb6",
+    "semantic_hash": "af32bca06a7021d53a77a281a273ebb6"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/next.config.ts": {
+    "mtime": 1779725812.993055,
+    "ast_hash": "cb6a4748319b2c8485dd1fbd47a2699c",
+    "semantic_hash": "cb6a4748319b2c8485dd1fbd47a2699c"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/test_limit.py": {
+    "mtime": 1779823608.8129015,
+    "ast_hash": "8786586597910096f4b37b329cd60102",
+    "semantic_hash": "8786586597910096f4b37b329cd60102"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/.opencode/package.json": {
+    "mtime": 1779929523.3767314,
+    "ast_hash": "9da2b87294a22da9e79bad08ba9aa53e",
+    "semantic_hash": "9da2b87294a22da9e79bad08ba9aa53e"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/.opencode/opencode.json": {
+    "mtime": 1779929519.6318517,
+    "ast_hash": "e5f74d14a81702b55bdf53b33ec991d7",
+    "semantic_hash": "e5f74d14a81702b55bdf53b33ec991d7"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/.opencode/plugins/graphify.js": {
+    "mtime": 1779929457.8034186,
+    "ast_hash": "64ccd3c03dbfe0980b6095766f5c4e52",
+    "semantic_hash": "64ccd3c03dbfe0980b6095766f5c4e52"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/db_scripts/schema.sql": {
+    "mtime": 1779823608.8090203,
+    "ast_hash": "7381e219f004b91fbd556b68d66c04da",
+    "semantic_hash": "7381e219f004b91fbd556b68d66c04da"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/db_scripts/seed.py": {
+    "mtime": 1779725812.9907458,
+    "ast_hash": "2ac6dee22038ab0ee2fd0c2c9b119907",
+    "semantic_hash": "2ac6dee22038ab0ee2fd0c2c9b119907"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/api/index.py": {
+    "mtime": 1779900861.364867,
+    "ast_hash": "18cf0e2b2fedd6f525c541ca114199a4",
+    "semantic_hash": "18cf0e2b2fedd6f525c541ca114199a4"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/.vscode/settings.json": {
+    "mtime": 1779823608.806852,
+    "ast_hash": "231777773948e527ab0aea907caad822",
+    "semantic_hash": "231777773948e527ab0aea907caad822"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/contexts/LanguageContext.tsx": {
+    "mtime": 1779900697.8448746,
+    "ast_hash": "1789c285f5c8cc53613792339b78b11b",
+    "semantic_hash": "1789c285f5c8cc53613792339b78b11b"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/layout.tsx": {
+    "mtime": 1779725812.998264,
+    "ast_hash": "b9f37eb5ac2015b9c90403720c93b67f",
+    "semantic_hash": "b9f37eb5ac2015b9c90403720c93b67f"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/page.tsx": {
+    "mtime": 1779823608.8116312,
+    "ast_hash": "da3388a2bfc7b62ca6d14609f04051fd",
+    "semantic_hash": "da3388a2bfc7b62ca6d14609f04051fd"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/thank-you/page.tsx": {
+    "mtime": 1779725812.9993122,
+    "ast_hash": "5c85720d766a67c1575804cc99f9dd32",
+    "semantic_hash": "5c85720d766a67c1575804cc99f9dd32"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/admin/layout.tsx": {
+    "mtime": 1779725812.9968572,
+    "ast_hash": "6185ca1e21fb9a7182d8c7385063f702",
+    "semantic_hash": "6185ca1e21fb9a7182d8c7385063f702"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/admin/page.tsx": {
+    "mtime": 1779725812.9971125,
+    "ast_hash": "fb84591f6f0b27394d8e8486b5f7cc34",
+    "semantic_hash": "fb84591f6f0b27394d8e8486b5f7cc34"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/admin/edit/[id]/page.tsx": {
+    "mtime": 1779901593.8017738,
+    "ast_hash": "ed09800b02a00fcefdf5db182ac89018",
+    "semantic_hash": "ed09800b02a00fcefdf5db182ac89018"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/admin/results/[id]/page.tsx": {
+    "mtime": 1779901938.2530892,
+    "ast_hash": "1b3505a507938c9844b4a7adf51b9b94",
+    "semantic_hash": "1b3505a507938c9844b4a7adf51b9b94"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/admin/create/page.tsx": {
+    "mtime": 1779901390.7575343,
+    "ast_hash": "2b6818d492afc5ee391dea59bde44b22",
+    "semantic_hash": "2b6818d492afc5ee391dea59bde44b22"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/admin/login/page.tsx": {
+    "mtime": 1779725812.9969923,
+    "ast_hash": "9a4df5b5447641b8d98bcb92bee4f887",
+    "semantic_hash": "9a4df5b5447641b8d98bcb92bee4f887"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/surveys/page.tsx": {
+    "mtime": 1779725812.99893,
+    "ast_hash": "cc026d02b1dceb152d78ed631304c9d5",
+    "semantic_hash": "cc026d02b1dceb152d78ed631304c9d5"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/api/cron/reminders/route.ts": {
+    "mtime": 1779725812.9978356,
+    "ast_hash": "63a661ee88b166a967ce212ababd5465",
+    "semantic_hash": "63a661ee88b166a967ce212ababd5465"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/survey/[id]/page.tsx": {
+    "mtime": 1779901874.964625,
+    "ast_hash": "922ba2da4af733c7b69749b177838fed",
+    "semantic_hash": "922ba2da4af733c7b69749b177838fed"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/components/AiInsightsTab.tsx": {
+    "mtime": 1779823608.8124604,
+    "ast_hash": "29b151bdbd91fabf28a3b3c9d934c68e",
+    "semantic_hash": "29b151bdbd91fabf28a3b3c9d934c68e"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/components/RichTextEditor.tsx": {
+    "mtime": 1779725813.0002067,
+    "ast_hash": "9f98804edb13630f4a0d957d94f1a560",
+    "semantic_hash": "9f98804edb13630f4a0d957d94f1a560"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/components/layout/HeaderFooter.tsx": {
+    "mtime": 1779725813.000535,
+    "ast_hash": "9c7b3ef1810835e8c9e5b94bd2ce08be",
+    "semantic_hash": "9c7b3ef1810835e8c9e5b94bd2ce08be"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/lib/supabase.ts": {
+    "mtime": 1779725813.001043,
+    "ast_hash": "af2e09a7fc68e5322888f60c3f28903c",
+    "semantic_hash": "af2e09a7fc68e5322888f60c3f28903c"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/requirements.txt": {
+    "mtime": 1779899410.986776,
+    "ast_hash": "112096049367ddad0ba853c40bde5542",
+    "semantic_hash": "112096049367ddad0ba853c40bde5542"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/README.md": {
+    "mtime": 1779729875.7705424,
+    "ast_hash": "4c8c8a2fa7345fb4b4dc1a0853830d23",
+    "semantic_hash": "4c8c8a2fa7345fb4b4dc1a0853830d23"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/AGENTS.md": {
+    "mtime": 1779929457.8031921,
+    "ast_hash": "62c05a2bf20bf036a0b2633478663e64",
+    "semantic_hash": "62c05a2bf20bf036a0b2633478663e64"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/docs/superpowers/plans/2026-01-26-pdf-translation-upload.md": {
+    "mtime": 1779899410.9848297,
+    "ast_hash": "5bc119833b927faab420d20061808589",
+    "semantic_hash": "5bc119833b927faab420d20061808589"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/docs/superpowers/plans/2026-05-27-short-answer-validation.md": {
+    "mtime": 1779900358.9186957,
+    "ast_hash": "799a038e4ceea9692610109a86472fb0",
+    "semantic_hash": "799a038e4ceea9692610109a86472fb0"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/docs/superpowers/specs/2026-01-26-pdf-translation-upload-design.md": {
+    "mtime": 1779899410.9852583,
+    "ast_hash": "4b42fc885da9b134b4da221ef40f74d3",
+    "semantic_hash": "4b42fc885da9b134b4da221ef40f74d3"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/docs/superpowers/specs/2026-05-27-short-answer-validation-design.md": {
+    "mtime": 1779900011.5708063,
+    "ast_hash": "a37a35866c332b60ed88bcf7e3b3855f",
+    "semantic_hash": "a37a35866c332b60ed88bcf7e3b3855f"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/Full Survey Questions.pdf": {
+    "mtime": 1779899410.9833221,
+    "ast_hash": "c09d2241cca09e27c2ed509f6e357f0a",
+    "semantic_hash": "c09d2241cca09e27c2ed509f6e357f0a"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/CYC_Logo.png": {
+    "mtime": 1779725812.99501,
+    "ast_hash": "df498058eb162b701d4d57d93b800f1f",
+    "semantic_hash": "df498058eb162b701d4d57d93b800f1f"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/icon.png": {
+    "mtime": 1779725812.9954882,
+    "ast_hash": "8e2b593e04e0a6e6421a7b300e6a345d",
+    "semantic_hash": "8e2b593e04e0a6e6421a7b300e6a345d"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/file.svg": {
+    "mtime": 1779725812.9952307,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/logo.png": {
+    "mtime": 1779725812.9957113,
+    "ast_hash": "be398c97d039a3b78313e9febed701c0",
+    "semantic_hash": "be398c97d039a3b78313e9febed701c0"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/vercel.svg": {
+    "mtime": 1779725812.9959044,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/next.svg": {
+    "mtime": 1779725812.99582,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/globe.svg": {
+    "mtime": 1779725812.9953396,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/public/window.svg": {
+    "mtime": 1779725812.996005,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": "a2760511c65806022ad20adf74370ff3"
+  },
+  "/Users/rsxing/CYC-Survey-Platform/src/app/icon.png": {
+    "mtime": 1779725812.9981434,
+    "ast_hash": "81a8999b2e0562c6caac80988efca78d",
+    "semantic_hash": "81a8999b2e0562c6caac80988efca78d"
+  }
+}
