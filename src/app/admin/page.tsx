@@ -21,8 +21,6 @@ export default function AdminDashboard() {
     fetch('/api/surveys?include_inactive=true')
       .then(res => res.json())
       .then(data => {
-        console.log("Data received:", data);
-        
         setSurveys(data);
         setLoading(false);
       })
