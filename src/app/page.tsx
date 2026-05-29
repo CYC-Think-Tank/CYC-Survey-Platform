@@ -245,7 +245,7 @@ export default function Home() {
 
       {/* Raffle Info Floating Box */}
       <motion.div
-        className="absolute top-[38%] right-[5%] lg:right-[8%] z-30 hidden md:flex flex-col items-center bg-white border border-gray-100 shadow-[0_15px_40px_rgba(4,55,126,0.12)] rounded-2xl py-3 px-5 rotate-[4deg]"
+        className="group absolute top-[38%] right-[5%] lg:right-[8%] z-30 hidden md:flex flex-col items-center bg-white border border-gray-100 shadow-[0_15px_40px_rgba(4,55,126,0.12)] rounded-2xl py-3 px-5 rotate-[4deg] cursor-help"
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: showIntro ? 0 : 1, scale: showIntro ? 0 : 1, y: [0, -8, 0] }}
         transition={{ 
@@ -262,6 +262,15 @@ export default function Home() {
         <span className="text-sm font-extrabold text-[#04377E]">
           {t('Win $100 (5 Winners!)')}
         </span>
+        
+        {/* Tooltip */}
+        <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-xl rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
+          <ul className="text-xs text-gray-600 font-medium space-y-2 list-disc pl-4 text-left">
+            <li>{t('Each survey completed is one entry.')}</li>
+            <li>{t('One person can complete up to 3 surveys.')}</li>
+            <li>{t('Winners will be contacted by June 29th.')}</li>
+          </ul>
+        </div>
       </motion.div>
 
       {/* Hero Section */}
