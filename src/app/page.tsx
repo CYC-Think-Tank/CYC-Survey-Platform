@@ -262,16 +262,14 @@ export default function Home() {
         <span className="text-sm font-extrabold text-[#04377E]">
           {t('Win $100 (5 Winners!)')}
         </span>
-
-        {/* Hover Tooltip */}
-        <div className="absolute top-full mt-3 w-56 bg-gray-900 text-white text-xs rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl z-50 left-1/2 -translate-x-1/2 rotate-[-4deg]">
-          <p className="mb-2 font-bold text-gray-100">{t('Raffle Details:')}</p>
-          <ul className="list-disc pl-4 space-y-1.5 text-[11px] text-gray-300">
-            <li>{t('Each survey completed = 1 entry')}</li>
-            <li>{t('Max 3 surveys per person')}</li>
-            <li>{t('Winners contacted by June 29th')}</li>
+        
+        {/* Tooltip */}
+        <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-xl rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
+          <ul className="text-xs text-gray-600 font-medium space-y-2 list-disc pl-4 text-left">
+            <li>{t('Each survey completed is one entry.')}</li>
+            <li>{t('One person can complete up to 3 surveys.')}</li>
+            <li>{t('Winners will be contacted by June 29th.')}</li>
           </ul>
-          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900 rotate-45" />
         </div>
       </motion.div>
 

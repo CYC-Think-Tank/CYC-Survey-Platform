@@ -279,7 +279,7 @@ async def duplicate_survey(survey_id: str):
         }).execute()
         
         new_survey = new_survey_res.data[0]
-        
+
         # 4. Duplicate questions
         if original_questions:
             original_sorted = sorted(original_questions, key=lambda q: q["order_index"])
@@ -303,6 +303,33 @@ async def duplicate_survey(survey_id: str):
             old_to_new = {}
             for old_q, new_q in zip(original_sorted, new_questions):
                 old_to_new[old_q["id"]] = new_q["id"]
+            
+            # Duplicate and Remap Translations
+            existing_translations_res = supabase.table("ai_analyses").select("*").eq("survey_id", survey_id).in_("analysis_type", ["translation_fr", "translation_zh"]).execute()
+            existing_translations = existing_translations_res.data
+
+            if existing_translations:
+                translations_to_insert = []
+                for trans in existing_translations:
+                    trans_data = json_module.loads(json_module.dumps(trans["data"]))
+                    lang_suffix = "fr" if "translation_fr" in trans["analysis_type"] else "zh"
+                    q_key = f"questions_{lang_suffix}"
+                    
+                    # Remap IDs inside the translation JSON
+                    if q_key in trans_data and isinstance(trans_data[q_key], list):
+                        for tq in trans_data[q_key]:
+                            old_id = tq.get("id")
+                            if old_id in old_to_new:
+                                tq["id"] = old_to_new[old_id]
+
+                    translations_to_insert.append({
+                        "survey_id": new_survey["id"],
+                        "analysis_type": trans["analysis_type"],
+                        "data": trans_data,
+                        "updated_at": datetime.utcnow().isoformat()
+                    })
+                if translations_to_insert:
+                    supabase.table("ai_analyses").insert(translations_to_insert).execute()
 
             updates_needed = []
             for new_q in new_questions:
@@ -999,7 +1026,6 @@ async def get_raffle_email():
     Handles any exceptions that may occur during the database query.
     """
     try:
-        print("in try")
         positions = await _get_random_email_position()
         emails = []
         for position in positions: 

@@ -60,6 +60,9 @@ export default function ThankYouPage() {
         <p className="text-lg md:text-xl text-gray-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
           {t('Your responses have been successfully submitted. We greatly appreciate you taking the time to share your voice and help empower Canadian youth.')}
         </p>
+        <p className="text-base md:text-lg text-[#0CA7A1] font-semibold leading-relaxed max-w-2xl mx-auto mt-4 bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
+          {t('Thanks for filling out the survey, we would really appreciate if you could share this survey with a friend in order to represent as many voices as possible.')}
+        </p>
       </motion.div>
 
       {/* Cross-Promotion Section */}
