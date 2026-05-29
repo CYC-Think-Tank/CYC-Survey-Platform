@@ -17,6 +17,13 @@ import math
 import pdfplumber
 import httpx
 import json as json_module
+from api.utils.survey_utils import (
+    calculate_median,
+    calculate_std_dev,
+    calculate_quartiles,
+    find_outliers,
+    calculate_mode,
+)
 # Initialize FastAPI
 app = FastAPI(title="CYC Survey Platform API")
 
@@ -961,45 +968,6 @@ async def submit_response(survey_id: str, submission: ResponseSubmission):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def calculate_median(arr):
-    if not arr:
-        return 0
-    s = sorted(arr)
-    mid = len(s) // 2
-    return s[mid] if len(s) % 2 != 0 else (s[mid - 1] + s[mid]) / 2.0
-
-def calculate_std_dev(arr, mean):
-    if len(arr) < 2:
-        return 0
-    variance = sum((x - mean) ** 2 for x in arr) / (len(arr) - 1)
-    return math.sqrt(variance)
-
-def calculate_quartiles(arr):
-    if not arr:
-        return {"q1": 0, "q3": 0, "iqr": 0}
-    s = sorted(arr)
-    mid = len(s) // 2
-    lower_half = s[:mid]
-    upper_half = s[mid:] if len(s) % 2 == 0 else s[mid+1:]
-    q1 = calculate_median(lower_half)
-    q3 = calculate_median(upper_half)
-    return {"q1": q1, "q3": q3, "iqr": q3 - q1}
-
-def find_outliers(arr, q1, q3, iqr):
-    lower = q1 - 1.5 * iqr
-    upper = q3 + 1.5 * iqr
-    return [x for x in arr if x < lower or x > upper]
-
-def calculate_mode(counts):
-    max_val = 0
-    modes = []
-    for k, v in counts.items():
-        if v > max_val:
-            max_val = v
-            modes = [k]
-        elif v == max_val and max_val > 0:
-            modes.append(k)
-    return {"modes": modes, "count": max_val} if modes else None
 
 async def _get_random_email_position(num_emails: int = 5) -> list:
     """
