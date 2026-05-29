@@ -275,8 +275,12 @@ export default function EditSurvey() {
     const newQ: QuestionDraft = {
       id: Math.random().toString(36).substr(2, 9),
       question_text: '',
+      question_text_fr: '',
+      question_text_zh: '',
       type,
       options: type === 'multiple_choice' || type === 'checkboxes' || type === 'dropdown' || type === 'ranking' ? ['Option 1'] : [],
+      options_fr: type === 'multiple_choice' || type === 'checkboxes' || type === 'dropdown' || type === 'ranking' ? [] : [],
+      options_zh: type === 'multiple_choice' || type === 'checkboxes' || type === 'dropdown' || type === 'ranking' ? [] : [],
       max_selections: type === 'checkboxes' ? 3 : undefined,
       has_other: false,
       randomize_options: false,
@@ -286,6 +290,8 @@ export default function EditSurvey() {
       logic_gates: [],
       logic_gate_match_type: 'all',
       section_description: type === 'section_header' ? '' : undefined,
+      section_description_fr: type === 'section_header' ? '' : undefined,
+      section_description_zh: type === 'section_header' ? '' : undefined,
       description_alignment: type === 'section_header' ? 'left' : undefined,
       attachments: type === 'section_header' ? [] : undefined,
       reference_number: type === 'rating_scale' ? undefined : undefined,
@@ -296,6 +302,9 @@ export default function EditSurvey() {
       validation_regex: '',
       validation_max_length: undefined,
       validation_normalize_uppercase: false,
+      definitions: [],
+      definitions_fr: [],
+      definitions_zh: []
     };
     setQuestions([...questions, newQ]);
   };
@@ -312,6 +321,11 @@ export default function EditSurvey() {
         const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
         arr[index] = value;
         return { ...q, options_fr: arr };
+      } else if (language === 'zh') {
+        const base = getOptionsArray(q.options_zh);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr[index] = value;
+        return { ...q, options_zh: arr };
       } else {
         const isArr = Array.isArray(q.options);
         const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
@@ -382,17 +396,35 @@ export default function EditSurvey() {
   const addOption = (qId: string) => {
     setQuestions(questions.map(q => {
       if (q.id !== qId) return q;
-      const isArr = Array.isArray(q.options);
-      const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
-      arr.push(`Option ${arr.length + 1}`);
-      return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+      if (language === 'fr') {
+        const base = getOptionsArray(q.options_fr);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr.push(`Option ${arr.length + 1}`);
+        return { ...q, options_fr: arr };
+      } else if (language === 'zh') {
+        const base = getOptionsArray(q.options_zh);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr.push(`Option ${arr.length + 1}`);
+        return { ...q, options_zh: arr };
+      } else {
+        const isArr = Array.isArray(q.options);
+        const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+        arr.push(`Option ${arr.length + 1}`);
+        return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+      }
     }));
   };
 
   const addDefinition = (qId: string) => {
     setQuestions(questions.map(q => {
       if (q.id !== qId) return q;
-      return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
+      if (language === 'fr') {
+        return { ...q, definitions_fr: [...(q.definitions_fr || q.definitions || []), { term: '', definition: '' }] };
+      } else if (language === 'zh') {
+        return { ...q, definitions_zh: [...(q.definitions_zh || q.definitions || []), { term: '', definition: '' }] };
+      } else {
+        return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
+      }
     }));
   };
 
@@ -404,6 +436,11 @@ export default function EditSurvey() {
         if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
         newDefs[index] = { ...newDefs[index], [field]: value };
         return { ...q, definitions_fr: newDefs };
+      } else if (language === 'zh') {
+        const newDefs = [...(q.definitions_zh || q.definitions || [])];
+        if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
+        newDefs[index] = { ...newDefs[index], [field]: value };
+        return { ...q, definitions_zh: newDefs };
       } else {
         const newDefs = [...(q.definitions || [])];
         if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
@@ -416,9 +453,19 @@ export default function EditSurvey() {
   const removeDefinition = (qId: string, index: number) => {
     setQuestions(questions.map(q => {
       if (q.id !== qId) return q;
-      const newDefs = [...(q.definitions || [])];
-      newDefs.splice(index, 1);
-      return { ...q, definitions: newDefs };
+      if (language === 'fr') {
+        const newDefs = [...(q.definitions_fr || q.definitions || [])];
+        newDefs.splice(index, 1);
+        return { ...q, definitions_fr: newDefs };
+      } else if (language === 'zh') {
+        const newDefs = [...(q.definitions_zh || q.definitions || [])];
+        newDefs.splice(index, 1);
+        return { ...q, definitions_zh: newDefs };
+      } else {
+        const newDefs = [...(q.definitions || [])];
+        newDefs.splice(index, 1);
+        return { ...q, definitions: newDefs };
+      }
     }));
   };
 
@@ -436,10 +483,22 @@ export default function EditSurvey() {
   const removeOption = (qId: string, index: number) => {
     setQuestions(questions.map(q => {
       if (q.id !== qId) return q;
-      const isArr = Array.isArray(q.options);
-      const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
-      arr.splice(index, 1);
-      return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+      if (language === 'fr') {
+        const base = getOptionsArray(q.options_fr);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr.splice(index, 1);
+        return { ...q, options_fr: arr };
+      } else if (language === 'zh') {
+        const base = getOptionsArray(q.options_zh);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr.splice(index, 1);
+        return { ...q, options_zh: arr };
+      } else {
+        const isArr = Array.isArray(q.options);
+        const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+        arr.splice(index, 1);
+        return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+      }
     }));
   };
 
@@ -750,11 +809,11 @@ export default function EditSurvey() {
             <input
               type="text"
               required={language === 'en'}
-              value={language === 'en' ? title : titleFr}
-              onChange={(e) => language === 'en' ? setTitle(e.target.value) : setTitleFr(e.target.value)}
+              value={language === 'en' ? title : language === 'fr' ? titleFr : titleZh}
+              onChange={(e) => language === 'en' ? setTitle(e.target.value) : language === 'fr' ? setTitleFr(e.target.value) : setTitleZh(e.target.value)}
               disabled={isLocked && language === 'en'}
               className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
-              placeholder={language === 'fr' ? "Titre en francais" : "Survey Title"}
+              placeholder={language === 'fr' ? "Titre en francais" : language === 'zh' ? "调查标题" : "Survey Title"}
             />
           </div>
           <div>
@@ -775,10 +834,10 @@ export default function EditSurvey() {
               </div>
             )}
             <RichTextEditor
-              value={language === 'en' ? description : descriptionFr}
-              onChange={(val) => language === 'en' ? setDescription(val) : setDescriptionFr(val)}
+              value={language === 'en' ? description : language === 'fr' ? descriptionFr : descriptionZh}
+              onChange={(val) => language === 'en' ? setDescription(val) : language === 'fr' ? setDescriptionFr(val) : setDescriptionZh(val)}
               readOnly={isLocked && language === 'en'}
-              placeholder={language === 'fr' ? "De quoi s'agit-il?" : "What is this survey about?"}
+              placeholder={language === 'fr' ? "De quoi s'agit-il?" : language === 'zh' ? "调查描述" : "What is this survey about?"}
             />
           </div>
           {/* Thumbnail Upload */}
@@ -890,10 +949,10 @@ export default function EditSurvey() {
                     <input
                       type="text"
                       required={language === 'en'}
-                      value={language === 'en' ? q.question_text : (q.question_text_fr || '')}
-                      onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_text' : 'question_text_fr', e.target.value)}
+                      value={language === 'en' ? q.question_text : language === 'fr' ? (q.question_text_fr || '') : (q.question_text_zh || '')}
+                      onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_text' : language === 'fr' ? 'question_text_fr' : 'question_text_zh', e.target.value)}
                       disabled={isLocked && language === 'en'}
-                      placeholder={language === 'fr' ? "Traduction française" : "Question Text"}
+                      placeholder={language === 'fr' ? "Traduction française" : language === 'zh' ? "中文问题" : "Question Text"}
                       className="w-full p-2 border rounded font-medium focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                     />
                   </div>
@@ -1095,10 +1154,9 @@ export default function EditSurvey() {
                     </div>
                   </div>
                       <RichTextEditor
-                        value={language === 'en' ? (q.section_description || '') : (q.section_description_fr || '')}
-                        onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : 'section_description_fr', val)}
-                        readOnly={isLocked && language === 'en'}
-                        placeholder={language === 'en' ? "Provide context or instructions before the next set of questions..." : "Traduction française du contexte..."}
+                        value={language === 'en' ? (q.section_description || '') : language === 'fr' ? (q.section_description_fr || '') : (q.section_description_zh || '')}
+                        onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : language === 'fr' ? 'section_description_fr' : 'section_description_zh', val)}
+                        placeholder={language === 'en' ? 'Provide context or instructions before the next set of questions...' : language === 'fr' ? 'Traduction francaise du contexte...' : '中文语境说明...'}
                       />
                     </div>
                     <div className={language !== 'en' || isLocked ? 'hidden' : ''}>
@@ -1127,14 +1185,14 @@ export default function EditSurvey() {
                     + Add Definition
                   </button>
                 </div>
-                {q.definitions && q.definitions.length > 0 && (
+                {((language === 'en' ? q.definitions : language === 'fr' ? q.definitions_fr : q.definitions_zh) || []).length > 0 && (
                   <div className="space-y-2">
-                    {(language === 'en' ? q.definitions : (q.definitions_fr || q.definitions)).map((def, dIdx) => (
+                    {(language === 'en' ? q.definitions : language === 'fr' ? (q.definitions_fr || q.definitions) : (q.definitions_zh || q.definitions))!.map((def, dIdx) => (
                       <div key={dIdx} className="flex items-start space-x-2">
                         <div className="w-1/3">
                           <input
                             type="text"
-                            placeholder={language === 'fr' ? (q.definitions![dIdx]?.term || "Terme") : "Term"}
+                            placeholder={language === 'fr' ? (q.definitions![dIdx]?.term || "Terme") : language === 'zh' ? (q.definitions![dIdx]?.term || "术语") : "Term"}
                             value={def.term}
                             onChange={(e) => updateDefinition(q.id, dIdx, 'term', e.target.value)}
                             className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none ${language === 'fr' ? 'border-blue-200' : ''}`}
@@ -1142,7 +1200,7 @@ export default function EditSurvey() {
                         </div>
                         <div className="flex-grow">
                           <textarea
-                            placeholder={language === 'fr' ? (q.definitions![dIdx]?.definition || "Définition") : "Definition"}
+                            placeholder={language === 'fr' ? (q.definitions![dIdx]?.definition || "Définition") : language === 'zh' ? (q.definitions![dIdx]?.definition || "定义") : "Definition"}
                             value={def.definition}
                             onChange={(e) => updateDefinition(q.id, dIdx, 'definition', e.target.value)}
                             rows={1}
