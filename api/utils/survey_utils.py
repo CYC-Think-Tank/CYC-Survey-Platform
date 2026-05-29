@@ -9,7 +9,7 @@ def calculate_median(arr: List[float]) -> float:
     n = len(sorted_arr)
     if n % 2 == 0:
         return (sorted_arr[n // 2 - 1] + sorted_arr[n // 2]) / 2
-    return sorted_arr[n // 2]
+    return float(sorted_arr[n // 2])
 
 
 def calculate_std_dev(arr: List[float], mean: float) -> float:
@@ -25,6 +25,8 @@ def calculate_quartiles(arr: List[float]) -> Tuple[float, float, float]:
     sorted_arr = sorted(arr)
     n = len(sorted_arr)
     q2 = calculate_median(sorted_arr)
+    if n == 1:
+        return (q2, q2, q2)
     if n % 2 == 0:
         lower_half = sorted_arr[:n // 2]
         upper_half = sorted_arr[n // 2:]
