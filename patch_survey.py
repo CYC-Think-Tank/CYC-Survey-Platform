@@ -6,7 +6,7 @@ with open("src/app/admin/edit/[id]/page.tsx", "r") as f:
 # 1. Add isLocked state
 content = content.replace(
     "const [language, setLanguage] = useState<'en' | 'fr'>('en');",
-    "const [language, setLanguage] = useState<'en' | 'fr'>('en');\n  const [isLocked, setIsLocked] = useState(false);"
+    "const [language, setLanguage] = useState<'en' | 'fr'>('en');\n  const [isLocked, setIsLocked] = useState(false);",
 )
 
 # 2. Update useEffect check
@@ -15,7 +15,9 @@ old_check = """        if (data.is_active) {
           setLoading(false);
           return;
         }"""
-content = content.replace(old_check, "        setIsLocked(data.has_been_published || data.is_active);")
+content = content.replace(
+    old_check, "        setIsLocked(data.has_been_published || data.is_active);"
+)
 
 # 3. Update handleSubmit
 old_submit = """      const res = await fetch(`/api/surveys/${params.id}`, {
@@ -34,7 +36,7 @@ old_submit = """      const res = await fetch(`/api/surveys/${params.id}`, {
       const payload_fr = payload.questions.map((q, idx) => {
         const draftQ = questions[idx];
         const updatedQ = updatedSurvey.questions?.[idx];"""
-        
+
 new_submit = """      let updatedSurvey = null;
       if (!isLocked) {
         const res = await fetch(`/api/surveys/${params.id}`, {
@@ -93,7 +95,7 @@ content = content.replace(
               className="w-full p-2 border""",
     """onChange={(e) => language === 'en' ? setTitle(e.target.value) : setTitleFr(e.target.value)}
               disabled={isLocked && language === 'en'}
-              className="w-full p-2 border"""
+              className="w-full p-2 border""",
 )
 
 # description textarea
@@ -102,13 +104,13 @@ content = content.replace(
               className="w-full p-2.5 border""",
     """onChange={(e) => language === 'en' ? setDescription(e.target.value) : setDescriptionFr(e.target.value)}
               disabled={isLocked && language === 'en'}
-              className="w-full p-2.5 border"""
+              className="w-full p-2.5 border""",
 )
 
 # descriptionAlignment
 content = content.replace(
     """<select value={descriptionAlignment} onChange={(e) => setDescriptionAlignment(e.target.value)} className="text-xs border""",
-    """<select value={descriptionAlignment} onChange={(e) => setDescriptionAlignment(e.target.value)} disabled={isLocked} className="text-xs border"""
+    """<select value={descriptionAlignment} onChange={(e) => setDescriptionAlignment(e.target.value)} disabled={isLocked} className="text-xs border""",
 )
 
 # estimatedMinutes
@@ -117,7 +119,7 @@ content = content.replace(
                 className="w-full p-2 border""",
     """onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
                 disabled={isLocked}
-                className="w-full p-2 border"""
+                className="w-full p-2 border""",
 )
 
 # isActive
@@ -126,7 +128,7 @@ content = content.replace(
                   className="mr-2 h-5 w-5""",
     """onChange={(e) => setIsActive(e.target.checked)}
                   disabled={isLocked}
-                  className="mr-2 h-5 w-5"""
+                  className="mr-2 h-5 w-5""",
 )
 
 # question_text input
@@ -137,29 +139,39 @@ content = content.replace(
     """onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_text' : 'question_text_fr', e.target.value)}
                       disabled={isLocked && language === 'en'}
                       placeholder={language === 'fr' ? "Traduction française" : "Question Text"}
-                      className="w-full p-2 border"""
+                      className="w-full p-2 border""",
 )
 
 # 7. Hide structural changes if isLocked
 content = re.sub(
     r"language === 'fr' \? 'hidden'",
     "language === 'fr' || isLocked ? 'hidden'",
-    content
+    content,
 )
 
 # For translation mode text, we don't need to change it, but it uses language === 'fr'
 content = content.replace(
-    "{language === 'fr' || isLocked && (",
-    "{language === 'fr' && ("
+    "{language === 'fr' || isLocked && (", "{language === 'fr' && ("
 )
 
 # Wait, `language === 'fr' ? 'hidden'` doesn't cover all cases. There are:
-content = content.replace("language === 'fr' || isLocked ? 'hidden' : 'opacity-0", "language === 'fr' || isLocked ? 'hidden' : 'opacity-0")
-content = content.replace("language === 'fr' || isLocked ? 'hidden' : ''", "language === 'fr' || isLocked ? 'hidden' : ''")
+content = content.replace(
+    "language === 'fr' || isLocked ? 'hidden' : 'opacity-0",
+    "language === 'fr' || isLocked ? 'hidden' : 'opacity-0",
+)
+content = content.replace(
+    "language === 'fr' || isLocked ? 'hidden' : ''",
+    "language === 'fr' || isLocked ? 'hidden' : ''",
+)
 
 # Replace any lingering missed occurrences
-content = content.replace("language === 'fr' ? 'hidden' : ''", "language === 'fr' || isLocked ? 'hidden' : ''")
-content = content.replace("language === 'fr' ? 'hidden' : 'opacity-0 group-hover:opacity-100'", "language === 'fr' || isLocked ? 'hidden' : 'opacity-0 group-hover:opacity-100'")
+content = content.replace(
+    "language === 'fr' ? 'hidden' : ''", "language === 'fr' || isLocked ? 'hidden' : ''"
+)
+content = content.replace(
+    "language === 'fr' ? 'hidden' : 'opacity-0 group-hover:opacity-100'",
+    "language === 'fr' || isLocked ? 'hidden' : 'opacity-0 group-hover:opacity-100'",
+)
 
 # Add disabled={isLocked && language === 'en'} to RichTextEditor in Section Header
 content = content.replace(
@@ -167,7 +179,7 @@ content = content.replace(
                         placeholder={language === 'en' ? "Provide context or instructions before the next set of questions..." : "Traduction française du contexte..."}""",
     """onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : 'section_description_fr', val)}
                         readOnly={isLocked && language === 'en'}
-                        placeholder={language === 'en' ? "Provide context or instructions before the next set of questions..." : "Traduction française du contexte..."}"""
+                        placeholder={language === 'en' ? "Provide context or instructions before the next set of questions..." : "Traduction française du contexte..."}""",
 )
 
 # Wait, RichTextEditor might not support readOnly directly, but we can pass it if it does. If not, it won't crash.

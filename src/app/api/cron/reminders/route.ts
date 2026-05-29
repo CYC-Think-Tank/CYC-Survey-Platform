@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD }
+    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
   });
 
   try {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const sessionsRes = await fetch(
       `${SUPABASE_URL}/rest/v1/response_sessions?is_completed=eq.false&reminder_sent=eq.false&started_at=lt.${cutoff}&select=id,email,survey_id,current_step`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
     const incompleteSessions = await sessionsRes.json();
 
@@ -37,13 +37,13 @@ export async function GET(request: NextRequest) {
 
     const surveysRes = await fetch(
       `${SUPABASE_URL}/rest/v1/surveys?is_active=eq.true&select=id,title`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
     const activeSurveys = await surveysRes.json();
 
     const completedRes = await fetch(
       `${SUPABASE_URL}/rest/v1/response_sessions?is_completed=eq.true&select=email,survey_id`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
     const completedSessions = await completedRes.json();
 
@@ -63,26 +63,24 @@ export async function GET(request: NextRequest) {
 
     for (const [email, sessions] of Object.entries(byEmail)) {
       const completed = completedMap[email] || new Set();
-      
+
       // remainingSurveys: all active surveys that aren't completed yet
       const remainingSurveys = activeSurveys.filter((s: any) => !completed.has(s.id));
-      
-      // Get titles of all unfinished surveys currently in progress for this email
-      const incompleteTitles = sessions
-        .map((s: any) => activeSurveys.find((sv: any) => sv.id === s.survey_id)?.title)
-        .filter(Boolean);
 
       const unfinishedCount = sessions.length;
-      
+
       // Set of unfinished survey IDs to identify which remaining ones haven't been started at all
       const unfinishedSurveyIds = new Set(sessions.map((s: any) => s.survey_id));
-      const unstartedCount = remainingSurveys.filter((s: any) => !unfinishedSurveyIds.has(s.id)).length;
+      const unstartedCount = remainingSurveys.filter(
+        (s: any) => !unfinishedSurveyIds.has(s.id)
+      ).length;
 
-      const subjectText = unfinishedCount > 0 && unstartedCount > 0
-        ? `You have ${unfinishedCount} unfinished and ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`
-        : unfinishedCount > 0
-          ? `You have ${unfinishedCount} unfinished survey${unfinishedCount > 1 ? 's' : ''} waiting`
-          : `You have ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`;
+      const subjectText =
+        unfinishedCount > 0 && unstartedCount > 0
+          ? `You have ${unfinishedCount} unfinished and ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`
+          : unfinishedCount > 0
+            ? `You have ${unfinishedCount} unfinished survey${unfinishedCount > 1 ? 's' : ''} waiting`
+            : `You have ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`;
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f4f6f8;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -124,24 +122,21 @@ export async function GET(request: NextRequest) {
           from: `CYC Surveys <${GMAIL_USER}>`,
           to: email,
           subject: subjectText,
-          html
+          html,
         });
 
         sentCount++;
         for (const s of sessions) {
-          await fetch(
-            `${SUPABASE_URL}/rest/v1/response_sessions?id=eq.${s.id}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({ reminder_sent: true })
-            }
-          );
+          await fetch(`${SUPABASE_URL}/rest/v1/response_sessions?id=eq.${s.id}`, {
+            method: 'PATCH',
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal',
+            },
+            body: JSON.stringify({ reminder_sent: true }),
+          });
         }
       } catch (emailErr) {
         console.error(`Failed to send to ${email}:`, emailErr);

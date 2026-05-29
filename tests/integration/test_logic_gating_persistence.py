@@ -5,8 +5,8 @@ Requires:
     - Valid Supabase credentials in .env.local
 """
 
-import requests
 import pytest
+import requests
 
 
 class TestLogicGatingPersistence:
@@ -33,7 +33,7 @@ class TestLogicGatingPersistence:
                         "locked_choices": [],
                         "logic_gates": [],
                         "logic_gate_match_type": "all",
-                    }
+                    },
                 },
                 {
                     "id": "temp-q1",
@@ -44,10 +44,14 @@ class TestLogicGatingPersistence:
                     "is_conditional": False,
                     "options": {
                         "logic_gates": [
-                            {"question_id": "temp-q0", "condition_type": "equals", "value": "Blue"}
+                            {
+                                "question_id": "temp-q0",
+                                "condition_type": "equals",
+                                "value": "Blue",
+                            }
                         ],
-                        "logic_gate_match_type": "any"
-                    }
+                        "logic_gate_match_type": "any",
+                    },
                 },
                 {
                     "id": "temp-q2",
@@ -58,12 +62,16 @@ class TestLogicGatingPersistence:
                     "is_conditional": False,
                     "options": {
                         "logic_gates": [
-                            {"question_id": "temp-q0", "condition_type": "equals", "value": "Red"}
+                            {
+                                "question_id": "temp-q0",
+                                "condition_type": "equals",
+                                "value": "Red",
+                            }
                         ],
-                        "logic_gate_match_type": "all"
-                    }
-                }
-            ]
+                        "logic_gate_match_type": "all",
+                    },
+                },
+            ],
         }
 
         res = requests.post(f"{base_url}/api/surveys", json=payload)
@@ -136,7 +144,7 @@ class TestLogicGatingPersistence:
         q1_updated_options = q1["options"].copy()
         q1_updated_options["logic_gates"] = [
             q1["options"]["logic_gates"][0],
-            {"question_id": q0_id, "condition_type": "equals", "value": "Red"}
+            {"question_id": q0_id, "condition_type": "equals", "value": "Red"},
         ]
         q1_updated_options["logic_gate_match_type"] = "all"
 
@@ -149,9 +157,13 @@ class TestLogicGatingPersistence:
             "thumbnail_url": survey.get("thumbnail_url"),
             "questions": [
                 {**survey["questions"][0], "id": survey["questions"][0]["id"]},
-                {**survey["questions"][1], "options": q1_updated_options, "id": survey["questions"][1]["id"]},
+                {
+                    **survey["questions"][1],
+                    "options": q1_updated_options,
+                    "id": survey["questions"][1]["id"],
+                },
                 {**survey["questions"][2], "id": survey["questions"][2]["id"]},
-            ]
+            ],
         }
 
         res = requests.put(f"{base_url}/api/surveys/{survey_id}", json=update_payload)
@@ -235,7 +247,7 @@ class TestLogicGatingPersistence:
                     "order_index": 1,
                     "is_required": True,
                     "is_conditional": False,
-                    "options": {"choices": ["X", "Y", "Z"]}
+                    "options": {"choices": ["X", "Y", "Z"]},
                 },
                 {
                     "id": "temp-active-q1",
@@ -246,12 +258,16 @@ class TestLogicGatingPersistence:
                     "is_conditional": False,
                     "options": {
                         "logic_gates": [
-                            {"question_id": "temp-active-q0", "condition_type": "equals", "value": "X"}
+                            {
+                                "question_id": "temp-active-q0",
+                                "condition_type": "equals",
+                                "value": "X",
+                            }
                         ],
-                        "logic_gate_match_type": "any"
-                    }
-                }
-            ]
+                        "logic_gate_match_type": "any",
+                    },
+                },
+            ],
         }
 
         res = requests.post(f"{base_url}/api/surveys", json=payload)

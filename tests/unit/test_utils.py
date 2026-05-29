@@ -1,10 +1,9 @@
-import pytest
 from api.utils.survey_utils import (
     calculate_median,
-    calculate_std_dev,
-    calculate_quartiles,
-    find_outliers,
     calculate_mode,
+    calculate_quartiles,
+    calculate_std_dev,
+    find_outliers,
 )
 
 
