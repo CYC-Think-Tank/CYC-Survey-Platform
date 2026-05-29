@@ -13,10 +13,16 @@ import re
 from datetime import datetime
 import io
 import traceback
-import math
 import pdfplumber
 import httpx
 import json as json_module
+from api.utils.survey_utils import (
+    calculate_median,
+    calculate_std_dev,
+    calculate_quartiles,
+    find_outliers,
+    calculate_mode,
+)
 # Initialize FastAPI
 app = FastAPI(title="CYC Survey Platform API")
 
@@ -988,45 +994,6 @@ async def submit_response(survey_id: str, submission: ResponseSubmission):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def calculate_median(arr):
-    if not arr:
-        return 0
-    s = sorted(arr)
-    mid = len(s) // 2
-    return s[mid] if len(s) % 2 != 0 else (s[mid - 1] + s[mid]) / 2.0
-
-def calculate_std_dev(arr, mean):
-    if len(arr) < 2:
-        return 0
-    variance = sum((x - mean) ** 2 for x in arr) / (len(arr) - 1)
-    return math.sqrt(variance)
-
-def calculate_quartiles(arr):
-    if not arr:
-        return {"q1": 0, "q3": 0, "iqr": 0}
-    s = sorted(arr)
-    mid = len(s) // 2
-    lower_half = s[:mid]
-    upper_half = s[mid:] if len(s) % 2 == 0 else s[mid+1:]
-    q1 = calculate_median(lower_half)
-    q3 = calculate_median(upper_half)
-    return {"q1": q1, "q3": q3, "iqr": q3 - q1}
-
-def find_outliers(arr, q1, q3, iqr):
-    lower = q1 - 1.5 * iqr
-    upper = q3 + 1.5 * iqr
-    return [x for x in arr if x < lower or x > upper]
-
-def calculate_mode(counts):
-    max_val = 0
-    modes = []
-    for k, v in counts.items():
-        if v > max_val:
-            max_val = v
-            modes = [k]
-        elif v == max_val and max_val > 0:
-            modes.append(k)
-    return {"modes": modes, "count": max_val} if modes else None
 
 async def _get_random_email_position(num_emails: int = 5) -> list:
     """
@@ -1211,7 +1178,9 @@ async def get_survey_summary(survey_id: str):
                     if a.get("answer_text"):
                         txt = a["answer_text"]
                         counts[txt] = counts.get(txt, 0) + 1
-                mode_data = calculate_mode(counts)
+                modes = calculate_mode(counts)
+                max_count = max(counts.values()) if counts else 0
+                mode_data = {"modes": modes, "count": max_count}
                 stats[qid] = {
                     "counts": counts,
                     "sample_size": len(ans),
@@ -1226,7 +1195,9 @@ async def get_survey_summary(survey_id: str):
                     if opts:
                         for o in opts:
                             counts[o] = counts.get(o, 0) + a.get("weight", 1.0)
-                mode_data = calculate_mode(counts)
+                modes = calculate_mode(counts)
+                max_count = max(counts.values()) if counts else 0
+                mode_data = {"modes": modes, "count": max_count}
                 stats[qid] = {
                     "counts": counts,
                     "total_weighted": total_weighted,
@@ -1242,9 +1213,10 @@ async def get_survey_summary(survey_id: str):
                 median = calculate_median(nums)
                 std_dev = calculate_std_dev(nums, mean)
                 variance = std_dev ** 2
-                q_vals = calculate_quartiles(nums)
-                outliers = find_outliers(nums, q_vals["q1"], q_vals["q3"], q_vals["iqr"])
-                
+                q1, q2, q3 = calculate_quartiles(nums)
+                iqr = q3 - q1
+                outliers = find_outliers(nums, q1, q3, iqr)
+
                 stats[qid] = {
                     "sample_size": len(nums),
                     "avg": avg,
@@ -1253,7 +1225,7 @@ async def get_survey_summary(survey_id: str):
                     "variance": variance,
                     "min": min(nums) if nums else 0,
                     "max": max(nums) if nums else 0,
-                    "quartiles": q_vals,
+                    "quartiles": {"q1": q1, "q2": q2, "q3": q3, "iqr": iqr},
                     "outliers": outliers
                 }
             elif q_type == "likert_scale":
@@ -1267,8 +1239,10 @@ async def get_survey_summary(survey_id: str):
                 avg = round(mean, 1) if nums else None
                 median = round(calculate_median(nums)) if nums else 0
                 std_dev = calculate_std_dev(nums, mean)
-                mode_data = calculate_mode(counts)
-                
+                modes = calculate_mode(counts)
+                max_count = max(counts.values()) if counts else 0
+                mode_data = {"modes": modes, "count": max_count}
+
                 stats[qid] = {
                     "counts": counts,
                     "sample_size": len(nums),
