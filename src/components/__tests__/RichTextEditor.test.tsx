@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { RichTextEditor } from '../RichTextEditor';
 
 vi.mock('@tiptap/react', () => ({
-  useEditor: ({ onUpdate, content, editable }: any) => {
+  useEditor: ({ onUpdate, content, editable: _editable }: any) => {
     const getHTML = () => content || '<p></p>';
     const getText = () => content?.replace(/<[^>]*>?/gm, '') || '';
     const commands = {
@@ -23,9 +23,7 @@ vi.mock('@tiptap/react', () => ({
     const isActive = () => false;
     return { getHTML, getText, commands, isActive, chain: () => commands };
   },
-  EditorContent: ({ editor }: any) => (
-    <div data-testid="editor-content">{editor?.getHTML()}</div>
-  ),
+  EditorContent: ({ editor }: any) => <div data-testid="editor-content">{editor?.getHTML()}</div>,
 }));
 
 vi.mock('@tiptap/starter-kit', () => ({ StarterKit: { configure: () => ({}) } }));
@@ -58,7 +56,9 @@ describe('RichTextEditor', () => {
 
   it('renders in disabled state when readOnly', () => {
     const onChange = vi.fn();
-    const { container } = render(<RichTextEditor value="test content" onChange={onChange} readOnly={true} />);
+    const { container } = render(
+      <RichTextEditor value="test content" onChange={onChange} readOnly={true} />
+    );
     expect(container.querySelector('.opacity-70')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -25,6 +26,7 @@ def cleanup_surveys(base_url):
 
     # Teardown: delete all created surveys
     import requests
+
     for sid in created_ids:
         try:
             requests.delete(f"{base_url}/api/surveys/{sid}")

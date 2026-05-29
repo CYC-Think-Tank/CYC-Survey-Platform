@@ -26,15 +26,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
           cache: pip
       - run: pip install -r requirements.txt
       - run: ruff check api/
+      - run: ruff format --check api/
       - run: pytest tests/unit/ -v
 
   e2e:
     runs-on: ubuntu-latest
-    if: false  # Enable in Phase 2 when staging environment is ready
+    if: false # Enable in Phase 2 when staging environment is ready
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

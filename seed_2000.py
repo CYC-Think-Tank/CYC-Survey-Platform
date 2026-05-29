@@ -18,38 +18,40 @@ questions = res.data
 print(f"Generating {NUM_RESPONSES} sessions...")
 sessions_data = []
 for i in range(NUM_RESPONSES):
-    sessions_data.append({
-        "id": str(uuid.uuid4()),
-        "survey_id": SURVEY_ID,
-        "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
-        "is_completed": True,
-        "completed_at": datetime.utcnow().isoformat(),
-        "is_valid": True,
-        "weight": 1.0
-    })
+    sessions_data.append(
+        {
+            "id": str(uuid.uuid4()),
+            "survey_id": SURVEY_ID,
+            "email": f"test_{uuid.uuid4().hex[:8]}@example.com",
+            "is_completed": True,
+            "completed_at": datetime.utcnow().isoformat(),
+            "is_valid": True,
+            "weight": 1.0,
+        }
+    )
 
-print(f"Inserting sessions in batches...")
+print("Inserting sessions in batches...")
 batch_size = 500
 for i in range(0, len(sessions_data), batch_size):
-    batch = sessions_data[i:i+batch_size]
+    batch = sessions_data[i : i + batch_size]
     supabase.table("response_sessions").insert(batch).execute()
 
-print(f"Generating answers...")
+print("Generating answers...")
 answers_data = []
 for session in sessions_data:
     for q in questions:
         q_type = q["type"]
         if q_type == "section_header":
             continue
-            
+
         ans = {
             "session_id": session["id"],
             "question_id": q["id"],
         }
-        
+
         opts = q.get("options") or {}
         choices = opts.get("choices", []) if isinstance(opts, dict) else []
-        
+
         if q_type in ["multiple_choice", "dropdown"]:
             if choices:
                 ans["answer_text"] = random.choice(choices)
@@ -64,14 +66,24 @@ for session in sessions_data:
         elif q_type in ["likert_scale", "rating_scale"]:
             ans["answer_numeric"] = random.randint(1, 5)
         elif q_type == "short_answer":
-            ans["answer_text"] = random.choice(["Good idea", "Bad idea", "Needs more planning", "No comment", "I strongly support this"])
-            
+            ans["answer_text"] = random.choice(
+                [
+                    "Good idea",
+                    "Bad idea",
+                    "Needs more planning",
+                    "No comment",
+                    "I strongly support this",
+                ]
+            )
+
         answers_data.append(ans)
 
 print(f"Total answers to insert: {len(answers_data)}")
-print(f"Inserting answers in batches...")
+print("Inserting answers in batches...")
 for i in range(0, len(answers_data), batch_size):
-    batch = answers_data[i:i+batch_size]
-    supabase.table("answers").upsert(batch, on_conflict="session_id,question_id").execute()
+    batch = answers_data[i : i + batch_size]
+    supabase.table("answers").upsert(
+        batch, on_conflict="session_id,question_id"
+    ).execute()
 
 print("✅ Success! 2000 test responses added.")

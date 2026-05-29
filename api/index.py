@@ -1,28 +1,31 @@
 # from urllib import response
-from fastapi import FastAPI, HTTPException, UploadFile, File, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional, Any
-from supabase import create_client, Client
-from dotenv import load_dotenv
+import io
+import json as json_module
 import os
-import uuid
-import string
 import random
 import re
-from datetime import datetime
-import io
+import string
 import traceback
-import pdfplumber
+import uuid
+from datetime import datetime
+from typing import Annotated, Any
+
 import httpx
-import json as json_module
+import pdfplumber
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from supabase import Client, create_client
+
 from api.utils.survey_utils import (
     calculate_median,
-    calculate_std_dev,
-    calculate_quartiles,
-    find_outliers,
     calculate_mode,
+    calculate_quartiles,
+    calculate_std_dev,
+    find_outliers,
 )
+
 # Initialize FastAPI
 app = FastAPI(title="CYC Survey Platform API")
 
@@ -31,7 +34,7 @@ GEMINI_MODEL = "gemini-2.5-flash"
 # Setup CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict to frontend URL
+    allow_origins=["*"],  # In production, restrict to frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,76 +49,87 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+
 # Pydantic Models
 class Question(BaseModel):
     id: str
     question_text: str
     type: str
     order_index: int
-    options: Optional[Any] = None
+    options: Any | None = None
     is_required: bool
     is_conditional: bool = False
+
 
 class SurveyList(BaseModel):
     id: str
     title: str
-    description: Optional[str] = None
-    description_alignment: Optional[str] = "left"
+    description: str | None = None
+    description_alignment: str | None = "left"
     estimated_minutes: int
     is_active: bool
     has_been_published: bool = False
-    thumbnail_url: Optional[str] = None
-    response_count: Optional[int] = 0
+    thumbnail_url: str | None = None
+    response_count: int | None = 0
+
 
 class SurveyDetail(SurveyList):
-    questions: List[Question]
+    questions: list[Question]
+
 
 class AnswerCreate(BaseModel):
     question_id: str
-    answer_text: Optional[str] = None
-    answer_numeric: Optional[int] = None
-    answer_options: Optional[Any] = None
-    time_spent: Optional[int] = 0
+    answer_text: str | None = None
+    answer_numeric: int | None = None
+    answer_options: Any | None = None
+    time_spent: int | None = 0
+
 
 class ResponseSubmission(BaseModel):
     survey_id: str
     email: str
-    answers: List[AnswerCreate]
+    answers: list[AnswerCreate]
+
 
 # Routes
 
+
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: Annotated[UploadFile, File(...)]):
     """Upload a file to Supabase Storage and return the public URL."""
     try:
         content = await file.read()
-        ext = file.filename.split('.')[-1] if file.filename else 'bin'
+        ext = file.filename.split(".")[-1] if file.filename else "bin"
         filename = f"{uuid.uuid4()}.{ext}"
         path = f"uploads/{filename}"
 
         supabase.storage.from_("survey-assets").upload(
             path,
             content,
-            file_options={"content-type": file.content_type or "application/octet-stream"}
+            file_options={
+                "content-type": file.content_type or "application/octet-stream"
+            },
         )
 
         public_url = supabase.storage.from_("survey-assets").get_public_url(path)
         return {"url": public_url, "filename": file.filename}
     except Exception as e:
         import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/surveys", response_model=List[SurveyList])
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/api/surveys", response_model=list[SurveyList])
 async def get_surveys(include_inactive: bool = False):
     """Get surveys and their response counts"""
     try:
         query = supabase.table("surveys").select("*, response_sessions(count)")
         if not include_inactive:
             query = query.eq("is_active", True)
-            
+
         response = query.execute()
-        
+
         surveys = []
         for row in response.data:
             # Safely extract count from the joined response_sessions relation
@@ -126,19 +140,24 @@ async def get_surveys(include_inactive: bool = False):
                     count = row["response_sessions"][0]["count"]
                 except Exception:
                     # Alternative format depending on supabase python client version
-                    if isinstance(row["response_sessions"], list) and len(row["response_sessions"]) > 0:
+                    if (
+                        isinstance(row["response_sessions"], list)
+                        and len(row["response_sessions"]) > 0
+                    ):
                         count = len(row["response_sessions"])
                     else:
                         count = row["response_sessions"]
-            
+
             row["response_count"] = count
             surveys.append(row)
-            
+
         return surveys
     except Exception as e:
         import traceback
+
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.get("/api/surveys/{survey_id}", response_model=SurveyDetail)
 async def get_survey(survey_id: str):
@@ -148,37 +167,46 @@ async def get_survey(survey_id: str):
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
-        
+
         survey = survey_res.data[0]
-        
+
         # Fetch questions
-        questions_res = supabase.table("questions").select("*").eq("survey_id", survey_id).order("order_index").execute()
-        
+        questions_res = (
+            supabase.table("questions")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("order_index")
+            .execute()
+        )
+
         survey["questions"] = questions_res.data
         return survey
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 class QuestionCreate(BaseModel):
-    id: Optional[str] = None
+    id: str | None = None
     question_text: str
     type: str
     order_index: int
-    options: Optional[Any] = None
+    options: Any | None = None
     is_required: bool
     is_conditional: bool = False
 
+
 class SurveyCreate(BaseModel):
     title: str
-    description: Optional[str] = None
-    description_alignment: Optional[str] = "left"
+    description: str | None = None
+    description_alignment: str | None = "left"
     estimated_minutes: int = 5
     is_active: bool = True
     has_been_published: bool = False
-    thumbnail_url: Optional[str] = None
-    questions: List[QuestionCreate]
+    thumbnail_url: str | None = None
+    questions: list[QuestionCreate]
+
 
 @app.post("/api/surveys", response_model=SurveyDetail)
 async def create_survey(survey: SurveyCreate):
@@ -187,40 +215,50 @@ async def create_survey(survey: SurveyCreate):
         has_been_published = survey.is_active
 
         # 1. Create Survey
-        survey_res = supabase.table("surveys").insert({
-            "title": survey.title,
-            "description": survey.description,
-            "description_alignment": survey.description_alignment,
-            "estimated_minutes": survey.estimated_minutes,
-            "is_active": survey.is_active,
-            "has_been_published": has_been_published,
-            "thumbnail_url": survey.thumbnail_url
-        }).execute()
-        
+        survey_res = (
+            supabase.table("surveys")
+            .insert(
+                {
+                    "title": survey.title,
+                    "description": survey.description,
+                    "description_alignment": survey.description_alignment,
+                    "estimated_minutes": survey.estimated_minutes,
+                    "is_active": survey.is_active,
+                    "has_been_published": has_been_published,
+                    "thumbnail_url": survey.thumbnail_url,
+                }
+            )
+            .execute()
+        )
+
         created_survey = survey_res.data[0]
-        
+
         # 2. Create Questions
         if survey.questions:
             questions_to_insert = []
             for q in survey.questions:
-                questions_to_insert.append({
-                    "survey_id": created_survey["id"],
-                    "question_text": q.question_text,
-                    "type": q.type,
-                    "order_index": q.order_index,
-                    "options": q.options,
-                    "is_required": q.is_required,
-                    "is_conditional": q.is_conditional
-                })
-            
-            questions_res = supabase.table("questions").insert(questions_to_insert).execute()
+                questions_to_insert.append(
+                    {
+                        "survey_id": created_survey["id"],
+                        "question_text": q.question_text,
+                        "type": q.type,
+                        "order_index": q.order_index,
+                        "options": q.options,
+                        "is_required": q.is_required,
+                        "is_conditional": q.is_conditional,
+                    }
+                )
+
+            questions_res = (
+                supabase.table("questions").insert(questions_to_insert).execute()
+            )
             created_questions = questions_res.data
 
             # Build mapping from frontend temp IDs to real UUIDs
             req_sorted = sorted(survey.questions, key=lambda q: q.order_index)
             created_sorted = sorted(created_questions, key=lambda q: q["order_index"])
             temp_to_real = {}
-            for req_q, created_q in zip(req_sorted, created_sorted):
+            for req_q, created_q in zip(req_sorted, created_sorted, strict=False):
                 if req_q.id:
                     temp_to_real[req_q.id] = created_q["id"]
 
@@ -236,21 +274,24 @@ async def create_survey(survey: SurveyCreate):
                                 gate["question_id"] = temp_to_real[old_id]
                                 remapped = True
                         if remapped:
-                            supabase.table("questions").update({
-                                "options": json_module.loads(json_module.dumps(opts))
-                            }).eq("id", new_q["id"]).execute()
-                            new_q["options"] = json_module.loads(json_module.dumps(opts))
+                            supabase.table("questions").update(
+                                {"options": json_module.loads(json_module.dumps(opts))}
+                            ).eq("id", new_q["id"]).execute()
+                            new_q["options"] = json_module.loads(
+                                json_module.dumps(opts)
+                            )
 
             created_survey["questions"] = created_questions
         else:
             created_survey["questions"] = []
-            
+
         # 3. Append response_count to match SurveyDetail shape although it's 0 initially
         created_survey["response_count"] = 0
-            
+
         return created_survey
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/api/surveys/{survey_id}/duplicate", response_model=SurveyDetail)
 async def duplicate_survey(survey_id: str):
@@ -260,24 +301,38 @@ async def duplicate_survey(survey_id: str):
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
-        
+
         original_survey = survey_res.data[0]
-        
+
         # 2. Fetch original questions
-        questions_res = supabase.table("questions").select("*").eq("survey_id", survey_id).order("order_index").execute()
+        questions_res = (
+            supabase.table("questions")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("order_index")
+            .execute()
+        )
         original_questions = questions_res.data
-        
+
         # 3. Create new survey based on original
-        new_survey_res = supabase.table("surveys").insert({
-            "title": f"{original_survey['title']} (Copy)",
-            "description": original_survey.get("description"),
-            "description_alignment": original_survey.get("description_alignment", "left"),
-            "estimated_minutes": original_survey.get("estimated_minutes", 5),
-            "is_active": False,  # Duplicate should be inactive by default
-            "has_been_published": False, # Duplicate hasn't been published
-            "thumbnail_url": original_survey.get("thumbnail_url")
-        }).execute()
-        
+        new_survey_res = (
+            supabase.table("surveys")
+            .insert(
+                {
+                    "title": f"{original_survey['title']} (Copy)",
+                    "description": original_survey.get("description"),
+                    "description_alignment": original_survey.get(
+                        "description_alignment", "left"
+                    ),
+                    "estimated_minutes": original_survey.get("estimated_minutes", 5),
+                    "is_active": False,  # Duplicate should be inactive by default
+                    "has_been_published": False,  # Duplicate hasn't been published
+                    "thumbnail_url": original_survey.get("thumbnail_url"),
+                }
+            )
+            .execute()
+        )
+
         new_survey = new_survey_res.data[0]
 
         # 4. Duplicate questions
@@ -285,36 +340,54 @@ async def duplicate_survey(survey_id: str):
             original_sorted = sorted(original_questions, key=lambda q: q["order_index"])
             questions_to_insert = []
             for q in original_sorted:
-                new_opts = json_module.loads(json_module.dumps(q["options"])) if q.get("options") else None
-                questions_to_insert.append({
-                    "survey_id": new_survey["id"],
-                    "question_text": q["question_text"],
-                    "type": q["type"],
-                    "order_index": q["order_index"],
-                    "options": new_opts,
-                    "is_required": q["is_required"],
-                    "is_conditional": q.get("is_conditional", False)
-                })
+                new_opts = (
+                    json_module.loads(json_module.dumps(q["options"]))
+                    if q.get("options")
+                    else None
+                )
+                questions_to_insert.append(
+                    {
+                        "survey_id": new_survey["id"],
+                        "question_text": q["question_text"],
+                        "type": q["type"],
+                        "order_index": q["order_index"],
+                        "options": new_opts,
+                        "is_required": q["is_required"],
+                        "is_conditional": q.get("is_conditional", False),
+                    }
+                )
 
-            new_questions_res = supabase.table("questions").insert(questions_to_insert).execute()
-            new_questions = sorted(new_questions_res.data, key=lambda q: q["order_index"])
+            new_questions_res = (
+                supabase.table("questions").insert(questions_to_insert).execute()
+            )
+            new_questions = sorted(
+                new_questions_res.data, key=lambda q: q["order_index"]
+            )
 
             # Build old-to-new UUID mapping and remap logic_gates
             old_to_new = {}
-            for old_q, new_q in zip(original_sorted, new_questions):
+            for old_q, new_q in zip(original_sorted, new_questions, strict=False):
                 old_to_new[old_q["id"]] = new_q["id"]
-            
+
             # Duplicate and Remap Translations
-            existing_translations_res = supabase.table("ai_analyses").select("*").eq("survey_id", survey_id).in_("analysis_type", ["translation_fr", "translation_zh"]).execute()
+            existing_translations_res = (
+                supabase.table("ai_analyses")
+                .select("*")
+                .eq("survey_id", survey_id)
+                .in_("analysis_type", ["translation_fr", "translation_zh"])
+                .execute()
+            )
             existing_translations = existing_translations_res.data
 
             if existing_translations:
                 translations_to_insert = []
                 for trans in existing_translations:
                     trans_data = json_module.loads(json_module.dumps(trans["data"]))
-                    lang_suffix = "fr" if "translation_fr" in trans["analysis_type"] else "zh"
+                    lang_suffix = (
+                        "fr" if "translation_fr" in trans["analysis_type"] else "zh"
+                    )
                     q_key = f"questions_{lang_suffix}"
-                    
+
                     # Remap IDs inside the translation JSON
                     if q_key in trans_data and isinstance(trans_data[q_key], list):
                         for tq in trans_data[q_key]:
@@ -322,14 +395,18 @@ async def duplicate_survey(survey_id: str):
                             if old_id in old_to_new:
                                 tq["id"] = old_to_new[old_id]
 
-                    translations_to_insert.append({
-                        "survey_id": new_survey["id"],
-                        "analysis_type": trans["analysis_type"],
-                        "data": trans_data,
-                        "updated_at": datetime.utcnow().isoformat()
-                    })
+                    translations_to_insert.append(
+                        {
+                            "survey_id": new_survey["id"],
+                            "analysis_type": trans["analysis_type"],
+                            "data": trans_data,
+                            "updated_at": datetime.utcnow().isoformat(),
+                        }
+                    )
                 if translations_to_insert:
-                    supabase.table("ai_analyses").insert(translations_to_insert).execute()
+                    supabase.table("ai_analyses").insert(
+                        translations_to_insert
+                    ).execute()
 
             updates_needed = []
             for new_q in new_questions:
@@ -342,16 +419,18 @@ async def duplicate_survey(survey_id: str):
                             gate["question_id"] = old_to_new[old_id]
                             remapped = True
                     if remapped:
-                        updates_needed.append({
-                            "id": new_q["id"],
-                            "options": json_module.loads(json_module.dumps(opts))
-                        })
+                        updates_needed.append(
+                            {
+                                "id": new_q["id"],
+                                "options": json_module.loads(json_module.dumps(opts)),
+                            }
+                        )
 
             if updates_needed:
                 for update in updates_needed:
-                    supabase.table("questions").update({
-                        "options": update["options"]
-                    }).eq("id", update["id"]).execute()
+                    supabase.table("questions").update(
+                        {"options": update["options"]}
+                    ).eq("id", update["id"]).execute()
                     for new_q in new_questions:
                         if new_q["id"] == update["id"]:
                             new_q["options"] = update["options"]
@@ -359,28 +438,43 @@ async def duplicate_survey(survey_id: str):
             new_survey["questions"] = new_questions
         else:
             new_survey["questions"] = []
-            
+
         new_survey["response_count"] = 0
-            
+
         return new_survey
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/api/surveys/{survey_id}/translation")
 async def get_survey_translation(survey_id: str):
     """Fetch the translated questions if they exist."""
     try:
-        res_fr = supabase.table("ai_analyses").select("data").eq("survey_id", survey_id).eq("analysis_type", "translation_fr").execute()
-        res_zh = supabase.table("ai_analyses").select("data").eq("survey_id", survey_id).eq("analysis_type", "translation_zh").execute()
-        
+        res_fr = (
+            supabase.table("ai_analyses")
+            .select("data")
+            .eq("survey_id", survey_id)
+            .eq("analysis_type", "translation_fr")
+            .execute()
+        )
+        res_zh = (
+            supabase.table("ai_analyses")
+            .select("data")
+            .eq("survey_id", survey_id)
+            .eq("analysis_type", "translation_zh")
+            .execute()
+        )
+
         result = {
-            "questions_fr": None, "title_fr": None, "description_fr": None,
-            "questions_zh": None, "title_zh": None, "description_zh": None,
+            "questions_fr": None,
+            "title_fr": None,
+            "description_fr": None,
+            "questions_zh": None,
+            "title_zh": None,
+            "description_zh": None,
         }
-        
+
         if res_fr.data:
             data_fr = res_fr.data[0]["data"]
             if isinstance(data_fr, list):
@@ -389,7 +483,7 @@ async def get_survey_translation(survey_id: str):
                 result["questions_fr"] = data_fr.get("questions_fr")
                 result["title_fr"] = data_fr.get("title_fr")
                 result["description_fr"] = data_fr.get("description_fr")
-                
+
         if res_zh.data:
             data_zh = res_zh.data[0]["data"]
             if isinstance(data_zh, list):
@@ -398,17 +492,18 @@ async def get_survey_translation(survey_id: str):
                 result["questions_zh"] = data_zh.get("questions_zh")
                 result["title_zh"] = data_zh.get("title_zh")
                 result["description_zh"] = data_zh.get("description_zh")
-                
+
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.put("/api/surveys/{survey_id}/translation")
 async def update_survey_translation(survey_id: str, request: Request):
     """Manually update the translated questions JSON."""
     try:
         body = await request.json()
-        
+
         # FR Translation
         questions_fr = body.get("questions_fr")
         if questions_fr is not None:
@@ -417,20 +512,27 @@ async def update_survey_translation(survey_id: str, request: Request):
                 "title_fr": body.get("title_fr"),
                 "description_fr": body.get("description_fr"),
             }
-            existing_fr = supabase.table("ai_analyses").select("id").eq("survey_id", survey_id).eq("analysis_type", "translation_fr").execute()
+            existing_fr = (
+                supabase.table("ai_analyses")
+                .select("id")
+                .eq("survey_id", survey_id)
+                .eq("analysis_type", "translation_fr")
+                .execute()
+            )
             if existing_fr.data:
-                supabase.table("ai_analyses").update({
-                    "data": payload_fr,
-                    "updated_at": datetime.utcnow().isoformat()
-                }).eq("id", existing_fr.data[0]["id"]).execute()
+                supabase.table("ai_analyses").update(
+                    {"data": payload_fr, "updated_at": datetime.utcnow().isoformat()}
+                ).eq("id", existing_fr.data[0]["id"]).execute()
             else:
-                supabase.table("ai_analyses").insert({
-                    "survey_id": survey_id,
-                    "analysis_type": "translation_fr",
-                    "data": payload_fr,
-                    "updated_at": datetime.utcnow().isoformat()
-                }).execute()
-                
+                supabase.table("ai_analyses").insert(
+                    {
+                        "survey_id": survey_id,
+                        "analysis_type": "translation_fr",
+                        "data": payload_fr,
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }
+                ).execute()
+
         # ZH Translation
         questions_zh = body.get("questions_zh")
         if questions_zh is not None:
@@ -439,23 +541,31 @@ async def update_survey_translation(survey_id: str, request: Request):
                 "title_zh": body.get("title_zh"),
                 "description_zh": body.get("description_zh"),
             }
-            existing_zh = supabase.table("ai_analyses").select("id").eq("survey_id", survey_id).eq("analysis_type", "translation_zh").execute()
+            existing_zh = (
+                supabase.table("ai_analyses")
+                .select("id")
+                .eq("survey_id", survey_id)
+                .eq("analysis_type", "translation_zh")
+                .execute()
+            )
             if existing_zh.data:
-                supabase.table("ai_analyses").update({
-                    "data": payload_zh,
-                    "updated_at": datetime.utcnow().isoformat()
-                }).eq("id", existing_zh.data[0]["id"]).execute()
+                supabase.table("ai_analyses").update(
+                    {"data": payload_zh, "updated_at": datetime.utcnow().isoformat()}
+                ).eq("id", existing_zh.data[0]["id"]).execute()
             else:
-                supabase.table("ai_analyses").insert({
-                    "survey_id": survey_id,
-                    "analysis_type": "translation_zh",
-                    "data": payload_zh,
-                    "updated_at": datetime.utcnow().isoformat()
-                }).execute()
-            
+                supabase.table("ai_analyses").insert(
+                    {
+                        "survey_id": survey_id,
+                        "analysis_type": "translation_zh",
+                        "data": payload_zh,
+                        "updated_at": datetime.utcnow().isoformat(),
+                    }
+                ).execute()
+
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.get("/api/test-gemini")
 async def test_gemini():
@@ -463,52 +573,68 @@ async def test_gemini():
     GOOGLE_AI_KEY = os.environ.get("GOOGLE_AI_KEY")
     if not GOOGLE_AI_KEY:
         raise HTTPException(status_code=500, detail="GOOGLE_AI_KEY not set")
-    
+
     gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GOOGLE_AI_KEY}"
-    
+
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            res = await client.post(gemini_url, json={
-                "contents": [{"parts": [{"text": "Say hello in French."}]}],
-                "generationConfig": {"maxOutputTokens": 50}
-            })
+            res = await client.post(
+                gemini_url,
+                json={
+                    "contents": [{"parts": [{"text": "Say hello in French."}]}],
+                    "generationConfig": {"maxOutputTokens": 50},
+                },
+            )
         return {
             "status": res.status_code,
             "body_preview": str(res.text)[:500] if res.text else "empty",
         }
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/api/surveys/{survey_id}/translation/upload")
-async def upload_translation_pdf(survey_id: str, language: str = "fr", file: UploadFile = File(...)):
+async def upload_translation_pdf(
+    survey_id: str, language: str = "fr", *, file: Annotated[UploadFile, File(...)]
+):
     """Upload a PDF containing translated survey questions and auto-populate translations."""
-    
-    if not file.filename.lower().endswith('.pdf'):
+
+    if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
-    
-    if language not in ('fr', 'zh'):
+
+    if language not in ("fr", "zh"):
         raise HTTPException(status_code=400, detail="Language must be 'fr' or 'zh'")
-    
+
     try:
-        print(f"[upload_translation_pdf] Starting upload for survey={survey_id}, language={language}, filename={file.filename}")
+        print(
+            f"[upload_translation_pdf] Starting upload for survey={survey_id}, language={language}, filename={file.filename}"
+        )
         content = await file.read()
         print(f"[upload_translation_pdf] Read {len(content)} bytes")
         if len(content) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="File too large (max 10MB)")
-        
+
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
-        print(f"[upload_translation_pdf] Survey lookup done, found={bool(survey_res.data)}")
+        print(
+            f"[upload_translation_pdf] Survey lookup done, found={bool(survey_res.data)}"
+        )
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
         survey = survey_res.data[0]
-        
-        questions_res = supabase.table("questions").select("*").eq("survey_id", survey_id).order("order_index").execute()
+
+        questions_res = (
+            supabase.table("questions")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("order_index")
+            .execute()
+        )
         questions = questions_res.data
-        
+
         if not questions:
             raise HTTPException(status_code=400, detail="Survey has no questions")
-        
+
         extracted_text = ""
         print("[upload_translation_pdf] Opening PDF with pdfplumber...")
         with pdfplumber.open(io.BytesIO(content)) as pdf:
@@ -518,10 +644,12 @@ async def upload_translation_pdf(survey_id: str, language: str = "fr", file: Upl
                 if page_text:
                     extracted_text += page_text + "\n"
         print(f"[upload_translation_pdf] Extracted {len(extracted_text)} chars of text")
-        
+
         if not extracted_text.strip():
-            raise HTTPException(status_code=400, detail="Could not extract text from PDF")
-        
+            raise HTTPException(
+                status_code=400, detail="Could not extract text from PDF"
+            )
+
         reference_questions = []
         for i, q in enumerate(questions):
             ref = {
@@ -537,14 +665,14 @@ async def upload_translation_pdf(survey_id: str, language: str = "fr", file: Upl
                 elif "description" in opts:
                     ref["options"] = {"description": opts["description"]}
             reference_questions.append(ref)
-        
+
         language_name = "French" if language == "fr" else "Chinese"
-        
+
         prompt = f"""You are an expert translator. Below is a survey with its English questions, followed by {language_name} translations extracted from a PDF.
 
 === SURVEY REFERENCE (English) ===
-Title: {survey['title']}
-Description: {survey.get('description', '')}
+Title: {survey["title"]}
+Description: {survey.get("description", "")}
 
 Questions (in exact order, with index):
 {json_module.dumps(reference_questions, ensure_ascii=False)}
@@ -584,51 +712,75 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
 
         GOOGLE_AI_KEY = os.environ.get("GOOGLE_AI_KEY")
         if not GOOGLE_AI_KEY:
-            raise HTTPException(status_code=500, detail="Google AI API key not configured")
-        
-        print(f"[upload_translation_pdf] Calling Gemini API with prompt length={len(prompt)}")
+            raise HTTPException(
+                status_code=500, detail="Google AI API key not configured"
+            )
+
+        print(
+            f"[upload_translation_pdf] Calling Gemini API with prompt length={len(prompt)}"
+        )
         gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GOOGLE_AI_KEY}"
-        
+
         async with httpx.AsyncClient(timeout=120.0) as client:
-            gemini_res = await client.post(gemini_url, json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.1,
-                    "maxOutputTokens": 65536
-                }
-            })
-        
-        print(f"[upload_translation_pdf] Gemini response status={gemini_res.status_code}", flush=True)
+            gemini_res = await client.post(
+                gemini_url,
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"temperature": 0.1, "maxOutputTokens": 65536},
+                },
+            )
+
+        print(
+            f"[upload_translation_pdf] Gemini response status={gemini_res.status_code}",
+            flush=True,
+        )
         if gemini_res.status_code != 200:
-            raise HTTPException(status_code=502, detail=f"Gemini API error: {gemini_res.status_code} - {gemini_res.text[:500]}")
-        
+            raise HTTPException(
+                status_code=502,
+                detail=f"Gemini API error: {gemini_res.status_code} - {gemini_res.text[:500]}",
+            )
+
         gemini_data = gemini_res.json()
-        print(f"[upload_translation_pdf] Gemini JSON parsed, keys={list(gemini_data.keys())}", flush=True)
+        print(
+            f"[upload_translation_pdf] Gemini JSON parsed, keys={list(gemini_data.keys())}",
+            flush=True,
+        )
         raw_text = gemini_data["candidates"][0]["content"]["parts"][0]["text"]
         print(f"[upload_translation_pdf] Raw text length={len(raw_text)}", flush=True)
-        
+
         cleaned = raw_text.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.split("\n", 1)[1]
             if cleaned.endswith("```"):
                 cleaned = cleaned[:-3]
             cleaned = cleaned.strip()
-        
-        print(f"[upload_translation_pdf] Cleaned text length={len(cleaned)}, starts_with={cleaned[:80].replace(chr(10), ' ')}", flush=True)
+
+        print(
+            f"[upload_translation_pdf] Cleaned text length={len(cleaned)}, starts_with={cleaned[:80].replace(chr(10), ' ')}",
+            flush=True,
+        )
         try:
             parsed = json_module.loads(cleaned)
         except Exception as e:
             print(f"[upload_translation_pdf] JSON parse FAILED: {e}", flush=True)
-            print(f"[upload_translation_pdf] First 500 chars: {cleaned[:500]}", flush=True)
+            print(
+                f"[upload_translation_pdf] First 500 chars: {cleaned[:500]}", flush=True
+            )
             raise
-        print(f"[upload_translation_pdf] JSON parsed successfully, questions_count={len(parsed.get('questions', []))}", flush=True)
-        
+        print(
+            f"[upload_translation_pdf] JSON parsed successfully, questions_count={len(parsed.get('questions', []))}",
+            flush=True,
+        )
+
         if "questions" not in parsed:
-            raise HTTPException(status_code=502, detail="Could not parse translations from PDF — missing questions in AI response")
-        
+            raise HTTPException(
+                status_code=502,
+                detail="Could not parse translations from PDF — missing questions in AI response",
+            )
+
         questions_translated = []
         gemini_questions = {q["index"]: q for q in parsed["questions"]}
-        
+
         for i, q in enumerate(questions):
             gemini_q = gemini_questions.get(i)
             if gemini_q:
@@ -652,75 +804,104 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
                     "options": q.get("options"),
                 }
             questions_translated.append(translated)
-        
+
         title_key = f"title_{language}"
         description_key = f"description_{language}"
         questions_key = f"questions_{language}"
         analysis_type = f"translation_{language}"
-        
+
         payload = {
             questions_key: questions_translated,
             title_key: parsed.get("title", "") or "",
             description_key: parsed.get("description", "") or "",
         }
-        
-        existing = supabase.table("ai_analyses").select("id").eq("survey_id", survey_id).eq("analysis_type", analysis_type).execute()
+
+        existing = (
+            supabase.table("ai_analyses")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("analysis_type", analysis_type)
+            .execute()
+        )
         if existing.data:
-            supabase.table("ai_analyses").update({
-                "data": payload,
-                "updated_at": datetime.utcnow().isoformat()
-            }).eq("id", existing.data[0]["id"]).execute()
+            supabase.table("ai_analyses").update(
+                {"data": payload, "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", existing.data[0]["id"]).execute()
         else:
-            supabase.table("ai_analyses").insert({
-                "survey_id": survey_id,
-                "analysis_type": analysis_type,
-                "data": payload,
-                "updated_at": datetime.utcnow().isoformat()
-            }).execute()
-        
-        print(f"[upload_translation_pdf] Successfully saved translations, {len(questions_translated)} questions")
+            supabase.table("ai_analyses").insert(
+                {
+                    "survey_id": survey_id,
+                    "analysis_type": analysis_type,
+                    "data": payload,
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            ).execute()
+
+        print(
+            f"[upload_translation_pdf] Successfully saved translations, {len(questions_translated)} questions"
+        )
         return {"success": True, "data": payload}
-        
+
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.put("/api/surveys/{survey_id}", response_model=SurveyDetail)
 async def update_survey(survey_id: str, survey: SurveyCreate):
     """Update an existing survey and its questions. Fails if the survey has ever been published."""
     try:
         # 1. Check if existing survey has been published
-        existing_res = supabase.table("surveys").select("has_been_published").eq("id", survey_id).execute()
+        existing_res = (
+            supabase.table("surveys")
+            .select("has_been_published")
+            .eq("id", survey_id)
+            .execute()
+        )
         if not existing_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
-        
+
         # Enforce editing lock
         if existing_res.data[0]["has_been_published"]:
-            raise HTTPException(status_code=400, detail="Cannot edit a survey that has been published and locked.")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot edit a survey that has been published and locked.",
+            )
 
-        has_been_published = survey.is_active or existing_res.data[0]["has_been_published"]
+        has_been_published = (
+            survey.is_active or existing_res.data[0]["has_been_published"]
+        )
 
         # 2. Update Survey
-        survey_res = supabase.table("surveys").update({
-            "title": survey.title,
-            "description": survey.description,
-            "description_alignment": survey.description_alignment,
-            "estimated_minutes": survey.estimated_minutes,
-            "is_active": survey.is_active,
-            "has_been_published": has_been_published,
-            "thumbnail_url": survey.thumbnail_url,
-            "updated_at": datetime.utcnow().isoformat()
-        }).eq("id", survey_id).execute()
-        
+        survey_res = (
+            supabase.table("surveys")
+            .update(
+                {
+                    "title": survey.title,
+                    "description": survey.description,
+                    "description_alignment": survey.description_alignment,
+                    "estimated_minutes": survey.estimated_minutes,
+                    "is_active": survey.is_active,
+                    "has_been_published": has_been_published,
+                    "thumbnail_url": survey.thumbnail_url,
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            )
+            .eq("id", survey_id)
+            .execute()
+        )
+
         updated_survey = survey_res.data[0]
-        
+
         # 3. Delete existing questions
         supabase.table("questions").delete().eq("survey_id", survey_id).execute()
-        
+
         # 4. Insert new questions
         if survey.questions:
             questions_to_insert = []
@@ -733,7 +914,7 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                     "order_index": q.order_index,
                     "options": q.options,
                     "is_required": q.is_required,
-                    "is_conditional": q.is_conditional
+                    "is_conditional": q.is_conditional,
                 }
                 got_id = False
                 if q.id:
@@ -750,7 +931,9 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                         temp_to_real[q.id] = gen_id
                 questions_to_insert.append(new_q)
 
-            questions_res = supabase.table("questions").insert(questions_to_insert).execute()
+            questions_res = (
+                supabase.table("questions").insert(questions_to_insert).execute()
+            )
             inserted = questions_res.data
 
             # Remap logic_gates that reference temp IDs
@@ -765,61 +948,84 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                                 gate["question_id"] = temp_to_real[old_id]
                                 remapped = True
                         if remapped:
-                            supabase.table("questions").update({
-                                "options": json_module.loads(json_module.dumps(opts))
-                            }).eq("id", new_q["id"]).execute()
-                            new_q["options"] = json_module.loads(json_module.dumps(opts))
+                            supabase.table("questions").update(
+                                {"options": json_module.loads(json_module.dumps(opts))}
+                            ).eq("id", new_q["id"]).execute()
+                            new_q["options"] = json_module.loads(
+                                json_module.dumps(opts)
+                            )
 
             updated_survey["questions"] = inserted
         else:
             updated_survey["questions"] = []
-            
-        updated_survey["response_count"] = 0 # Dummy count for response_model
-            
+
+        updated_survey["response_count"] = 0  # Dummy count for response_model
+
         return updated_survey
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 class SessionCreate(BaseModel):
     email: str
-    referral_source: Optional[str] = None
+    referral_source: str | None = None
+
 
 class AnswerUpsert(BaseModel):
     question_id: str
-    answer_text: Optional[str] = None
-    answer_numeric: Optional[int] = None
-    answer_options: Optional[Any] = None
-    time_spent: Optional[int] = 0
+    answer_text: str | None = None
+    answer_numeric: int | None = None
+    answer_options: Any | None = None
+    time_spent: int | None = 0
+
 
 class CheckStatusRequest(BaseModel):
     email: str
+
 
 @app.post("/api/surveys/{survey_id}/check-status")
 async def check_survey_status(survey_id: str, body: CheckStatusRequest):
     """Check if the given email has already submitted the survey."""
     try:
-        existing = supabase.table("response_sessions").select("id").eq(
-            "survey_id", survey_id
-        ).eq("email", body.email).eq("is_completed", True).execute()
+        existing = (
+            supabase.table("response_sessions")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("email", body.email)
+            .eq("is_completed", True)
+            .execute()
+        )
         return {"has_submitted": bool(existing.data)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.get("/api/user/profile-data")
 async def get_user_profile_data(email: str):
     """Fetch past answers for an email to populate conditional fields."""
     try:
-        sessions = supabase.table("response_sessions").select("id").eq("email", email).eq("is_completed", True).execute()
+        sessions = (
+            supabase.table("response_sessions")
+            .select("id")
+            .eq("email", email)
+            .eq("is_completed", True)
+            .execute()
+        )
         if not sessions.data:
             return {}
-        
+
         session_ids = [s["id"] for s in sessions.data]
-        
+
         # Get answers joined with question text
-        answers = supabase.table("answers").select("*, questions(question_text)").in_("session_id", session_ids).execute()
-        
+        answers = (
+            supabase.table("answers")
+            .select("*, questions(question_text)")
+            .in_("session_id", session_ids)
+            .execute()
+        )
+
         profile_data = {}
         for ans in answers.data:
             q_info = ans.get("questions")
@@ -829,54 +1035,85 @@ async def get_user_profile_data(email: str):
                     profile_data[q_text] = {
                         "answer_text": ans.get("answer_text"),
                         "answer_numeric": ans.get("answer_numeric"),
-                        "answer_options": ans.get("answer_options")
+                        "answer_options": ans.get("answer_options"),
                     }
-                    
+
         return profile_data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/api/surveys/{survey_id}/sessions")
 async def create_session(survey_id: str, body: SessionCreate):
     """Create a new partial response session when user enters their email."""
     try:
         # Check if there's already an incomplete session for this email + survey
-        existing = supabase.table("response_sessions").select("id", "current_step").eq(
-            "survey_id", survey_id
-        ).eq("email", body.email).eq("is_completed", False).execute()
+        existing = (
+            supabase.table("response_sessions")
+            .select("id", "current_step")
+            .eq("survey_id", survey_id)
+            .eq("email", body.email)
+            .eq("is_completed", False)
+            .execute()
+        )
 
         if existing.data:
             # Return existing session for resume
             session = existing.data[0]
             # Fetch saved answers
-            answers_res = supabase.table("answers").select("*").eq("session_id", session["id"]).execute()
-            return {"session_id": session["id"], "current_step": session.get("current_step", 0), "saved_answers": answers_res.data, "resumed": True}
+            answers_res = (
+                supabase.table("answers")
+                .select("*")
+                .eq("session_id", session["id"])
+                .execute()
+            )
+            return {
+                "session_id": session["id"],
+                "current_step": session.get("current_step", 0),
+                "saved_answers": answers_res.data,
+                "resumed": True,
+            }
 
         session_data = {
             "survey_id": survey_id,
             "email": body.email,
             "is_completed": False,
-            "current_step": 0
+            "current_step": 0,
         }
         if body.referral_source:
             session_data["referral_source"] = body.referral_source
         session_res = supabase.table("response_sessions").insert(session_data).execute()
 
-        return {"session_id": session_res.data[0]["id"], "current_step": 0, "saved_answers": [], "resumed": False}
+        return {
+            "session_id": session_res.data[0]["id"],
+            "current_step": 0,
+            "saved_answers": [],
+            "resumed": False,
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.put("/api/sessions/{session_id}/answers")
 async def upsert_answer(session_id: str, body: AnswerUpsert):
     """Save or update a single answer for a session (auto-save on Next)."""
     try:
-        q_res = supabase.table("questions").select("options, is_required").eq("id", body.question_id).execute()
+        q_res = (
+            supabase.table("questions")
+            .select("options, is_required")
+            .eq("id", body.question_id)
+            .execute()
+        )
         if q_res.data:
             q = q_res.data[0]
             opts = q.get("options")
             if isinstance(opts, dict):
                 validation = opts.get("validation")
-                if validation and isinstance(validation, dict) and validation.get("type") != "none":
+                if (
+                    validation
+                    and isinstance(validation, dict)
+                    and validation.get("type") != "none"
+                ):
                     val = body.answer_text
                     max_len = validation.get("max_length")
                     regex_str = validation.get("regex")
@@ -887,112 +1124,144 @@ async def upsert_answer(session_id: str, body: AnswerUpsert):
                         body.answer_text = val
 
                     if val and max_len and len(val) > max_len:
-                        raise HTTPException(status_code=422, detail=f"Answer exceeds maximum length of {max_len}")
+                        raise HTTPException(
+                            status_code=422,
+                            detail=f"Answer exceeds maximum length of {max_len}",
+                        )
 
                     if val and regex_str:
                         if not re.match(regex_str, val):
-                            raise HTTPException(status_code=422, detail=f"Answer must match pattern: {regex_str}")
+                            raise HTTPException(
+                                status_code=422,
+                                detail=f"Answer must match pattern: {regex_str}",
+                            )
 
-        supabase.table("answers").upsert({
-            "session_id": session_id,
-            "question_id": body.question_id,
-            "answer_text": body.answer_text,
-            "answer_numeric": body.answer_numeric,
-            "answer_options": body.answer_options,
-            "time_spent": body.time_spent
-        }, on_conflict="session_id,question_id").execute()
+        supabase.table("answers").upsert(
+            {
+                "session_id": session_id,
+                "question_id": body.question_id,
+                "answer_text": body.answer_text,
+                "answer_numeric": body.answer_numeric,
+                "answer_options": body.answer_options,
+                "time_spent": body.time_spent,
+            },
+            on_conflict="session_id,question_id",
+        ).execute()
 
         return {"status": "saved"}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.patch("/api/sessions/{session_id}/step")
 async def update_step(session_id: str, body: dict):
     """Update the current step for a session (for resume)."""
     try:
-        supabase.table("response_sessions").update({
-            "current_step": body.get("current_step", 0)
-        }).eq("id", session_id).execute()
+        supabase.table("response_sessions").update(
+            {"current_step": body.get("current_step", 0)}
+        ).eq("id", session_id).execute()
         return {"status": "updated"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/api/sessions/{session_id}/attention-failure")
 async def report_attention_failure(session_id: str):
     """Report a failed attention check for a session."""
     try:
-        session_res = supabase.table("response_sessions").select("attention_check_failures").eq("id", session_id).execute()
+        session_res = (
+            supabase.table("response_sessions")
+            .select("attention_check_failures")
+            .eq("id", session_id)
+            .execute()
+        )
         if not session_res.data:
             raise HTTPException(status_code=404, detail="Session not found")
-            
+
         failures = session_res.data[0].get("attention_check_failures", 0)
         if failures is None:
             failures = 0
         failures += 1
-        
+
         weight = 1.0
         is_valid = True
-        
+
         if failures == 1:
             weight = 0.5
         elif failures >= 2:
             weight = 0.0
             is_valid = False
-            
-        supabase.table("response_sessions").update({
-            "attention_check_failures": failures,
+
+        supabase.table("response_sessions").update(
+            {
+                "attention_check_failures": failures,
+                "weight": weight,
+                "is_valid": is_valid,
+            }
+        ).eq("id", session_id).execute()
+
+        return {
+            "status": "updated",
+            "failures": failures,
             "weight": weight,
-            "is_valid": is_valid
-        }).eq("id", session_id).execute()
-        
-        return {"status": "updated", "failures": failures, "weight": weight, "is_valid": is_valid}
+            "is_valid": is_valid,
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.patch("/api/sessions/{session_id}/complete")
 async def complete_session(session_id: str):
     """Mark a session as complete."""
     try:
-        supabase.table("response_sessions").update({
-            "is_completed": True,
-            "completed_at": datetime.utcnow().isoformat()
-        }).eq("id", session_id).execute()
+        supabase.table("response_sessions").update(
+            {"is_completed": True, "completed_at": datetime.utcnow().isoformat()}
+        ).eq("id", session_id).execute()
         return {"status": "completed"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.post("/api/surveys/{survey_id}/responses")
 async def submit_response(survey_id: str, submission: ResponseSubmission):
     """Legacy: Submit a full response at once (fallback)."""
     try:
-        session_res = supabase.table("response_sessions").insert({
-            "survey_id": survey_id,
-            "email": submission.email,
-            "is_completed": True,
-            "completed_at": datetime.utcnow().isoformat()
-        }).execute()
-        
+        session_res = (
+            supabase.table("response_sessions")
+            .insert(
+                {
+                    "survey_id": survey_id,
+                    "email": submission.email,
+                    "is_completed": True,
+                    "completed_at": datetime.utcnow().isoformat(),
+                }
+            )
+            .execute()
+        )
+
         session_id = session_res.data[0]["id"]
-        
+
         answers_to_insert = []
         for answer in submission.answers:
-            answers_to_insert.append({
-                "session_id": session_id,
-                "question_id": answer.question_id,
-                "answer_text": answer.answer_text,
-                "answer_numeric": answer.answer_numeric,
-                "answer_options": answer.answer_options,
-                "time_spent": answer.time_spent
-            })
-            
+            answers_to_insert.append(
+                {
+                    "session_id": session_id,
+                    "question_id": answer.question_id,
+                    "answer_text": answer.answer_text,
+                    "answer_numeric": answer.answer_numeric,
+                    "answer_options": answer.answer_options,
+                    "time_spent": answer.time_spent,
+                }
+            )
+
         if answers_to_insert:
             supabase.table("answers").insert(answers_to_insert).execute()
-            
+
         return {"status": "success", "session_id": session_id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def _get_random_email_position(num_emails: int = 5) -> list:
@@ -1005,18 +1274,22 @@ async def _get_random_email_position(num_emails: int = 5) -> list:
     """
     try:
         # Queries the database to get the total count of emails in the response_sessions table
-        count_res = supabase.table("response_sessions").select("id", count="exact").execute()
+        count_res = (
+            supabase.table("response_sessions").select("id", count="exact").execute()
+        )
         total_emails = getattr(count_res, "count", None)
         if total_emails is None:
             total_emails = len(count_res.data) if count_res.data else 0
 
         if total_emails == 0:
-            raise ValueError("No emails found in response_sessions for raffle selection.")
+            raise ValueError(
+                "No emails found in response_sessions for raffle selection."
+            )
 
         return random.sample(range(total_emails), num_emails)
     #    return random.randint(0, total_emails - 1)
     except Exception as e:
-        raise Exception(f"Failed to determine raffle position: {e}")
+        raise Exception(f"Failed to determine raffle position: {e}") from e
 
 
 @app.get("/api/admin/raffle-email")
@@ -1028,8 +1301,14 @@ async def get_raffle_email():
     try:
         positions = await _get_random_email_position()
         emails = []
-        for position in positions: 
-            response = supabase.table("response_sessions").select("email").order("id").range(position, position).execute()
+        for position in positions:
+            response = (
+                supabase.table("response_sessions")
+                .select("email")
+                .order("id")
+                .range(position, position)
+                .execute()
+            )
             if not response.data or not response.data[0]:
                 raise ValueError("No email row returned for raffle selection.")
 
@@ -1041,7 +1320,7 @@ async def get_raffle_email():
 
         return {"emails": emails}
     except Exception as e:
-        raise Exception(f"Failed to select raffle email: {e}")
+        raise Exception(f"Failed to select raffle email: {e}") from e
 
 
 @app.get("/api/surveys/{survey_id}/results")
@@ -1053,15 +1332,33 @@ async def get_survey_results(survey_id: str):
             raise HTTPException(status_code=404, detail="Survey not found")
         survey = survey_res.data[0]
 
-        questions_res = supabase.table("questions").select("*").eq("survey_id", survey_id).order("order_index").execute()
+        questions_res = (
+            supabase.table("questions")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("order_index")
+            .execute()
+        )
         questions = questions_res.data
 
         # Get total responses efficiently
-        sessions_count_res = supabase.table("response_sessions").select("id", count="exact").eq("survey_id", survey_id).execute()
-        total_responses = sessions_count_res.count if hasattr(sessions_count_res, 'count') else 0
+        sessions_count_res = (
+            supabase.table("response_sessions")
+            .select("id", count="exact")
+            .eq("survey_id", survey_id)
+            .execute()
+        )
+        total_responses = (
+            sessions_count_res.count if hasattr(sessions_count_res, "count") else 0
+        )
 
         # Get referral counts efficiently
-        referrals_res = supabase.table("response_sessions").select("referral_source").eq("survey_id", survey_id).execute()
+        referrals_res = (
+            supabase.table("response_sessions")
+            .select("referral_source")
+            .eq("survey_id", survey_id)
+            .execute()
+        )
         referral_counts = {}
         for row in referrals_res.data:
             ref = row.get("referral_source") or "Direct"
@@ -1071,36 +1368,53 @@ async def get_survey_results(survey_id: str):
             "survey": survey,
             "questions": questions,
             "total_responses": total_responses,
-            "referral_breakdown": referral_counts
+            "referral_breakdown": referral_counts,
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.get("/api/surveys/{survey_id}/responses/paginated")
-async def get_survey_responses_paginated(survey_id: str, offset: int = 0, limit: int = 1, filter_failed: bool = False):
+async def get_survey_responses_paginated(
+    survey_id: str, offset: int = 0, limit: int = 1, filter_failed: bool = False
+):
     """Fetch individual responses with pagination."""
     try:
-        query = supabase.table("response_sessions").select("*").eq("survey_id", survey_id).order("completed_at", desc=True)
+        query = (
+            supabase.table("response_sessions")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("completed_at", desc=True)
+        )
         if filter_failed:
             query = query.gt("attention_check_failures", 0)
-            
+
         sessions_res = query.range(offset, offset + limit - 1).execute()
         sessions = sessions_res.data
 
         if not sessions:
             return {"responses": [], "total": 0}
-            
+
         # Get count
-        count_query = supabase.table("response_sessions").select("id", count="exact").eq("survey_id", survey_id)
+        count_query = (
+            supabase.table("response_sessions")
+            .select("id", count="exact")
+            .eq("survey_id", survey_id)
+        )
         if filter_failed:
             count_query = count_query.gt("attention_check_failures", 0)
         total = count_query.execute().count
 
         session_ids = [s["id"] for s in sessions]
-        answers_res = supabase.table("answers").select("*").in_("session_id", session_ids).execute()
-        
+        answers_res = (
+            supabase.table("answers")
+            .select("*")
+            .in_("session_id", session_ids)
+            .execute()
+        )
+
         answers_by_session = {}
         for a in answers_res.data:
             sid = a["session_id"]
@@ -1110,32 +1424,48 @@ async def get_survey_responses_paginated(survey_id: str, offset: int = 0, limit:
 
         responses = []
         for s in sessions:
-            responses.append({
-                "session_id": s["id"],
-                "completed_at": s.get("completed_at"),
-                "referral_source": s.get("referral_source"),
-                "attention_check_failures": s.get("attention_check_failures", 0),
-                "weight": s.get("weight", 1.0),
-                "is_valid": s.get("is_valid", True),
-                "answers": answers_by_session.get(s["id"], [])
-            })
-            
+            responses.append(
+                {
+                    "session_id": s["id"],
+                    "completed_at": s.get("completed_at"),
+                    "referral_source": s.get("referral_source"),
+                    "attention_check_failures": s.get("attention_check_failures", 0),
+                    "weight": s.get("weight", 1.0),
+                    "is_valid": s.get("is_valid", True),
+                    "answers": answers_by_session.get(s["id"], []),
+                }
+            )
+
         return {"responses": responses, "total": total}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.get("/api/surveys/{survey_id}/summary")
 async def get_survey_summary(survey_id: str):
     """Calculate and return aggregate summary statistics for all questions on the backend."""
     try:
-        questions_res = supabase.table("questions").select("*").eq("survey_id", survey_id).order("order_index").execute()
+        questions_res = (
+            supabase.table("questions")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("order_index")
+            .execute()
+        )
         questions = questions_res.data
 
         sessions = []
         page_size = 10000
         start = 0
         while True:
-            chunk = supabase.table("response_sessions").select("id, is_valid, weight").eq("survey_id", survey_id).range(start, start + page_size - 1).execute().data
+            chunk = (
+                supabase.table("response_sessions")
+                .select("id, is_valid, weight")
+                .eq("survey_id", survey_id)
+                .range(start, start + page_size - 1)
+                .execute()
+                .data
+            )
             if not chunk:
                 break
             sessions.extend(chunk)
@@ -1143,12 +1473,23 @@ async def get_survey_summary(survey_id: str):
                 break
             start += page_size
 
-        valid_sessions = {s["id"]: s.get("weight", 1.0) for s in sessions if s.get("is_valid") is not False}
+        valid_sessions = {
+            s["id"]: s.get("weight", 1.0)
+            for s in sessions
+            if s.get("is_valid") is not False
+        }
 
         all_answers = []
         start = 0
         while True:
-            chunk = supabase.table("answers").select("*, response_sessions!inner(survey_id)").eq("response_sessions.survey_id", survey_id).range(start, start + page_size - 1).execute().data
+            chunk = (
+                supabase.table("answers")
+                .select("*, response_sessions!inner(survey_id)")
+                .eq("response_sessions.survey_id", survey_id)
+                .range(start, start + page_size - 1)
+                .execute()
+                .data
+            )
             if not chunk:
                 break
             all_answers.extend(chunk)
@@ -1171,7 +1512,7 @@ async def get_survey_summary(survey_id: str):
             qid = q["id"]
             q_type = q["type"]
             ans = answers_by_question.get(qid, [])
-            
+
             if q_type in ["multiple_choice", "dropdown"]:
                 counts = {}
                 for a in ans:
@@ -1184,7 +1525,7 @@ async def get_survey_summary(survey_id: str):
                 stats[qid] = {
                     "counts": counts,
                     "sample_size": len(ans),
-                    "mode_data": mode_data
+                    "mode_data": mode_data,
                 }
             elif q_type == "checkboxes":
                 counts = {}
@@ -1202,17 +1543,25 @@ async def get_survey_summary(survey_id: str):
                     "counts": counts,
                     "total_weighted": total_weighted,
                     "sample_size": len(ans),
-                    "mode_data": mode_data
+                    "mode_data": mode_data,
                 }
             elif q_type == "rating_scale":
-                nums_weights = [(a["answer_numeric"], a.get("weight", 1.0)) for a in ans if a.get("answer_numeric") is not None]
+                nums_weights = [
+                    (a["answer_numeric"], a.get("weight", 1.0))
+                    for a in ans
+                    if a.get("answer_numeric") is not None
+                ]
                 nums = [x[0] for x in nums_weights]
                 total_w = sum(x[1] for x in nums_weights)
-                mean = sum(x[0] * x[1] for x in nums_weights) / total_w if total_w > 0 else 0
+                mean = (
+                    sum(x[0] * x[1] for x in nums_weights) / total_w
+                    if total_w > 0
+                    else 0
+                )
                 avg = round(mean, 1) if nums else None
                 median = calculate_median(nums)
                 std_dev = calculate_std_dev(nums, mean)
-                variance = std_dev ** 2
+                variance = std_dev**2
                 q1, q2, q3 = calculate_quartiles(nums)
                 iqr = q3 - q1
                 outliers = find_outliers(nums, q1, q3, iqr)
@@ -1226,15 +1575,19 @@ async def get_survey_summary(survey_id: str):
                     "min": min(nums) if nums else 0,
                     "max": max(nums) if nums else 0,
                     "quartiles": {"q1": q1, "q2": q2, "q3": q3, "iqr": iqr},
-                    "outliers": outliers
+                    "outliers": outliers,
                 }
             elif q_type == "likert_scale":
-                counts = {1:0, 2:0, 3:0, 4:0, 5:0}
+                counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
                 for a in ans:
                     val = a.get("answer_numeric")
                     if val is not None and val in counts:
                         counts[val] += 1
-                nums = [a.get("answer_numeric") for a in ans if a.get("answer_numeric") is not None]
+                nums = [
+                    a.get("answer_numeric")
+                    for a in ans
+                    if a.get("answer_numeric") is not None
+                ]
                 mean = sum(nums) / len(nums) if nums else 0
                 avg = round(mean, 1) if nums else None
                 median = round(calculate_median(nums)) if nums else 0
@@ -1249,13 +1602,11 @@ async def get_survey_summary(survey_id: str):
                     "avg": avg,
                     "median": median,
                     "std_dev": std_dev,
-                    "mode_data": mode_data
+                    "mode_data": mode_data,
                 }
             elif q_type == "short_answer":
                 texts = [a.get("answer_text") for a in ans if a.get("answer_text")]
-                stats[qid] = {
-                    "texts": texts[:100]
-                }
+                stats[qid] = {"texts": texts[:100]}
             elif q_type == "ranking":
                 sums = {}
                 counts = {}
@@ -1275,24 +1626,29 @@ async def get_survey_summary(survey_id: str):
                 stats[qid] = {
                     "avg_ranks": avg_ranks,
                     "sample_size": len(ans),
-                    "total_weighted": total_weighted
+                    "total_weighted": total_weighted,
                 }
-                
+
         return stats
     except Exception as e:
         import traceback
+
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.delete("/api/surveys/{survey_id}/responses")
 async def delete_all_responses(survey_id: str):
     """Delete all response sessions and their answers for a survey."""
     try:
         # Cascade: deleting sessions will auto-delete answers via ON DELETE CASCADE
-        supabase.table("response_sessions").delete().eq("survey_id", survey_id).execute()
+        supabase.table("response_sessions").delete().eq(
+            "survey_id", survey_id
+        ).execute()
         return {"success": True, "message": "All responses deleted"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.delete("/api/responses/{session_id}")
 async def delete_single_response(session_id: str):
@@ -1301,7 +1657,8 @@ async def delete_single_response(session_id: str):
         supabase.table("response_sessions").delete().eq("id", session_id).execute()
         return {"success": True, "message": "Response deleted"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.delete("/api/surveys/{survey_id}")
 async def delete_survey(survey_id: str):
@@ -1311,62 +1668,86 @@ async def delete_survey(survey_id: str):
         existing = supabase.table("surveys").select("id").eq("id", survey_id).execute()
         if not existing.data:
             raise HTTPException(status_code=404, detail="Survey not found")
-            
+
         # Delete survey (Postgres ON DELETE CASCADE handles questions, sessions, and answers)
         supabase.table("surveys").delete().eq("id", survey_id).execute()
-        
-        return {"success": True, "message": "Survey and all related data deleted successfully"}
+
+        return {
+            "success": True,
+            "message": "Survey and all related data deleted successfully",
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.patch("/api/surveys/{survey_id}/toggle", response_model=SurveyList)
 async def toggle_survey_status(survey_id: str):
     """Toggle a survey's active status."""
     try:
-        existing = supabase.table("surveys").select("is_active", "has_been_published").eq("id", survey_id).execute()
+        existing = (
+            supabase.table("surveys")
+            .select("is_active", "has_been_published")
+            .eq("id", survey_id)
+            .execute()
+        )
         if not existing.data:
             raise HTTPException(status_code=404, detail="Survey not found")
-            
+
         current = existing.data[0]
         new_status = not current["is_active"]
-            
-        res = supabase.table("surveys").update({
-            "is_active": new_status,
-            "has_been_published": True if new_status else current["has_been_published"],
-            "updated_at": datetime.utcnow().isoformat()
-        }).eq("id", survey_id).execute()
-        
+
+        res = (
+            supabase.table("surveys")
+            .update(
+                {
+                    "is_active": new_status,
+                    "has_been_published": True
+                    if new_status
+                    else current["has_been_published"],
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            )
+            .eq("id", survey_id)
+            .execute()
+        )
+
         updated = res.data[0]
         updated["response_count"] = 0
         return updated
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 # --- SHARE LINKS ---
 
+
 class ShareLinkCreate(BaseModel):
-    label: Optional[str] = None
+    label: str | None = None
+
 
 @app.post("/api/surveys/{survey_id}/share-links")
 async def create_share_link(survey_id: str, body: ShareLinkCreate):
     """Generate a unique share link code for a survey."""
     try:
-        code = ''.join(random.choices(string.ascii_letters + string.digits, k=7))
-        row = {
-            "survey_id": survey_id,
-            "code": code,
-            "label": body.label or None
-        }
+        code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
+        row = {"survey_id": survey_id, "code": code, "label": body.label or None}
         res = supabase.table("share_links").insert(row).execute()
         return res.data[0]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.get("/api/surveys/{survey_id}/share-links")
 async def get_share_links(survey_id: str):
     """Get all share links for a survey with their response counts."""
     try:
-        links_res = supabase.table("share_links").select("*").eq("survey_id", survey_id).order("created_at", desc=True).execute()
+        links_res = (
+            supabase.table("share_links")
+            .select("*")
+            .eq("survey_id", survey_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
         links = links_res.data
 
         if not links:
@@ -1374,7 +1755,13 @@ async def get_share_links(survey_id: str):
 
         # Get response counts per referral_source code
         codes = [link["code"] for link in links]
-        sessions_res = supabase.table("response_sessions").select("referral_source").eq("survey_id", survey_id).in_("referral_source", codes).execute()
+        sessions_res = (
+            supabase.table("response_sessions")
+            .select("referral_source")
+            .eq("survey_id", survey_id)
+            .in_("referral_source", codes)
+            .execute()
+        )
 
         counts = {}
         for s in sessions_res.data:
@@ -1387,7 +1774,8 @@ async def get_share_links(survey_id: str):
 
         return links
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 @app.delete("/api/share-links/{link_id}")
 async def delete_share_link(link_id: str):
@@ -1396,12 +1784,15 @@ async def delete_share_link(link_id: str):
         supabase.table("share_links").delete().eq("id", link_id).execute()
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 
 # --- AI ANALYSIS SUITE ---
 
+
 class AIAnalysisRequest(BaseModel):
     force_refresh: bool = False
+
 
 def _gather_survey_data(survey_id: str):
     """Shared helper: gather all survey data for AI analysis."""
@@ -1410,21 +1801,41 @@ def _gather_survey_data(survey_id: str):
         raise HTTPException(status_code=404, detail="Survey not found")
     survey = survey_res.data[0]
 
-    questions_res = supabase.table("questions").select("*").eq("survey_id", survey_id).order("order_index").execute()
+    questions_res = (
+        supabase.table("questions")
+        .select("*")
+        .eq("survey_id", survey_id)
+        .order("order_index")
+        .execute()
+    )
     questions = questions_res.data
 
-    sessions_res = supabase.table("response_sessions").select("*").eq("survey_id", survey_id).eq("is_completed", True).execute()
+    sessions_res = (
+        supabase.table("response_sessions")
+        .select("*")
+        .eq("survey_id", survey_id)
+        .eq("is_completed", True)
+        .execute()
+    )
     # Filter out invalid sessions
     sessions = [s for s in sessions_res.data if s.get("is_valid", True) is not False]
 
     if len(sessions) < 3:
-        raise HTTPException(status_code=400, detail="Need at least 3 completed responses for AI analysis.")
+        raise HTTPException(
+            status_code=400,
+            detail="Need at least 3 completed responses for AI analysis.",
+        )
 
     valid_session_ids = {s["id"] for s in sessions}
-    
+
     # Fetch all answers for the survey using inner join to bypass URL limits
-    answers_res = supabase.table("answers").select("*, response_sessions!inner(survey_id)").eq("response_sessions.survey_id", survey_id).execute()
-    
+    answers_res = (
+        supabase.table("answers")
+        .select("*, response_sessions!inner(survey_id)")
+        .eq("response_sessions.survey_id", survey_id)
+        .execute()
+    )
+
     # Filter down to only valid, completed sessions
     all_answers = [a for a in answers_res.data if a["session_id"] in valid_session_ids]
 
@@ -1470,7 +1881,12 @@ def _gather_survey_data(survey_id: str):
         answers_for_q = [a for a in all_answers if a["question_id"] == q["id"]]
         q_agg["total_answers"] = len(answers_for_q)
 
-        if q["type"] in ["multiple_choice", "checkboxes", "rating_scale", "likert_scale"]:
+        if q["type"] in [
+            "multiple_choice",
+            "checkboxes",
+            "rating_scale",
+            "likert_scale",
+        ]:
             counts = {}
             for a in answers_for_q:
                 vals = []
@@ -1482,7 +1898,7 @@ def _gather_survey_data(survey_id: str):
                     vals = [a["answer_text"]]
                 elif a.get("answer_numeric") is not None:
                     vals = [str(a["answer_numeric"])]
-                
+
                 for v in vals:
                     counts[v] = counts.get(v, 0) + 1
             q_agg["distribution"] = counts
@@ -1490,6 +1906,7 @@ def _gather_survey_data(survey_id: str):
             texts = [a["answer_text"] for a in answers_for_q if a.get("answer_text")]
             if len(texts) > 50:
                 import random
+
                 texts = random.sample(texts, 50)
             q_agg["sample_responses"] = texts
         aggregated_summary.append(q_agg)
@@ -1497,9 +1914,16 @@ def _gather_survey_data(survey_id: str):
     # Sample respondents to a max of 200 to prevent token limits on large datasets
     if len(respondent_profiles) > 200:
         import random
+
         respondent_profiles = random.sample(respondent_profiles, 200)
 
-    return survey, questions_summary, respondent_profiles, aggregated_summary, len(sessions)
+    return (
+        survey,
+        questions_summary,
+        respondent_profiles,
+        aggregated_summary,
+        len(sessions),
+    )
 
 
 async def _call_gemini(prompt: str, survey_id: str, total_respondents: int):
@@ -1511,17 +1935,23 @@ async def _call_gemini(prompt: str, survey_id: str, total_respondents: int):
     gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GOOGLE_AI_KEY}"
 
     async with httpx.AsyncClient(timeout=90.0) as client:
-        gemini_res = await client.post(gemini_url, json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": 0.3,
-                "maxOutputTokens": 8192,
-                "responseMimeType": "application/json"
-            }
-        })
+        gemini_res = await client.post(
+            gemini_url,
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.3,
+                    "maxOutputTokens": 8192,
+                    "responseMimeType": "application/json",
+                },
+            },
+        )
 
     if gemini_res.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"Gemini API error: {gemini_res.status_code} - {gemini_res.text[:500]}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Gemini API error: {gemini_res.status_code} - {gemini_res.text[:500]}",
+        )
 
     gemini_data = gemini_res.json()
     raw_text = gemini_data["candidates"][0]["content"]["parts"][0]["text"]
@@ -1534,7 +1964,7 @@ async def _call_gemini(prompt: str, survey_id: str, total_respondents: int):
         cleaned = cleaned.strip()
 
     analysis = json_module.loads(cleaned)
-    
+
     # Gracefully handle if the model mistakenly wraps the response in a JSON array
     if isinstance(analysis, list):
         if len(analysis) == 1 and isinstance(analysis[0], dict):
@@ -1545,57 +1975,88 @@ async def _call_gemini(prompt: str, survey_id: str, total_respondents: int):
     analysis["meta"] = {
         "survey_id": survey_id,
         "total_respondents": total_respondents,
-        "generated_at": datetime.utcnow().isoformat()
+        "generated_at": datetime.utcnow().isoformat(),
     }
     return analysis
 
-async def handle_ai_analysis(survey_id: str, analysis_type: str, force_refresh: bool, prompt_suffix: str):
+
+async def handle_ai_analysis(
+    survey_id: str, analysis_type: str, force_refresh: bool, prompt_suffix: str
+):
     """Handles the caching and generation flow for AI analysis."""
     if not force_refresh:
         try:
-            res = supabase.table("ai_analyses").select("data").eq("survey_id", survey_id).eq("analysis_type", analysis_type).execute()
+            res = (
+                supabase.table("ai_analyses")
+                .select("data")
+                .eq("survey_id", survey_id)
+                .eq("analysis_type", analysis_type)
+                .execute()
+            )
             if res.data:
                 return res.data[0]["data"]
         except Exception as e:
             print(f"Warning: Failed to read AI cache: {e}")
 
-    survey, questions_summary, profiles, aggregated_summary, total_respondents = _gather_survey_data(survey_id)
+    survey, questions_summary, profiles, aggregated_summary, total_respondents = (
+        _gather_survey_data(survey_id)
+    )
     if total_respondents < 3:
-        raise HTTPException(status_code=400, detail="Not enough responses for AI analysis.")
+        raise HTTPException(
+            status_code=400, detail="Not enough responses for AI analysis."
+        )
 
-    prompt = _base_context(survey, questions_summary, profiles, aggregated_summary, total_respondents) + prompt_suffix
-    
+    prompt = (
+        _base_context(
+            survey, questions_summary, profiles, aggregated_summary, total_respondents
+        )
+        + prompt_suffix
+    )
+
     analysis = await _call_gemini(prompt, survey_id, total_respondents)
-    
+
     # Save to cache
     try:
-        # Get existing record to handle upsert properly without relying purely on constraint if preferred, 
+        # Get existing record to handle upsert properly without relying purely on constraint if preferred,
         # but UPSERT should work. To be safe since we don't have primary key from client:
-        existing = supabase.table("ai_analyses").select("id").eq("survey_id", survey_id).eq("analysis_type", analysis_type).execute()
+        existing = (
+            supabase.table("ai_analyses")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("analysis_type", analysis_type)
+            .execute()
+        )
         if existing.data:
-            supabase.table("ai_analyses").update({
-                "data": analysis,
-                "updated_at": datetime.utcnow().isoformat()
-            }).eq("id", existing.data[0]["id"]).execute()
+            supabase.table("ai_analyses").update(
+                {"data": analysis, "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", existing.data[0]["id"]).execute()
         else:
-            supabase.table("ai_analyses").insert({
-                "survey_id": survey_id,
-                "analysis_type": analysis_type,
-                "data": analysis,
-                "updated_at": datetime.utcnow().isoformat()
-            }).execute()
+            supabase.table("ai_analyses").insert(
+                {
+                    "survey_id": survey_id,
+                    "analysis_type": analysis_type,
+                    "data": analysis,
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            ).execute()
     except Exception as e:
         print(f"Warning: Failed to cache AI analysis: {e}")
-        
+
     return analysis
 
 
-def _base_context(survey, questions_summary, respondent_profiles, aggregated_summary, total_respondents):
+def _base_context(
+    survey,
+    questions_summary,
+    respondent_profiles,
+    aggregated_summary,
+    total_respondents,
+):
     """Build the shared context block for all prompts."""
     return f"""You are an expert policy research analyst working for a Canadian youth advocacy organization called CYC (Canadian Youth Cabinet).
 
-Survey: "{survey['title']}"
-Description: {survey.get('description', 'N/A')}
+Survey: "{survey["title"]}"
+Description: {survey.get("description", "N/A")}
 Total respondents: {total_respondents}
 
 Questions asked:
@@ -1610,8 +2071,9 @@ Representative Sample of Respondent Profiles (Sampled {len(respondent_profiles)}
 
 # --- 1. PERSUADABILITY DETECTION ---
 
+
 @app.post("/api/surveys/{survey_id}/ai-analysis")
-async def ai_persuadability_analysis(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_persuadability_analysis(survey_id: str, body: AIAnalysisRequest):
     try:
         prompt_suffix = """
 
@@ -1627,19 +2089,24 @@ Produce a Persuadability Detection report as JSON with EXACTLY this structure:
 
 Guidelines: High variance in rating/likert = persuadable. Split multiple choice = opinion still forming. Analyze sentiment strength in short answers. Be specific and data-driven. Return ONLY valid JSON."""
 
-        return await handle_ai_analysis(survey_id, "persuadability", body.force_refresh, prompt_suffix)
+        return await handle_ai_analysis(
+            survey_id, "persuadability", body.force_refresh, prompt_suffix
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- 2. PUBLIC MOOD HEATMAP ---
 
+
 @app.post("/api/surveys/{survey_id}/ai-mood")
-async def ai_mood_heatmap(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_mood_heatmap(survey_id: str, body: AIAnalysisRequest):
     try:
         prompt_suffix = """
 
@@ -1656,19 +2123,24 @@ Produce a Public Mood Heatmap report as JSON with EXACTLY this structure:
 
 Guidelines: Focus on emotional valence and intensity across responses. Look for underlying frustration, optimism, or apathy. Identify specific trigger points or issues driving negative/positive sentiment. Return ONLY valid JSON."""
 
-        return await handle_ai_analysis(survey_id, "mood", body.force_refresh, prompt_suffix)
+        return await handle_ai_analysis(
+            survey_id, "mood", body.force_refresh, prompt_suffix
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- 3. BELIEF NETWORK GRAPH ---
 
+
 @app.post("/api/surveys/{survey_id}/ai-beliefs")
-async def ai_belief_network(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_belief_network(survey_id: str, body: AIAnalysisRequest):
     try:
         prompt_suffix = """
 
@@ -1685,19 +2157,24 @@ Produce a Hidden Belief Network report as JSON with EXACTLY this structure:
 
 Guidelines: Look for correlations in how people answer seemingly unrelated questions. Identify clusters of respondents sharing underlying ideological frameworks or worldviews. Highlight contradictory or surprising combinations of beliefs. Return ONLY valid JSON."""
 
-        return await handle_ai_analysis(survey_id, "beliefs", body.force_refresh, prompt_suffix)
+        return await handle_ai_analysis(
+            survey_id, "beliefs", body.force_refresh, prompt_suffix
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- 4. MINORITY INSIGHT AMPLIFIER ---
 
+
 @app.post("/api/surveys/{survey_id}/ai-minority")
-async def ai_minority_insights(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_minority_insights(survey_id: str, body: AIAnalysisRequest):
     try:
         prompt_suffix = """
 
@@ -1721,19 +2198,24 @@ Produce a Minority Insight Amplifier report as JSON with EXACTLY this structure:
 
 Guidelines: Focus on issues raised by <25% of respondents but with unusually high emotional intensity or concentration. Look for geographic/demographic clustering. Prioritize concerns with disproportionate potential impact. Detect urgency language in open-ended responses. Return ONLY valid JSON."""
 
-        return await handle_ai_analysis(survey_id, "minority", body.force_refresh, prompt_suffix)
+        return await handle_ai_analysis(
+            survey_id, "minority", body.force_refresh, prompt_suffix
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- 5. RESPONDENT ARCHETYPE GENERATOR ---
 
+
 @app.post("/api/surveys/{survey_id}/ai-archetypes")
-async def ai_archetypes(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_archetypes(survey_id: str, body: AIAnalysisRequest):
     try:
         prompt_suffix = """
 
@@ -1760,19 +2242,24 @@ Produce a Behavioural Archetypes report as JSON with EXACTLY this structure:
 
 Guidelines: Cluster respondents by recurring patterns in attitudes, values, and priorities. Go beyond simple demographics — create meaningful behavioural personas. Give each archetype an intuitive, memorable name. Provide 3-5 archetypes. Return ONLY valid JSON."""
 
-        return await handle_ai_analysis(survey_id, "archetypes", body.force_refresh, prompt_suffix)
+        return await handle_ai_analysis(
+            survey_id, "archetypes", body.force_refresh, prompt_suffix
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- 6. SURVEY BLIND SPOT ANALYZER ---
 
+
 @app.post("/api/surveys/{survey_id}/ai-blindspots")
-async def ai_blindspots(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_blindspots(survey_id: str, body: AIAnalysisRequest):
     try:
         prompt_suffix = """
 
@@ -1801,16 +2288,20 @@ Produce a Survey Blind Spot Analyzer report as JSON with EXACTLY this structure:
 
 Guidelines: Review which topics the survey covers well and where gaps exist. Look for recurring themes in open-ended responses not reflected in structured questions. Flag potential question bias or missing response options. Suggest specific new questions for future iterations. Return ONLY valid JSON."""
 
-        return await handle_ai_analysis(survey_id, "blindspots", body.force_refresh, prompt_suffix)
+        return await handle_ai_analysis(
+            survey_id, "blindspots", body.force_refresh, prompt_suffix
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        ) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
 
+    uvicorn.run(app, host="0.0.0.0", port=8000)
