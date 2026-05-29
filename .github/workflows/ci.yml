@@ -18,6 +18,7 @@ jobs:
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
+      - run: npm test
 
   backend:
     runs-on: ubuntu-latest
@@ -29,3 +30,18 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: ruff check api/
+      - run: pytest tests/unit/ -v
+
+  e2e:
+    runs-on: ubuntu-latest
+    if: false  # Enable in Phase 2 when staging environment is ready
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
