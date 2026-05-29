@@ -251,7 +251,6 @@ async def duplicate_survey(survey_id: str):
     """Duplicate an existing survey and its questions"""
     try:
         # 1. Fetch original survey
-        print("in try")
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
@@ -1060,7 +1059,6 @@ async def get_raffle_email():
     Handles any exceptions that may occur during the database query.
     """
     try:
-        print("in try")
         positions = await _get_random_email_position()
         emails = []
         for position in positions: 
