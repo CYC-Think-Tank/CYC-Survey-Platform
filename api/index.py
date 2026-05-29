@@ -13,7 +13,6 @@ import re
 from datetime import datetime
 import io
 import traceback
-import math
 import pdfplumber
 import httpx
 import json as json_module

@@ -20,7 +20,7 @@ vi.mock('@/contexts/LanguageContext', () => ({
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    img: ({ ...props }: any) => <img {...props} />,
+    img: ({ alt, ...props }: any) => <img alt={alt || ''} {...props} />,
     h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
   },
   useMotionValue: () => ({ set: vi.fn() }),
