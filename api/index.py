@@ -1153,7 +1153,9 @@ async def get_survey_summary(survey_id: str):
                     if a.get("answer_text"):
                         txt = a["answer_text"]
                         counts[txt] = counts.get(txt, 0) + 1
-                mode_data = calculate_mode(counts)
+                modes = calculate_mode(counts)
+                max_count = max(counts.values()) if counts else 0
+                mode_data = {"modes": modes, "count": max_count}
                 stats[qid] = {
                     "counts": counts,
                     "sample_size": len(ans),
@@ -1168,7 +1170,9 @@ async def get_survey_summary(survey_id: str):
                     if opts:
                         for o in opts:
                             counts[o] = counts.get(o, 0) + a.get("weight", 1.0)
-                mode_data = calculate_mode(counts)
+                modes = calculate_mode(counts)
+                max_count = max(counts.values()) if counts else 0
+                mode_data = {"modes": modes, "count": max_count}
                 stats[qid] = {
                     "counts": counts,
                     "total_weighted": total_weighted,
@@ -1184,9 +1188,10 @@ async def get_survey_summary(survey_id: str):
                 median = calculate_median(nums)
                 std_dev = calculate_std_dev(nums, mean)
                 variance = std_dev ** 2
-                q_vals = calculate_quartiles(nums)
-                outliers = find_outliers(nums, q_vals["q1"], q_vals["q3"], q_vals["iqr"])
-                
+                q1, q2, q3 = calculate_quartiles(nums)
+                iqr = q3 - q1
+                outliers = find_outliers(nums, q1, q3, iqr)
+
                 stats[qid] = {
                     "sample_size": len(nums),
                     "avg": avg,
@@ -1195,7 +1200,7 @@ async def get_survey_summary(survey_id: str):
                     "variance": variance,
                     "min": min(nums) if nums else 0,
                     "max": max(nums) if nums else 0,
-                    "quartiles": q_vals,
+                    "quartiles": {"q1": q1, "q2": q2, "q3": q3, "iqr": iqr},
                     "outliers": outliers
                 }
             elif q_type == "likert_scale":
@@ -1209,8 +1214,10 @@ async def get_survey_summary(survey_id: str):
                 avg = round(mean, 1) if nums else None
                 median = round(calculate_median(nums)) if nums else 0
                 std_dev = calculate_std_dev(nums, mean)
-                mode_data = calculate_mode(counts)
-                
+                modes = calculate_mode(counts)
+                max_count = max(counts.values()) if counts else 0
+                mode_data = {"modes": modes, "count": max_count}
+
                 stats[qid] = {
                     "counts": counts,
                     "sample_size": len(nums),
