@@ -676,7 +676,7 @@ export default function SurveyPage() {
       const res = await fetch(`/api/surveys/${survey.id}/responses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, answers: submissionAnswers })
+        body: JSON.stringify({ survey_id: survey.id, email, answers: submissionAnswers })
       });
       
       if (!res.ok) throw new Error(t('Failed to submit response'));
