@@ -1,3 +1,18 @@
+[project]
+name = "cyc-survey-platform"
+version = "0.1.0"
+description = "CYC Survey Platform"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi",
+    "httpx",
+    "pdfplumber",
+    "python-dotenv",
+    "pydantic",
+    "supabase",
+    "uvicorn",
+]
+
 [tool.ruff]
 target-version = "py312"
 
