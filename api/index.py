@@ -40,10 +40,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "backend"}
+
 
 load_dotenv(dotenv_path=".env.local")
 
