@@ -14,7 +14,7 @@ CREATE TABLE surveys (
 );
 
 -- Question Types Enum
-CREATE TYPE question_type AS ENUM ('multiple_choice', 'short_answer', 'rating_scale', 'checkboxes', 'likert_scale', 'ranking');
+CREATE TYPE question_type AS ENUM ('multiple_choice', 'short_answer', 'rating_scale', 'checkboxes', 'likert_scale', 'ranking', 'dropdown', 'section_header');
 
 -- Questions Table
 CREATE TABLE questions (
@@ -23,7 +23,7 @@ CREATE TABLE questions (
     question_text TEXT NOT NULL,
     type question_type NOT NULL,
     order_index INTEGER NOT NULL,
-    options JSONB, -- Array of strings for multiple choice/checkboxes
+    options JSONB, -- Array of strings for multiple choice/checkboxes or structured options
     is_required BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
@@ -32,9 +32,16 @@ CREATE TABLE questions (
 CREATE TABLE response_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     survey_id UUID REFERENCES surveys(id) ON DELETE CASCADE,
+    email TEXT,
+    referral_source TEXT,
+    language VARCHAR(10), -- 'en', 'fr', 'zh', or NULL for legacy
     started_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
     completed_at TIMESTAMP WITH TIME ZONE,
-    is_completed BOOLEAN DEFAULT false
+    is_completed BOOLEAN DEFAULT false,
+    current_step INTEGER DEFAULT 0,
+    attention_check_failures INTEGER DEFAULT 0,
+    weight NUMERIC(3,2) DEFAULT 1.0,
+    is_valid BOOLEAN DEFAULT true
 );
 
 -- Individual Answers Table
@@ -44,7 +51,8 @@ CREATE TABLE answers (
     question_id UUID REFERENCES questions(id) ON DELETE CASCADE,
     answer_text TEXT,
     answer_numeric INTEGER,
-    answer_options JSONB, -- For checkboxes
+    answer_options JSONB, -- For checkboxes / ranking
+    time_spent INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
 
