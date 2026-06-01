@@ -47,12 +47,18 @@ async def health_check():
     return {"status": "ok", "service": "backend"}
 
 
-load_dotenv(dotenv_path=".env.local")
+# Load .env.local only for local development; on Vercel env vars are injected directly
+load_dotenv(dotenv_path=".env.local", override=False)
 
 # Supabase Configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-# Fallback to the secret key provided for backend operations
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError(
+        "SUPABASE_URL and SUPABASE_KEY environment variables must be set. "
+        "On Vercel, add them in Settings → Environment Variables."
+    )
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
