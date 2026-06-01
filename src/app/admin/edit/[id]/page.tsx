@@ -312,6 +312,11 @@ export default function EditSurvey() {
         const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
         arr[index] = value;
         return { ...q, options_fr: arr };
+      } else if (language === 'zh') {
+        const base = getOptionsArray(q.options_zh);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr[index] = value;
+        return { ...q, options_zh: arr };
       } else {
         const isArr = Array.isArray(q.options);
         const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
@@ -404,6 +409,11 @@ export default function EditSurvey() {
         if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
         newDefs[index] = { ...newDefs[index], [field]: value };
         return { ...q, definitions_fr: newDefs };
+      } else if (language === 'zh') {
+        const newDefs = [...(q.definitions_zh || q.definitions || [])];
+        if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
+        newDefs[index] = { ...newDefs[index], [field]: value };
+        return { ...q, definitions_zh: newDefs };
       } else {
         const newDefs = [...(q.definitions || [])];
         if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
@@ -750,11 +760,11 @@ export default function EditSurvey() {
             <input
               type="text"
               required={language === 'en'}
-              value={language === 'en' ? title : titleFr}
-              onChange={(e) => language === 'en' ? setTitle(e.target.value) : setTitleFr(e.target.value)}
+              value={language === 'en' ? title : language === 'zh' ? titleZh : titleFr}
+              onChange={(e) => language === 'en' ? setTitle(e.target.value) : language === 'zh' ? setTitleZh(e.target.value) : setTitleFr(e.target.value)}
               disabled={isLocked && language === 'en'}
               className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
-              placeholder={language === 'fr' ? "Titre en francais" : "Survey Title"}
+              placeholder={language === 'fr' ? "Titre en francais" : language === 'zh' ? "调查标题" : "Survey Title"}
             />
           </div>
           <div>
@@ -775,10 +785,10 @@ export default function EditSurvey() {
               </div>
             )}
             <RichTextEditor
-              value={language === 'en' ? description : descriptionFr}
-              onChange={(val) => language === 'en' ? setDescription(val) : setDescriptionFr(val)}
+              value={language === 'en' ? description : language === 'zh' ? descriptionZh : descriptionFr}
+              onChange={(val) => language === 'en' ? setDescription(val) : language === 'zh' ? setDescriptionZh(val) : setDescriptionFr(val)}
               readOnly={isLocked && language === 'en'}
-              placeholder={language === 'fr' ? "De quoi s'agit-il?" : "What is this survey about?"}
+              placeholder={language === 'fr' ? "De quoi s'agit-il?" : language === 'zh' ? "这个调查是关于什么的？" : "What is this survey about?"}
             />
           </div>
           {/* Thumbnail Upload */}
@@ -890,10 +900,10 @@ export default function EditSurvey() {
                     <input
                       type="text"
                       required={language === 'en'}
-                      value={language === 'en' ? q.question_text : (q.question_text_fr || '')}
-                      onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_text' : 'question_text_fr', e.target.value)}
+                      value={language === 'en' ? q.question_text : language === 'zh' ? (q.question_text_zh || '') : (q.question_text_fr || '')}
+                      onChange={(e) => updateQuestion(q.id, language === 'en' ? 'question_text' : language === 'zh' ? 'question_text_zh' : 'question_text_fr', e.target.value)}
                       disabled={isLocked && language === 'en'}
-                      placeholder={language === 'fr' ? "Traduction française" : "Question Text"}
+                      placeholder={language === 'fr' ? "Traduction française" : language === 'zh' ? "中文翻译" : "Question Text"}
                       className="w-full p-2 border rounded font-medium focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                     />
                   </div>
@@ -1059,7 +1069,7 @@ export default function EditSurvey() {
                           type="text"
                           value={opt}
                           required={language === 'en'}
-                          placeholder={language === 'fr' ? (getOptionsArray(q.options)[oIdx] || `Option ${oIdx + 1} (Francais)`) : `Option ${oIdx + 1}`}
+                          placeholder={language === 'fr' ? (getOptionsArray(q.options)[oIdx] || `Option ${oIdx + 1} (Français)`) : language === 'zh' ? (getOptionsArray(q.options)[oIdx] || `选项 ${oIdx + 1}`) : `Option ${oIdx + 1}`}
                           onChange={(e) => updateOption(q.id, oIdx, e.target.value)}
                           className={`flex-grow p-1.5 border-b focus:border-[var(--color-cyc-primary)] focus:outline-none bg-transparent ${language === 'fr' ? 'border-blue-200 focus:border-blue-500' : ''}`}
                         />
@@ -1095,10 +1105,10 @@ export default function EditSurvey() {
                     </div>
                   </div>
                       <RichTextEditor
-                        value={language === 'en' ? (q.section_description || '') : (q.section_description_fr || '')}
-                        onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : 'section_description_fr', val)}
+                        value={language === 'en' ? (q.section_description || '') : language === 'zh' ? (q.section_description_zh || '') : (q.section_description_fr || '')}
+                        onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : language === 'zh' ? 'section_description_zh' : 'section_description_fr', val)}
                         readOnly={isLocked && language === 'en'}
-                        placeholder={language === 'en' ? "Provide context or instructions before the next set of questions..." : "Traduction française du contexte..."}
+                        placeholder={language === 'en' ? "Provide context or instructions before the next set of questions..." : language === 'zh' ? "中文翻译..." : "Traduction française du contexte..."}
                       />
                     </div>
                     <div className={language !== 'en' || isLocked ? 'hidden' : ''}>
@@ -1129,7 +1139,7 @@ export default function EditSurvey() {
                 </div>
                 {q.definitions && q.definitions.length > 0 && (
                   <div className="space-y-2">
-                    {(language === 'en' ? q.definitions : (q.definitions_fr || q.definitions)).map((def, dIdx) => (
+                    {(language === 'en' ? q.definitions : language === 'zh' ? (q.definitions_zh || q.definitions) : (q.definitions_fr || q.definitions)).map((def, dIdx) => (
                       <div key={dIdx} className="flex items-start space-x-2">
                         <div className="w-1/3">
                           <input

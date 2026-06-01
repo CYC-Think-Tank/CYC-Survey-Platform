@@ -458,7 +458,7 @@ export default function SurveyPage() {
     }
     return opts.choices;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestion?.id]);
+  }, [currentQuestion?.id, language]);
 
   useEffect(() => {
     if (currentQuestion?.type === 'ranking' && !answers[currentQuestion.id] && displayChoices.length > 0) {

@@ -186,6 +186,11 @@ export default function CreateSurvey() {
         const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
         arr[index] = value;
         return { ...q, options_fr: arr };
+      } else if (language === 'zh') {
+        const base = getOptionsArray(q.options_zh);
+        const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+        arr[index] = value;
+        return { ...q, options_zh: arr };
       }
       const newOptions = [...q.options];
       newOptions[index] = value;
@@ -205,6 +210,8 @@ export default function CreateSurvey() {
       if (q.id !== qId) return q;
       if (language === 'fr') {
         return { ...q, definitions_fr: [...(q.definitions_fr || []), { term: '', definition: '' }] };
+      } else if (language === 'zh') {
+        return { ...q, definitions_zh: [...(q.definitions_zh || []), { term: '', definition: '' }] };
       }
       return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
     }));
@@ -218,6 +225,11 @@ export default function CreateSurvey() {
         if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
         newDefs[index] = { ...newDefs[index], [field]: value };
         return { ...q, definitions_fr: newDefs };
+      } else if (language === 'zh') {
+        const newDefs = [...(q.definitions_zh || q.definitions || [])];
+        if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
+        newDefs[index] = { ...newDefs[index], [field]: value };
+        return { ...q, definitions_zh: newDefs };
       }
       const newDefs = [...(q.definitions || [])];
       newDefs[index] = { ...newDefs[index], [field]: value };
@@ -530,15 +542,15 @@ export default function CreateSurvey() {
         <div className="card space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Survey Title</label>
-            {language === 'fr' && (
+            {language !== 'en' && (
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-1 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                 {title || "No English title provided"}
               </div>
             )}
-            <input type="text" required={language === 'en'} value={language === 'en' ? title : titleFr}
-              onChange={(e) => language === 'en' ? setTitle(e.target.value) : setTitleFr(e.target.value)}
+            <input type="text" required={language === 'en'} value={language === 'en' ? title : language === 'zh' ? titleZh : titleFr}
+              onChange={(e) => language === 'en' ? setTitle(e.target.value) : language === 'zh' ? setTitleZh(e.target.value) : setTitleFr(e.target.value)}
               className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
-              placeholder={language === 'fr' ? 'Titre en francais' : 'e.g. Mental Health Perspectives 2026'} />
+              placeholder={language === 'fr' ? 'Titre en francais' : language === 'zh' ? '调查标题' : 'e.g. Mental Health Perspectives 2026'} />
           </div>
           <div>
             <div className="flex justify-between items-center mb-1">
@@ -552,15 +564,15 @@ export default function CreateSurvey() {
                 </select>
               </div>
             </div>
-            {language === 'fr' && (
+            {language !== 'en' && (
               <div className="text-sm text-gray-500 dark:text-slate-400 mb-2 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                 {description || "No English description provided"}
               </div>
             )}
             <RichTextEditor
-              value={language === 'en' ? description : descriptionFr}
-              onChange={(val) => language === 'en' ? setDescription(val) : setDescriptionFr(val)}
-              placeholder={language === 'fr' ? "De quoi s'agit-il?" : "What is this survey about?"}
+              value={language === 'en' ? description : language === 'zh' ? descriptionZh : descriptionFr}
+              onChange={(val) => language === 'en' ? setDescription(val) : language === 'zh' ? setDescriptionZh(val) : setDescriptionFr(val)}
+              placeholder={language === 'fr' ? "De quoi s'agit-il?" : language === 'zh' ? "这个调查是关于什么的？" : "What is this survey about?"}
             />
           </div>
 
@@ -629,15 +641,15 @@ export default function CreateSurvey() {
                 <span className="font-bold text-gray-400 dark:text-slate-500 mt-8 w-6 text-right">{q.type === 'section_header' ? '§' : `Q${qIdx + 1}`}</span>
                 <div className="flex-grow">
                   <label className="block text-sm font-medium text-gray-600 dark:text-slate-400 capitalize mb-1">{q.type.replace('_', ' ')}</label>
-                  {language === 'fr' && (
+                  {language !== 'en' && (
                     <div className="text-sm text-gray-500 dark:text-slate-400 mb-2 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                       {q.question_text || "No English text provided"}
                     </div>
                   )}
                   <RichTextEditor
-                    value={language === 'en' ? q.question_text : (q.question_text_fr || '')}
-                    onChange={(val) => updateQuestion(q.id, language === 'en' ? 'question_text' : 'question_text_fr', val)}
-                    placeholder={language === 'en' ? (q.type === 'section_header' ? 'Section Title' : 'Type your question here...') : 'Traduction francaise'}
+                    value={language === 'en' ? q.question_text : language === 'zh' ? (q.question_text_zh || '') : (q.question_text_fr || '')}
+                    onChange={(val) => updateQuestion(q.id, language === 'en' ? 'question_text' : language === 'zh' ? 'question_text_zh' : 'question_text_fr', val)}
+                    placeholder={language === 'en' ? (q.type === 'section_header' ? 'Section Title' : 'Type your question here...') : language === 'zh' ? '中文翻译' : 'Traduction francaise'}
                   />
                 </div>
               </div>
@@ -797,9 +809,9 @@ export default function CreateSurvey() {
                     </div>
                   </div>
                     <RichTextEditor
-                        value={language === 'en' ? (q.section_description || '') : (q.section_description_fr || '')}
-                        onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : 'section_description_fr', val)}
-                        placeholder={language === 'en' ? 'Provide context or instructions before the next set of questions...' : 'Traduction francaise du contexte...'}
+                        value={language === 'en' ? (q.section_description || '') : language === 'zh' ? (q.section_description_zh || '') : (q.section_description_fr || '')}
+                        onChange={(val) => updateQuestion(q.id, language === 'en' ? 'section_description' : language === 'zh' ? 'section_description_zh' : 'section_description_fr', val)}
+                        placeholder={language === 'en' ? 'Provide context or instructions before the next set of questions...' : language === 'zh' ? '中文翻译...' : 'Traduction francaise du contexte...'}
                       />
                   </div>
                   <div className={language !== 'en' ? 'hidden' : ''}>
@@ -857,22 +869,22 @@ export default function CreateSurvey() {
                     + Add Definition
                   </button>
                 </div>
-                {((language === 'en' ? q.definitions : (q.definitions_fr || q.definitions)) || []).length > 0 && (
+                {((language === 'en' ? q.definitions : language === 'zh' ? (q.definitions_zh || q.definitions) : (q.definitions_fr || q.definitions)) || []).length > 0 && (
                   <div className="space-y-2">
-                    {(language === 'en' ? (q.definitions || []) : (q.definitions_fr || q.definitions || [])).map((def, dIdx) => (
+                    {(language === 'en' ? (q.definitions || []) : language === 'zh' ? (q.definitions_zh || q.definitions || []) : (q.definitions_fr || q.definitions || [])).map((def, dIdx) => (
                       <div key={dIdx} className="flex items-start space-x-2">
                         <input
                           type="text"
                           value={def.term}
                           onChange={(e) => updateDefinition(q.id, dIdx, 'term', e.target.value)}
-                          placeholder={language === 'fr' ? (q.definitions?.[dIdx]?.term || 'Terme') : 'Term to bold'}
-                          className={`w-1/3 p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm ${language === 'fr' ? 'border-blue-200' : ''}`}
+                          placeholder={language === 'fr' ? (q.definitions?.[dIdx]?.term || 'Terme') : language === 'zh' ? (q.definitions?.[dIdx]?.term || '术语') : 'Term to bold'}
+                          className={`w-1/3 p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm ${language !== 'en' ? 'border-blue-200' : ''}`}
                         />
                         <textarea
                           value={def.definition}
                           onChange={(e) => updateDefinition(q.id, dIdx, 'definition', e.target.value)}
-                          placeholder={language === 'fr' ? (q.definitions?.[dIdx]?.definition || 'Definition') : 'Definition text...'}
-                          className={`flex-grow p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm resize-none ${language === 'fr' ? 'border-blue-200' : ''}`}
+                          placeholder={language === 'fr' ? (q.definitions?.[dIdx]?.definition || 'Definition') : language === 'zh' ? (q.definitions?.[dIdx]?.definition || '定义') : 'Definition text...'}
+                          className={`flex-grow p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm resize-none ${language !== 'en' ? 'border-blue-200' : ''}`}
                           rows={2}
                         />
                         <button type="button" onClick={() => removeDefinition(q.id, dIdx)} className={`text-gray-400 dark:text-slate-500 hover:text-red-500 mt-1 ${language !== 'en' ? 'hidden' : ''}`}>
