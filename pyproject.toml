@@ -1,3 +1,9 @@
+[project]
+name = "cyc-survey-platform"
+version = "0.1.0"
+description = "CYC Survey Platform"
+requires-python = ">=3.12"
+
 [tool.ruff]
 target-version = "py312"
 
