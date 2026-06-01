@@ -4,7 +4,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn((url: string, key: string) => {
     if (!url || !key) throw new Error('Missing Supabase env vars');
     return {};
-  })
+  }),
 }));
 
 describe('Supabase Client', () => {

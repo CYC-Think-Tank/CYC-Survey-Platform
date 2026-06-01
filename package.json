@@ -9,7 +9,10 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
@@ -28,22 +31,25 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.0",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.6.0",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.4.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "husky": "^9.1.7",
+    "jsdom": "^26.0.0",
+    "lint-staged": "^17.0.5",
+    "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^3.0.0",
-    "@vitejs/plugin-react": "^4.4.0",
-    "jsdom": "^26.0.0",
-    "@testing-library/react": "^16.2.0",
-    "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/user-event": "^14.6.0",
-    "@playwright/test": "^1.50.0"
+    "vitest": "^3.0.0"
   },
   "description": "This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).",
   "main": "index.js",
