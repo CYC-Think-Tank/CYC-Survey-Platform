@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Clock, BarChart3, Globe, Users, Star } from 'lucide-react';
 
-function TiltCard({ item, isCompleted, t, isFront, children, className }: any) {
+function TiltCard({ _item, _isCompleted, _t, isFront, children, className }: any) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -226,7 +226,6 @@ export default function Home() {
   }
 
   const STEP = 360 / Math.max(items.length, 1);
-  const RX = 260;
 
   // Floating decoration data with varying depth (blur, scale, opacity, z-index)
   const decos = [

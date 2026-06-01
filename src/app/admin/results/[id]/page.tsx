@@ -13,17 +13,7 @@ import {
   ChevronUp,
   Calculator,
   Sparkles,
-  Lightbulb,
-  TrendingUp,
-  Users,
   AlertTriangle,
-  Target,
-  Zap,
-  RefreshCw,
-  Brain,
-  Eye,
-  Search,
-  Layers,
   Globe,
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
