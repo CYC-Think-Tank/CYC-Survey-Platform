@@ -73,18 +73,6 @@ export default function SurveyPage() {
   const [timeSpentAccumulator, setTimeSpentAccumulator] = useState<Record<string, number>>({});
 
 
-  // Initialize email from URL or global cache
-  useEffect(() => {
-    const urlEmail = searchParams.get('email');
-    if (urlEmail) {
-      setEmail(urlEmail);
-    } else {
-      const globalEmail = localStorage.getItem('cyc_global_email');
-      if (globalEmail) setEmail(globalEmail);
-    }
-  }, [searchParams]);
-
-
   // Inactivity tracking
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -113,7 +101,40 @@ export default function SurveyPage() {
     };
   }, [currentStep, inactivityTriggered, inactivityChecksShown]);
 
+  // Reset all per-survey state whenever the survey ID changes
   useEffect(() => {
+    setSurvey(null);
+    setAlreadyCompleted(false);
+    setHasStarted(false);
+    setCurrentStep(0);
+    setEmail('');
+    setProfileData({});
+    setSessionId(null);
+    setAnswers({});
+    setOtherTexts({});
+    setRefNumbers({});
+    setLoading(true);
+    setSubmitting(false);
+    setError('');
+    setInactivityTriggered(false);
+    setInactivityChecksShown(0);
+    setQuestionEnterTime(Date.now());
+    setTimeSpentAccumulator({});
+
+    // Initialize email from URL or global cache
+    const urlEmail = searchParams.get('email');
+    if (urlEmail) {
+      setEmail(urlEmail);
+    } else {
+      const globalEmail = localStorage.getItem('cyc_global_email');
+      if (globalEmail) setEmail(globalEmail);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!params.id) return;
+
     Promise.all([
       fetch(`/api/surveys/${params.id}`).then(r => {
         if (!r.ok) throw new Error("Survey not found");
@@ -126,30 +147,30 @@ export default function SurveyPage() {
         if (completedSurveys.includes(data.id)) {
           setAlreadyCompleted(true);
         }
-        
-        if (translationData?.questions_fr) {
+
+        if (translationData?.questions_fr !== undefined) {
           data.questions_fr = translationData.questions_fr;
         }
-        if (translationData?.title_fr) {
+        if (translationData?.title_fr !== undefined) {
           data.title_fr = translationData.title_fr;
         }
-        if (translationData?.description_fr) {
+        if (translationData?.description_fr !== undefined) {
           data.description_fr = translationData.description_fr;
         }
-        if (translationData?.questions_zh) {
+        if (translationData?.questions_zh !== undefined) {
           data.questions_zh = translationData.questions_zh;
         }
-        if (translationData?.title_zh) {
+        if (translationData?.title_zh !== undefined) {
           data.title_zh = translationData.title_zh;
         }
-        if (translationData?.description_zh) {
+        if (translationData?.description_zh !== undefined) {
           data.description_zh = translationData.description_zh;
         }
-        
+
         setSurvey(data);
 
         // Handle attention check injections
-        let finalQuestions = data.questions || [];
+        let finalQuestions = [...(data.questions || [])];
         let loadedSaved = false;
 
         // Auto-resume from localStorage if present
@@ -175,16 +196,16 @@ export default function SurveyPage() {
             console.error("Failed to parse cached session", e);
           }
         }
-        
+
         if (!loadedSaved && finalQuestions.length > 3) {
             const total = finalQuestions.length;
             const p1 = Math.floor(total * 0.25);
             const p2 = Math.floor(total * 0.5);
             const p3 = Math.floor(total * 0.75);
-            
+
             const q1Index = p1 + Math.floor(Math.random() * Math.max(1, p2 - p1));
             const q2Index = p2 + Math.floor(Math.random() * Math.max(1, p3 - p2));
-            
+
             const attn1 = {
                 id: 'attn-fixed-1',
                 type: 'likert_scale',
@@ -199,20 +220,20 @@ export default function SurveyPage() {
                 is_required: true,
                 options: { choices: ["True", "False"] }
             };
-            
+
             finalQuestions.splice(q2Index, 0, attn2);
             finalQuestions.splice(q1Index, 0, attn1);
         }
-        
+
         setSurvey({ ...data, questions: finalQuestions });
         setLoading(false);
       })
       .catch(err => {
         console.error("Error fetching survey", err);
-        setError(t('Survey not found or unavailable.'));
+        setError('Survey not found or unavailable.');
         setLoading(false);
       });
-  }, [params.id, t]);
+  }, [params.id]);
 
   // Sync state changes to localStorage for robust resume support
   useEffect(() => {
@@ -375,13 +396,13 @@ export default function SurveyPage() {
     if (language === 'fr' && survey?.questions_fr) {
       const frQ = survey.questions_fr.find((q: any) => q.id === finalQ.id);
       if (frQ) {
-        finalQ.question_text = frQ.question_text;
+        if (frQ.question_text && frQ.question_text.trim()) finalQ.question_text = frQ.question_text;
         finalQ.options = frQ.options;
       }
     } else if (language === 'zh' && survey?.questions_zh) {
       const zhQ = survey.questions_zh.find((q: any) => q.id === finalQ.id);
       if (zhQ) {
-        finalQ.question_text = zhQ.question_text;
+        if (zhQ.question_text && zhQ.question_text.trim()) finalQ.question_text = zhQ.question_text;
         finalQ.options = zhQ.options;
       }
     }
@@ -458,7 +479,7 @@ export default function SurveyPage() {
     }
     return opts.choices;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentQuestion?.id]);
+  }, [currentQuestion?.id, language]);
 
   useEffect(() => {
     if (currentQuestion?.type === 'ranking' && !answers[currentQuestion.id] && displayChoices.length > 0) {
