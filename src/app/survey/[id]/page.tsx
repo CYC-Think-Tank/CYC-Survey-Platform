@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { ArrowRight, CheckCircle2, FileText, Download } from 'lucide-react';
-import parse, { domToReact, Element, Text } from 'html-react-parser';
+import parse from 'html-react-parser';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const RichTextRenderer = ({
@@ -744,37 +744,6 @@ export default function SurveyPage() {
       </div>
     );
   }
-
-  // Save the current answer to backend
-  const saveCurrentAnswer = async (sid: string, questionIdx: number) => {
-    const question = survey.questions[questionIdx];
-    if (!question || question.type === 'section_header' || question.id.startsWith('attn-')) return;
-    const val = answers[question.id];
-    if (val === undefined) return;
-
-    const currentSessionTime = Date.now() - questionEnterTime;
-    const body: any = {
-      question_id: question.id,
-      time_spent: Math.floor((timeSpentAccumulator[question.id] || 0) + currentSessionTime),
-    };
-    if (
-      question.type === 'multiple_choice' ||
-      question.type === 'short_answer' ||
-      question.type === 'dropdown'
-    ) {
-      body.answer_text = val;
-    } else if (question.type === 'rating_scale' || question.type === 'likert_scale') {
-      body.answer_numeric = val;
-    } else if (question.type === 'checkboxes' || question.type === 'ranking') {
-      body.answer_options = val;
-    }
-
-    await fetch(`/api/sessions/${sid}/answers`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).catch(() => {});
-  };
 
   async function handleNext() {
     if (isEmailStep) {
