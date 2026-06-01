@@ -886,7 +886,7 @@ export default function SurveyPage() {
       const res = await fetch(`/api/surveys/${survey.id}/responses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, answers: submissionAnswers, language })
+        body: JSON.stringify({ email, answers: submissionAnswers, language, referral_source: referralSource })
       });
       
       if (!res.ok) {
