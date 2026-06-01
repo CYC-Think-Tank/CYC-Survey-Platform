@@ -13,7 +13,18 @@ import {
   ChevronUp,
   Calculator,
   Sparkles,
+  Lightbulb,
+  TrendingUp,
+  Users,
   AlertTriangle,
+  Target,
+  Zap,
+  RefreshCw,
+  Brain,
+  Eye,
+  Search,
+  Layers,
+  Globe,
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
 
@@ -30,6 +41,7 @@ interface Response {
   session_id: string;
   completed_at: string | null;
   answers: Answer[];
+  language?: string | null;
   attention_check_failures?: number;
   weight?: number;
   is_valid?: boolean;
@@ -647,6 +659,51 @@ export default function ResultsPage() {
                 </div>
               )}
 
+              {/* Language Breakdown */}
+              {data.language_breakdown && Object.keys(data.language_breakdown).length > 0 && (
+                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                  <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
+                    <Globe className="w-4 h-4 mr-2" />
+                    Language Breakdown
+                  </h3>
+                  <p className="text-xs text-gray-400 mb-4">
+                    Which language users completed the survey in
+                  </p>
+                  <div className="space-y-3">
+                    {Object.entries(data.language_breakdown as Record<string, number>)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([lang, count]) => {
+                        const label =
+                          lang === 'en'
+                            ? 'English'
+                            : lang === 'fr'
+                              ? 'Français'
+                              : lang === 'zh'
+                                ? '中文'
+                                : lang;
+                        const pct =
+                          total_responses > 0 ? Math.round((count / total_responses) * 100) : 0;
+                        return (
+                          <div key={lang}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="font-medium text-gray-700">{label}</span>
+                              <span className="text-gray-500">
+                                {count} ({pct}%)
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-2.5">
+                              <div
+                                className="bg-[var(--color-cyc-accent)] h-2.5 rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
               {questions.map((q: Question, idx: number) => (
                 <div key={q.id} className="bg-white rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1">
@@ -713,6 +770,28 @@ export default function ResultsPage() {
                   <span className="font-bold text-[var(--color-cyc-secondary)]">
                     {paginatedTotal}
                   </span>
+                  {currentResp.language && (
+                    <div
+                      className={`mt-2 inline-flex items-center px-2 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${
+                        currentResp.language === 'en'
+                          ? 'bg-blue-100 text-blue-700'
+                          : currentResp.language === 'fr'
+                            ? 'bg-purple-100 text-purple-700'
+                            : currentResp.language === 'zh'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      <Globe className="w-3 h-3 mr-1" />
+                      {currentResp.language === 'en'
+                        ? 'English'
+                        : currentResp.language === 'fr'
+                          ? 'Français'
+                          : currentResp.language === 'zh'
+                            ? '中文'
+                            : currentResp.language}
+                    </div>
+                  )}
                   {currentResp.attention_check_failures &&
                   currentResp.attention_check_failures > 0 ? (
                     <div className="mt-2 inline-flex items-center px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-full uppercase tracking-wider">

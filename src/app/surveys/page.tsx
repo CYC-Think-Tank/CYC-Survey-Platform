@@ -27,6 +27,8 @@ export default function SurveysPage() {
                 ...survey,
                 title_fr: tr?.title_fr,
                 description_fr: tr?.description_fr,
+                title_zh: tr?.title_zh,
+                description_zh: tr?.description_zh,
               };
             } catch {
               return survey;
@@ -64,10 +66,17 @@ export default function SurveysPage() {
         {surveys.map((item, idx) => {
           const isCompleted = completedIds.includes(item.id);
           const displayTitle =
-            (language === 'fr' && item.title_fr ? item.title_fr : item.title) || item.title;
+            (language === 'zh' && item.title_zh
+              ? item.title_zh
+              : language === 'fr' && item.title_fr
+                ? item.title_fr
+                : item.title) || item.title;
           const displayDescription =
-            (language === 'fr' && item.description_fr ? item.description_fr : item.description) ||
-            item.description;
+            (language === 'zh' && item.description_zh
+              ? item.description_zh
+              : language === 'fr' && item.description_fr
+                ? item.description_fr
+                : item.description) || item.description;
           return (
             <motion.div
               key={item.id}
