@@ -12,7 +12,10 @@
     "test:e2e": "playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose up --build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
