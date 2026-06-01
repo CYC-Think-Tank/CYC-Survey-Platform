@@ -78,9 +78,9 @@ class AnswerCreate(BaseModel):
     time_spent: Optional[int] = 0
 
 class ResponseSubmission(BaseModel):
-    survey_id: str
     email: str
     answers: List[AnswerCreate]
+    language: Optional[str] = None
 
 # Routes
 
@@ -895,14 +895,25 @@ async def upsert_answer(session_id: str, body: AnswerUpsert):
                         if not re.match(regex_str, val):
                             raise HTTPException(status_code=422, detail=f"Answer must match pattern: {regex_str}")
 
-        supabase.table("answers").upsert({
+        answer_data = {
             "session_id": session_id,
             "question_id": body.question_id,
             "answer_text": body.answer_text,
             "answer_numeric": body.answer_numeric,
             "answer_options": body.answer_options,
-            "time_spent": body.time_spent
-        }, on_conflict="session_id,question_id").execute()
+        }
+        if body.time_spent is not None:
+            answer_data["time_spent"] = body.time_spent
+        try:
+            supabase.table("answers").upsert(answer_data, on_conflict="session_id,question_id").execute()
+        except Exception as insert_err:
+            err_str = str(insert_err).lower()
+            if "time_spent" in err_str and ("does not exist" in err_str or "column" in err_str):
+                print("[upsert_answer] time_spent column missing, retrying without it")
+                answer_data.pop("time_spent", None)
+                supabase.table("answers").upsert(answer_data, on_conflict="session_id,question_id").execute()
+            else:
+                raise
 
         return {"status": "saved"}
     except HTTPException:
@@ -969,31 +980,48 @@ async def complete_session(session_id: str):
 async def submit_response(survey_id: str, submission: ResponseSubmission):
     """Legacy: Submit a full response at once (fallback)."""
     try:
-        session_res = supabase.table("response_sessions").insert({
+        session_data = {
             "survey_id": survey_id,
             "email": submission.email,
             "is_completed": True,
             "completed_at": datetime.utcnow().isoformat()
-        }).execute()
+        }
+        if submission.language:
+            session_data["language"] = submission.language
+        session_res = supabase.table("response_sessions").insert(session_data).execute()
         
         session_id = session_res.data[0]["id"]
         
         answers_to_insert = []
         for answer in submission.answers:
-            answers_to_insert.append({
+            item = {
                 "session_id": session_id,
                 "question_id": answer.question_id,
                 "answer_text": answer.answer_text,
                 "answer_numeric": answer.answer_numeric,
                 "answer_options": answer.answer_options,
-                "time_spent": answer.time_spent
-            })
+            }
+            if answer.time_spent is not None:
+                item["time_spent"] = answer.time_spent
+            answers_to_insert.append(item)
             
         if answers_to_insert:
-            supabase.table("answers").insert(answers_to_insert).execute()
+            try:
+                supabase.table("answers").insert(answers_to_insert).execute()
+            except Exception as insert_err:
+                err_str = str(insert_err).lower()
+                # If time_spent column is missing, retry without it
+                if "time_spent" in err_str and ("does not exist" in err_str or "column" in err_str):
+                    print("[submit_response] time_spent column missing, retrying without it")
+                    for item in answers_to_insert:
+                        item.pop("time_spent", None)
+                    supabase.table("answers").insert(answers_to_insert).execute()
+                else:
+                    raise
             
         return {"status": "success", "session_id": session_id}
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -1069,11 +1097,19 @@ async def get_survey_results(survey_id: str):
             ref = row.get("referral_source") or "Direct"
             referral_counts[ref] = referral_counts.get(ref, 0) + 1
 
+        # Get language breakdown
+        lang_res = supabase.table("response_sessions").select("language").eq("survey_id", survey_id).execute()
+        language_counts = {}
+        for row in lang_res.data:
+            lang = row.get("language") or "Unknown"
+            language_counts[lang] = language_counts.get(lang, 0) + 1
+
         return {
             "survey": survey,
             "questions": questions,
             "total_responses": total_responses,
-            "referral_breakdown": referral_counts
+            "referral_breakdown": referral_counts,
+            "language_breakdown": language_counts
         }
     except HTTPException:
         raise
@@ -1116,6 +1152,7 @@ async def get_survey_responses_paginated(survey_id: str, offset: int = 0, limit:
                 "session_id": s["id"],
                 "completed_at": s.get("completed_at"),
                 "referral_source": s.get("referral_source"),
+                "language": s.get("language"),
                 "attention_check_failures": s.get("attention_check_failures", 0),
                 "weight": s.get("weight", 1.0),
                 "is_valid": s.get("is_valid", True),

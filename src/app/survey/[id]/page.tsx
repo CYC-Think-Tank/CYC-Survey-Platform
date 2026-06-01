@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { ArrowRight, CheckCircle2, FileText, Download } from 'lucide-react';
@@ -72,6 +72,8 @@ export default function SurveyPage() {
   const [questionEnterTime, setQuestionEnterTime] = useState<number>(Date.now());
   const [timeSpentAccumulator, setTimeSpentAccumulator] = useState<Record<string, number>>({});
 
+  // Track previous language so we can remap choice-based answers when the user switches languages
+  const prevLanguageRef = useRef(language);
 
   // Inactivity tracking
   useEffect(() => {
@@ -100,6 +102,19 @@ export default function SurveyPage() {
       window.removeEventListener('click', resetTimer);
     };
   }, [currentStep, inactivityTriggered, inactivityChecksShown]);
+
+  // Remap choice-based answers when the user switches languages while the survey is mounted
+  useEffect(() => {
+    if (!survey || language === prevLanguageRef.current) return;
+    const oldLang = prevLanguageRef.current;
+
+    setAnswers(prevAnswers => {
+      const remapped = remapAnswers(prevAnswers, oldLang, language, survey);
+      return remapped;
+    });
+
+    prevLanguageRef.current = language;
+  }, [language, survey]);
 
   // Reset all per-survey state whenever the survey ID changes
   useEffect(() => {
@@ -179,9 +194,16 @@ export default function SurveyPage() {
           try {
             const parsed = JSON.parse(savedSession);
             if (parsed.sessionId) {
+              const savedLang = parsed.answerLanguage || 'en';
+              let restoredAnswers = parsed.answers || {};
+              // If the survey was saved in a different language, remap choice answers
+              // so they match the currently selected language's option texts
+              if (savedLang !== language) {
+                restoredAnswers = remapAnswers(restoredAnswers, savedLang, language, data);
+              }
               setSessionId(parsed.sessionId);
               setEmail(parsed.email || '');
-              setAnswers(parsed.answers || {});
+              setAnswers(restoredAnswers);
               setOtherTexts(parsed.otherTexts || {});
               setRefNumbers(parsed.refNumbers || {});
               setCurrentStep(parsed.currentStep !== undefined ? parsed.currentStep : 1);
@@ -246,10 +268,11 @@ export default function SurveyPage() {
         refNumbers,
         currentStep,
         injectedQuestions: survey.questions,
-        inactivityChecksShown
+        inactivityChecksShown,
+        answerLanguage: language
       }));
     }
-  }, [survey, sessionId, email, answers, otherTexts, refNumbers, currentStep]);
+  }, [survey, sessionId, email, answers, otherTexts, refNumbers, currentStep, language]);
 
   // Auto-save the active question's answer to the database in the background on change
   useEffect(() => {
@@ -447,6 +470,108 @@ export default function SurveyPage() {
     return arr;
   };
 
+  // Get the translated version of a question for a given language
+  const getTranslatedQuestion = (q: any, lang: string, surveyData: any) => {
+    if (lang === 'en') return q;
+    const translatedList = lang === 'fr' ? surveyData.questions_fr : surveyData.questions_zh;
+    if (!translatedList) return q;
+    return translatedList.find((tq: any) => tq.id === q.id) || q;
+  };
+
+  // Remap choice-based answers from one language to another so selections survive language switches
+  const remapAnswers = (existingAnswers: Record<string, any>, fromLang: string, toLang: string, surveyData: any): Record<string, any> => {
+    if (fromLang === toLang) return existingAnswers;
+
+    const newAnswers = { ...existingAnswers };
+    let changed = false;
+
+    (surveyData.questions || []).forEach((q: any) => {
+      const answer = existingAnswers[q.id];
+      if (answer === undefined || answer === null) return;
+
+      // Attention checks have hardcoded translations — handle them separately
+      if (q.id?.startsWith('attn-')) {
+        const map: Record<string, Record<string, string>> = {
+          'attn-fixed-2': { True: 'Vrai', False: 'Faux' },
+          'attn-inact-1': { No: 'Non', Yes: 'Oui', Maybe: 'Peut-être' },
+        };
+        const zhMap: Record<string, Record<string, string>> = {
+          'attn-fixed-2': { True: '正确', False: '错误' },
+          'attn-inact-1': { No: '否', Yes: '是', Maybe: '也许' },
+        };
+
+        if (q.type === 'multiple_choice' || q.type === 'dropdown') {
+          if (typeof answer === 'string') {
+            let mapped: string | undefined;
+            if (toLang === 'fr') mapped = map[q.id]?.[answer];
+            else if (toLang === 'zh') mapped = zhMap[q.id]?.[answer];
+            else if (fromLang !== 'en') {
+              // Mapping back to English — reverse lookup
+              const revMap = Object.fromEntries(Object.entries(map[q.id] || {}).map(([k, v]) => [v, k]));
+              const revZhMap = Object.fromEntries(Object.entries(zhMap[q.id] || {}).map(([k, v]) => [v, k]));
+              mapped = revMap[answer] ?? revZhMap[answer];
+            }
+            if (mapped !== undefined) {
+              newAnswers[q.id] = mapped;
+              changed = true;
+            }
+          }
+        }
+        return;
+      }
+
+      if (q.type !== 'multiple_choice' && q.type !== 'checkboxes' &&
+          q.type !== 'dropdown' && q.type !== 'ranking') {
+        return;
+      }
+
+      const fromQ = getTranslatedQuestion(q, fromLang, surveyData);
+      const toQ = getTranslatedQuestion(q, toLang, surveyData);
+      const fromOpts = getOpts(fromQ).choices;
+      const toOpts = getOpts(toQ).choices;
+
+      if (!fromOpts.length || !toOpts.length || fromOpts.length !== toOpts.length) return;
+
+      if (q.type === 'multiple_choice' || q.type === 'dropdown') {
+        if (typeof answer === 'string') {
+          if (answer.startsWith('Other: ')) return; // user-typed text, keep as-is
+          const idx = fromOpts.indexOf(answer);
+          if (idx !== -1 && idx < toOpts.length) {
+            newAnswers[q.id] = toOpts[idx];
+            changed = true;
+          }
+        }
+      } else if (q.type === 'checkboxes') {
+        if (Array.isArray(answer)) {
+          const newArr = answer.map((val: string) => {
+            if (val.startsWith('Other: ')) return val;
+            const idx = fromOpts.indexOf(val);
+            if (idx !== -1 && idx < toOpts.length) return toOpts[idx];
+            return val;
+          });
+          if (JSON.stringify(newArr) !== JSON.stringify(answer)) {
+            newAnswers[q.id] = newArr;
+            changed = true;
+          }
+        }
+      } else if (q.type === 'ranking') {
+        if (Array.isArray(answer)) {
+          const newArr = answer.map((val: string) => {
+            const idx = fromOpts.indexOf(val);
+            if (idx !== -1 && idx < toOpts.length) return toOpts[idx];
+            return val;
+          });
+          if (JSON.stringify(newArr) !== JSON.stringify(answer)) {
+            newAnswers[q.id] = newArr;
+            changed = true;
+          }
+        }
+      }
+    });
+
+    return changed ? newAnswers : existingAnswers;
+  };
+
   // Helper to get options config
   function getOpts(q: any) {
     if (!q?.options) return { choices: [], has_other: false, max_selections: undefined, has_calculator: false, description: '', attachments: [], randomize_options: false, locked_choices: [], description_alignment: 'left', definitions: [], validation: undefined };
@@ -531,7 +656,7 @@ export default function SurveyPage() {
         question_id: question.id,
         time_spent: Math.floor((timeSpentAccumulator[question.id] || 0) + currentSessionTime)
     };
-    if (question.type === 'multiple_choice' || question.type === 'short_answer') {
+    if (question.type === 'multiple_choice' || question.type === 'short_answer' || question.type === 'dropdown') {
       body.answer_text = val;
     } else if (question.type === 'rating_scale' || question.type === 'likert_scale') {
       body.answer_numeric = val;
@@ -562,8 +687,8 @@ export default function SurveyPage() {
         const val = answers[currentQuestion.id];
         let passed = false;
         if (currentQuestion.id === 'attn-fixed-1' && val === 4) passed = true;
-        if (currentQuestion.id === 'attn-fixed-2' && (val === 'False' || val === 'Faux')) passed = true;
-        if (currentQuestion.id === 'attn-inact-1' && (val === 'Yes' || val === 'Oui')) passed = true;
+        if (currentQuestion.id === 'attn-fixed-2' && (val === 'False' || val === 'Faux' || val === '错误')) passed = true;
+        if (currentQuestion.id === 'attn-inact-1' && (val === 'Yes' || val === 'Oui' || val === '是')) passed = true;
         
         if (!passed && sessionId) {
             fetch(`/api/sessions/${sessionId}/attention-failure`, { method: 'POST' }).catch(()=>console.error("Failed to report attn"));
@@ -648,6 +773,70 @@ export default function SurveyPage() {
     }
   };
 
+  // Map a choice-based answer from the current display language back to English
+  // so all database entries are canonical and admin aggregation works correctly.
+  const normalizeAnswerToEnglish = (qId: string, value: any): any => {
+    if (language === 'en') return value;
+    const q = survey?.questions.find((x: any) => x.id === qId);
+    if (!q) return value;
+
+    // Language-agnostic types — no translation needed
+    if (q.type === 'short_answer' || q.type === 'rating_scale' || q.type === 'likert_scale' || q.type === 'section_header') {
+      return value;
+    }
+
+    // Attention checks have hardcoded translations — map them explicitly
+    if (q.id?.startsWith('attn-')) {
+      const frMap: Record<string, Record<string, string>> = {
+        'attn-fixed-2': { True: 'Vrai', False: 'Faux' },
+        'attn-inact-1': { No: 'Non', Yes: 'Oui', Maybe: 'Peut-être' },
+      };
+      const zhMap: Record<string, Record<string, string>> = {
+        'attn-fixed-2': { True: '正确', False: '错误' },
+        'attn-inact-1': { No: '否', Yes: '是', Maybe: '也许' },
+      };
+
+      if (q.type === 'multiple_choice' || q.type === 'dropdown') {
+        if (typeof value === 'string') {
+          // Reverse map: translated → English
+          if (language === 'fr') {
+            const rev = Object.fromEntries(Object.entries(frMap[q.id] || {}).map(([k, v]) => [v, k]));
+            if (rev[value]) return rev[value];
+          } else if (language === 'zh') {
+            const rev = Object.fromEntries(Object.entries(zhMap[q.id] || {}).map(([k, v]) => [v, k]));
+            if (rev[value]) return rev[value];
+          }
+        }
+      }
+      return value;
+    }
+
+    // For regular questions, map by option index using the translation data
+    const translatedList = language === 'fr' ? survey?.questions_fr : survey?.questions_zh;
+    if (!translatedList) return value;
+    const transQ = translatedList.find((tq: any) => tq.id === qId);
+    if (!transQ) return value;
+
+    const enOpts = getOpts(q).choices;
+    const transOpts = getOpts(transQ).choices;
+    if (!enOpts.length || !transOpts.length || enOpts.length !== transOpts.length) return value;
+
+    const mapByIndex = (val: string) => {
+      if (val.startsWith('Other: ')) return val;
+      const idx = transOpts.indexOf(val);
+      if (idx !== -1 && idx < enOpts.length) return enOpts[idx];
+      return val;
+    };
+
+    if (q.type === 'multiple_choice' || q.type === 'dropdown') {
+      if (typeof value === 'string') return mapByIndex(value);
+    } else if (q.type === 'checkboxes' || q.type === 'ranking') {
+      if (Array.isArray(value)) return value.map(mapByIndex);
+    }
+
+    return value;
+  };
+
   const finishSurvey = async () => {
     setSubmitting(true);
     try {
@@ -683,12 +872,12 @@ export default function SurveyPage() {
           question_id: q.id,
           time_spent: timeSpentAccumulator[qId] || 0,
         };
-        if (q.type === 'multiple_choice' || q.type === 'short_answer') {
-          answerObj.answer_text = val;
+        if (q.type === 'multiple_choice' || q.type === 'short_answer' || q.type === 'dropdown') {
+          answerObj.answer_text = normalizeAnswerToEnglish(qId, val);
         } else if (q.type === 'rating_scale' || q.type === 'likert_scale') {
           answerObj.answer_numeric = val;
         } else if (q.type === 'checkboxes' || q.type === 'ranking') {
-          answerObj.answer_options = val;
+          answerObj.answer_options = normalizeAnswerToEnglish(qId, val);
         }
         submissionAnswers.push(answerObj);
       }
@@ -697,10 +886,14 @@ export default function SurveyPage() {
       const res = await fetch(`/api/surveys/${survey.id}/responses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, answers: submissionAnswers })
+        body: JSON.stringify({ email, answers: submissionAnswers, language })
       });
       
-      if (!res.ok) throw new Error(t('Failed to submit response'));
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`Survey submit failed (HTTP ${res.status}):`, errText);
+        throw new Error(`${t('Failed to submit response')} (${res.status}: ${errText.slice(0, 200)})`);
+      }
 
       const completedSurveys = JSON.parse(localStorage.getItem('cyc_completed_surveys') || '[]');
       if (!completedSurveys.includes(survey.id)) {
