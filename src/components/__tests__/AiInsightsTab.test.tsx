@@ -35,9 +35,12 @@ describe('AiInsightsTab', () => {
   it('shows error state when fetch fails', async () => {
     vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
     render(<AiInsightsTab surveyId="test-survey-id" totalRespondents={100} />);
-    await waitFor(() => {
-      expect(screen.getByText('Analysis Failed')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Analysis Failed')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('renders persuadability data when loaded', async () => {
@@ -51,9 +54,12 @@ describe('AiInsightsTab', () => {
       json: async () => mockData,
     } as Response);
     render(<AiInsightsTab surveyId="test-survey-id" totalRespondents={100} />);
-    await waitFor(() => {
-      expect(screen.getByText('75')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('75')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('switches tabs when clicked', async () => {

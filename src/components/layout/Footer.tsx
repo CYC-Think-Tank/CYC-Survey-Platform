@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -57,7 +57,8 @@ export function Footer() {
               />
             </Link>
             <p className="text-sm text-slate-500 leading-relaxed max-w-sm">
-              {t('The Canadian Youth Champions (thecyc.org)')} {t('is a registered Canadian non-profit #1260703-4.')}
+              {t('The Canadian Youth Champions (thecyc.org)')}{' '}
+              {t('is a registered Canadian non-profit #1260703-4.')}
             </p>
           </div>
 
@@ -97,9 +98,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 pt-5 border-t border-slate-100 text-center">
-          <p className="text-xs text-slate-400">
-            {t('Copyright © 2021. All rights reserved.')}
-          </p>
+          <p className="text-xs text-slate-400">{t('Copyright © 2021. All rights reserved.')}</p>
         </div>
       </div>
     </motion.footer>

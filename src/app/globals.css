@@ -1,15 +1,15 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Force light mode everywhere by mapping the dark variant to a non-existent class */
 @variant dark (&:where(.never-use-dark-mode));
 
 @theme {
-  --color-cyc-primary: #0CB7C4;
-  --color-cyc-secondary: #04377E;
-  --color-cyc-accent: #F5C518;
-  --color-cyc-bg: #FFFFFF;
-  --color-cyc-divider: #F3F4F6;
-  --color-cyc-text-heading: #04377E;
+  --color-cyc-primary: #0cb7c4;
+  --color-cyc-secondary: #04377e;
+  --color-cyc-accent: #f5c518;
+  --color-cyc-bg: #ffffff;
+  --color-cyc-divider: #f3f4f6;
+  --color-cyc-text-heading: #04377e;
   --color-cyc-text-body: #4b5563; /* Updated to a better default body text color */
 }
 
