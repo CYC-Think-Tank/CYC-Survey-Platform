@@ -24,7 +24,9 @@ export default function SurveysPage() {
               return {
                 ...survey,
                 title_fr: tr?.title_fr,
-                description_fr: tr?.description_fr
+                description_fr: tr?.description_fr,
+                title_zh: tr?.title_zh,
+                description_zh: tr?.description_zh
               };
             } catch {
               return survey;
@@ -58,8 +60,14 @@ export default function SurveysPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
         {surveys.map((item, idx) => {
           const isCompleted = completedIds.includes(item.id);
-          const displayTitle = (language === 'fr' && item.title_fr ? item.title_fr : item.title) || item.title;
-          const displayDescription = (language === 'fr' && item.description_fr ? item.description_fr : item.description) || item.description;
+          const displayTitle =
+            (language === 'zh' && item.title_zh ? item.title_zh :
+             language === 'fr' && item.title_fr ? item.title_fr :
+             item.title) || item.title;
+          const displayDescription =
+            (language === 'zh' && item.description_zh ? item.description_zh :
+             language === 'fr' && item.description_fr ? item.description_fr :
+             item.description) || item.description;
           return (
             <motion.div 
               key={item.id} 
