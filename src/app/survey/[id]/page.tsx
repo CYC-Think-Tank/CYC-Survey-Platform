@@ -3,8 +3,66 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { ArrowRight, CheckCircle2, FileText, Download } from 'lucide-react';
-import parse from 'html-react-parser';
+import parse, { type DOMNode, Text as TextNode } from 'html-react-parser';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+interface Attachment {
+  url: string;
+  name: string;
+  type?: string;
+}
+
+interface LogicGate {
+  question_id?: string;
+  value?: string;
+}
+
+interface QuestionOptions {
+  choices?: string[];
+  has_other?: boolean;
+  max_selections?: number;
+  has_calculator?: boolean;
+  reference_number?: boolean;
+  description?: string;
+  attachments?: Attachment[];
+  randomize_options?: boolean;
+  locked_choices?: string[];
+  description_alignment?: string;
+  definitions?: { term: string; definition: string }[];
+  validation?: {
+    type?: string;
+    max_length?: number;
+    regex?: string;
+    normalize_uppercase?: boolean;
+  };
+  logic_gates?: LogicGate[];
+  logic_gate_match_type?: string;
+  [key: string]: unknown;
+}
+
+interface Question {
+  id: string;
+  type: string;
+  question_text: string;
+  is_required?: boolean;
+  is_conditional?: boolean;
+  options?: QuestionOptions | string[] | unknown;
+}
+
+interface Survey {
+  id: string;
+  title: string;
+  title_fr?: string;
+  title_zh?: string;
+  description?: string;
+  description_fr?: string;
+  description_zh?: string;
+  estimated_minutes?: number;
+  description_alignment?: string;
+  questions: Question[];
+  questions_fr?: Question[];
+  questions_zh?: Question[];
+}
 
 const RichTextRenderer = ({
   text,
@@ -23,9 +81,11 @@ const RichTextRenderer = ({
     'gi'
   );
 
+  const isTextNode = (node: DOMNode): node is TextNode => node.type === 'text';
+
   const options = {
-    replace: (domNode: any) => {
-      if (domNode.type === 'text') {
+    replace: (domNode: DOMNode) => {
+      if (isTextNode(domNode)) {
         const parts = domNode.data.split(pattern);
         if (parts.length === 1) return undefined; // No match, let parser handle it
 
@@ -61,14 +121,14 @@ export default function SurveyPage() {
   const searchParams = useSearchParams();
   const { language, t } = useLanguage();
   const referralSource = searchParams.get('ref') || null;
-  const [survey, setSurvey] = useState<any>(null);
+  const [survey, setSurvey] = useState<Survey | null>(null);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 0 = email, 1+ = questions
   const [email, setEmail] = useState('');
-  const [profileData, setProfileData] = useState<Record<string, any>>({});
+  const [profileData, setProfileData] = useState<Record<string, unknown>>({});
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>({});
   const [refNumbers, setRefNumbers] = useState<Record<string, number | undefined>>({});
   const [loading, setLoading] = useState(true);
@@ -321,7 +381,7 @@ export default function SurveyPage() {
         const val = answers[currentQuestion.id];
         if (val !== undefined) {
           const currentSessionTime = Date.now() - questionEnterTime;
-          const body: any = {
+          const body: Record<string, unknown> = {
             question_id: currentQuestion.id,
             time_spent: Math.floor(
               (timeSpentAccumulator[currentQuestion.id] || 0) + currentSessionTime
@@ -359,41 +419,47 @@ export default function SurveyPage() {
 
   const getNextVisibleStep = (startIdx: number, forward: boolean, pData = profileData) => {
     let idx = startIdx;
+    if (!survey) return forward ? 0 : -1;
     while (idx >= 0 && idx < survey.questions.length) {
       const q = survey.questions[idx];
       let shouldSkip = false;
 
-      if (q && q.is_conditional && pData[q.question_text]) {
+      if (
+        q &&
+        q.is_conditional &&
+        (pData[q.question_text] as unknown as string | boolean | number)
+      ) {
         shouldSkip = true;
       }
 
-      if (!shouldSkip && q && q.options?.logic_gates && q.options.logic_gates.length > 0) {
-        const matchType = q.options.logic_gate_match_type || 'all';
-        const logicGates = q.options.logic_gates;
+      const qOptions = q?.options as QuestionOptions | undefined;
+      if (!shouldSkip && q && qOptions?.logic_gates && qOptions.logic_gates.length > 0) {
+        const matchType = qOptions?.logic_gate_match_type || 'all';
+        const logicGates = qOptions?.logic_gates || [];
 
-        const gateResults = logicGates.map((gate: any) => {
+        const gateResults = logicGates.map((gate: LogicGate) => {
           if (!gate.question_id || !gate.value) return true;
           const answer = answers[gate.question_id];
 
-          const dependencyQ = survey.questions.find((x: any) => x.id === gate.question_id);
+          const dependencyQ = survey.questions.find((x: Question) => x.id === gate.question_id);
           let targetValue = gate.value;
           if (dependencyQ && language !== 'en') {
             const enOptions = Array.isArray(dependencyQ.options)
               ? dependencyQ.options
-              : dependencyQ.options?.choices || [];
+              : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
             const optIndex = enOptions.indexOf(gate.value);
             if (optIndex !== -1) {
               if (language === 'fr' && survey.questions_fr) {
-                const frQ = survey.questions_fr.find((x: any) => x.id === gate.question_id);
+                const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
                 const frOpts = Array.isArray(frQ?.options)
                   ? frQ.options
-                  : frQ?.options?.choices || [];
+                  : (frQ?.options as QuestionOptions | undefined)?.choices || [];
                 if (frOpts[optIndex]) targetValue = frOpts[optIndex];
               } else if (language === 'zh' && survey.questions_zh) {
-                const zhQ = survey.questions_zh.find((x: any) => x.id === gate.question_id);
+                const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
                 const zhOpts = Array.isArray(zhQ?.options)
                   ? zhQ.options
-                  : zhQ?.options?.choices || [];
+                  : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
                 if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
               }
             }
@@ -454,13 +520,13 @@ export default function SurveyPage() {
     const finalQ = { ...currentQuestionRaw };
 
     if (language === 'fr' && survey?.questions_fr) {
-      const frQ = survey.questions_fr.find((q: any) => q.id === finalQ.id);
+      const frQ = survey.questions_fr.find((q: Question) => q.id === finalQ.id);
       if (frQ) {
         if (frQ.question_text && frQ.question_text.trim()) finalQ.question_text = frQ.question_text;
         finalQ.options = frQ.options;
       }
     } else if (language === 'zh' && survey?.questions_zh) {
-      const zhQ = survey.questions_zh.find((q: any) => q.id === finalQ.id);
+      const zhQ = survey.questions_zh.find((q: Question) => q.id === finalQ.id);
       if (zhQ) {
         if (zhQ.question_text && zhQ.question_text.trim()) finalQ.question_text = zhQ.question_text;
         finalQ.options = zhQ.options;
@@ -526,26 +592,26 @@ export default function SurveyPage() {
   };
 
   // Get the translated version of a question for a given language
-  const getTranslatedQuestion = (q: any, lang: string, surveyData: any) => {
+  const getTranslatedQuestion = (q: Question, lang: string, surveyData: Survey) => {
     if (lang === 'en') return q;
     const translatedList = lang === 'fr' ? surveyData.questions_fr : surveyData.questions_zh;
     if (!translatedList) return q;
-    return translatedList.find((tq: any) => tq.id === q.id) || q;
+    return translatedList.find((tq: Question) => tq.id === q.id) || q;
   };
 
   // Remap choice-based answers from one language to another so selections survive language switches
   const remapAnswers = (
-    existingAnswers: Record<string, any>,
+    existingAnswers: Record<string, unknown>,
     fromLang: string,
     toLang: string,
-    surveyData: any
-  ): Record<string, any> => {
+    surveyData: Survey
+  ): Record<string, unknown> => {
     if (fromLang === toLang) return existingAnswers;
 
     const newAnswers = { ...existingAnswers };
     let changed = false;
 
-    (surveyData.questions || []).forEach((q: any) => {
+    (surveyData.questions || []).forEach((q: Question) => {
       const answer = existingAnswers[q.id];
       if (answer === undefined || answer === null) return;
 
@@ -641,7 +707,7 @@ export default function SurveyPage() {
   };
 
   // Helper to get options config
-  function getOpts(q: any) {
+  function getOpts(q: Question | null) {
     if (!q?.options)
       return {
         choices: [],
@@ -658,7 +724,7 @@ export default function SurveyPage() {
       };
     if (Array.isArray(q.options))
       return {
-        choices: q.options,
+        choices: q.options as string[],
         has_other: false,
         max_selections: undefined,
         has_calculator: false,
@@ -670,18 +736,19 @@ export default function SurveyPage() {
         definitions: [],
         validation: undefined,
       };
+    const opts = q.options as QuestionOptions;
     return {
-      choices: q.options.choices || [],
-      has_other: q.options.has_other || false,
-      max_selections: q.options.max_selections,
-      has_calculator: q.options.has_calculator || q.options.reference_number ? true : false,
-      description: q.options.description || '',
-      attachments: q.options.attachments || [],
-      randomize_options: q.options.randomize_options || false,
-      locked_choices: q.options.locked_choices || [],
-      description_alignment: q.options.description_alignment || 'left',
-      definitions: q.options.definitions || [],
-      validation: q.options.validation || undefined,
+      choices: opts.choices || [],
+      has_other: opts.has_other || false,
+      max_selections: opts.max_selections,
+      has_calculator: opts.has_calculator || opts.reference_number ? true : false,
+      description: opts.description || '',
+      attachments: opts.attachments || [],
+      randomize_options: opts.randomize_options || false,
+      locked_choices: opts.locked_choices || [],
+      description_alignment: opts.description_alignment || 'left',
+      definitions: opts.definitions || [],
+      validation: opts.validation || undefined,
     };
   }
 
@@ -791,7 +858,7 @@ export default function SurveyPage() {
         const newQs = [...survey.questions];
         newQs.splice(currentStep + 1, 0, attnInact);
 
-        setSurvey((prev: any) => ({ ...prev, questions: newQs }));
+        setSurvey((prev: Survey | null) => ({ ...(prev as Survey), questions: newQs }));
         setInactivityChecksShown((prev) => prev + 1);
         setInactivityTriggered(false);
       }
@@ -844,7 +911,7 @@ export default function SurveyPage() {
       }
 
       const qId = currentQuestion.id;
-      setTimeSpentAccumulator((prev: any) => ({
+      setTimeSpentAccumulator((prev: Record<string, number>) => ({
         ...prev,
         [qId]: (prev[qId] || 0) + (Date.now() - questionEnterTime),
       }));
@@ -860,7 +927,7 @@ export default function SurveyPage() {
     if (currentStep > 0) {
       if (survey && survey.questions[currentStep]) {
         const qId = survey.questions[currentStep].id;
-        setTimeSpentAccumulator((prev: any) => ({
+        setTimeSpentAccumulator((prev: Record<string, number>) => ({
           ...prev,
           [qId]: (prev[qId] || 0) + (Date.now() - questionEnterTime),
         }));
@@ -872,9 +939,9 @@ export default function SurveyPage() {
 
   // Map a choice-based answer from the current display language back to English
   // so all database entries are canonical and admin aggregation works correctly.
-  const normalizeAnswerToEnglish = (qId: string, value: any): any => {
+  const normalizeAnswerToEnglish = (qId: string, value: unknown): unknown => {
     if (language === 'en') return value;
-    const q = survey?.questions.find((x: any) => x.id === qId);
+    const q = survey?.questions.find((x: Question) => x.id === qId);
     if (!q) return value;
 
     // Language-agnostic types — no translation needed
@@ -920,7 +987,7 @@ export default function SurveyPage() {
     // For regular questions, map by option index using the translation data
     const translatedList = language === 'fr' ? survey?.questions_fr : survey?.questions_zh;
     if (!translatedList) return value;
-    const transQ = translatedList.find((tq: any) => tq.id === qId);
+    const transQ = translatedList.find((tq: Question) => tq.id === qId);
     if (!transQ) return value;
 
     const enOpts = getOpts(q).choices;
@@ -971,10 +1038,10 @@ export default function SurveyPage() {
       const submissionAnswers = [];
       for (const [qId, val] of Object.entries(answers)) {
         if (!visibleQuestionIds.has(qId)) continue;
-        const q = survey.questions.find((x: any) => x.id === qId);
+        const q = survey.questions.find((x: Question) => x.id === qId);
         if (!q || q.type === 'section_header' || q.id.startsWith('attn-')) continue;
 
-        const answerObj: any = {
+        const answerObj: Record<string, unknown> = {
           question_id: q.id,
           time_spent: timeSpentAccumulator[qId] || 0,
         };
@@ -1172,7 +1239,7 @@ export default function SurveyPage() {
                       )}
                       {opts.attachments.length > 0 && (
                         <div className="space-y-3 mt-4">
-                          {opts.attachments.map((att: any, i: number) => (
+                          {opts.attachments.map((att: Attachment, i: number) => (
                             <div key={i}>
                               {att.type?.startsWith('image/') ? (
                                 <img
@@ -1205,7 +1272,7 @@ export default function SurveyPage() {
                   {currentQuestion.type === 'dropdown' && (
                     <div className="w-full">
                       <select
-                        value={answers[currentQuestion.id] || ''}
+                        value={(answers[currentQuestion.id] as string | undefined) || ''}
                         onChange={(e) =>
                           setAnswers({ ...answers, [currentQuestion.id]: e.target.value })
                         }
@@ -1255,13 +1322,17 @@ export default function SurveyPage() {
                       ))}
                       {opts.has_other && (
                         <label
-                          className={`flex items-center p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${answers[currentQuestion.id]?.startsWith('Other: ') ? 'border-[var(--color-cyc-primary)] bg-teal-50/50 dark:bg-[var(--color-cyc-primary)]/10 dark:border-[var(--color-cyc-primary)]' : 'border-gray-100 dark:border-white/5 hover:border-teal-200 dark:hover:border-white/15 bg-white dark:bg-white/5'}`}
+                          className={`flex items-center p-3 sm:p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md ${(answers[currentQuestion.id] as string | undefined)?.startsWith('Other: ') ? 'border-[var(--color-cyc-primary)] bg-teal-50/50 dark:bg-[var(--color-cyc-primary)]/10 dark:border-[var(--color-cyc-primary)]' : 'border-gray-100 dark:border-white/5 hover:border-teal-200 dark:hover:border-white/15 bg-white dark:bg-white/5'}`}
                         >
                           <input
                             type="radio"
                             name={currentQuestion.id}
                             value="__other__"
-                            checked={!!answers[currentQuestion.id]?.startsWith('Other: ')}
+                            checked={
+                              !!(answers[currentQuestion.id] as string | undefined)?.startsWith(
+                                'Other: '
+                              )
+                            }
                             onChange={() =>
                               setAnswers({
                                 ...answers,
@@ -1271,9 +1342,11 @@ export default function SurveyPage() {
                             className="sr-only"
                           />
                           <div
-                            className={`w-5 h-5 rounded-full border-2 mr-3 sm:mr-4 flex-shrink-0 flex items-center justify-center ${!!answers[currentQuestion.id]?.startsWith('Other: ') ? 'border-[var(--color-cyc-primary)]' : 'border-gray-300'}`}
+                            className={`w-5 h-5 rounded-full border-2 mr-3 sm:mr-4 flex-shrink-0 flex items-center justify-center ${!!(answers[currentQuestion.id] as string | undefined)?.startsWith('Other: ') ? 'border-[var(--color-cyc-primary)]' : 'border-gray-300'}`}
                           >
-                            {!!answers[currentQuestion.id]?.startsWith('Other: ') && (
+                            {!!(answers[currentQuestion.id] as string | undefined)?.startsWith(
+                              'Other: '
+                            ) && (
                               <div className="w-2.5 h-2.5 bg-[var(--color-cyc-primary)] rounded-full" />
                             )}
                           </div>
@@ -1288,7 +1361,11 @@ export default function SurveyPage() {
                                 ...otherTexts,
                                 [currentQuestion.id]: e.target.value,
                               });
-                              if (answers[currentQuestion.id]?.startsWith('Other: ')) {
+                              if (
+                                (answers[currentQuestion.id] as string | undefined)?.startsWith(
+                                  'Other: '
+                                )
+                              ) {
                                 setAnswers({
                                   ...answers,
                                   [currentQuestion.id]: `Other: ${e.target.value}`,
@@ -1314,15 +1391,15 @@ export default function SurveyPage() {
                     <div className="py-8 px-4 sm:px-8 flex flex-col items-center">
                       <div className="text-4xl sm:text-5xl font-extrabold text-[var(--color-cyc-primary)] mb-2">
                         {answers[currentQuestion.id] !== undefined
-                          ? answers[currentQuestion.id]
+                          ? (answers[currentQuestion.id] as number)
                           : 50}
                         %
                       </div>
                       {opts.has_calculator && refNumbers[currentQuestion.id] !== undefined && (
                         <div className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-2">
                           {Math.round(
-                            ((answers[currentQuestion.id] !== undefined
-                              ? answers[currentQuestion.id]
+                            (((answers[currentQuestion.id] as number | undefined) !== undefined
+                              ? (answers[currentQuestion.id] as number)
                               : 50) /
                               100) *
                               (refNumbers[currentQuestion.id] || 0)
@@ -1357,8 +1434,8 @@ export default function SurveyPage() {
                         min="0"
                         max="100"
                         value={
-                          answers[currentQuestion.id] !== undefined
-                            ? answers[currentQuestion.id]
+                          (answers[currentQuestion.id] as number | undefined) !== undefined
+                            ? (answers[currentQuestion.id] as number)
                             : 50
                         }
                         onChange={(e) =>
@@ -1366,7 +1443,7 @@ export default function SurveyPage() {
                         }
                         className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-cyc-primary)]"
                         style={{
-                          background: `linear-gradient(to right, var(--color-cyc-primary) ${answers[currentQuestion.id] !== undefined ? answers[currentQuestion.id] : 50}%, #e5e7eb ${answers[currentQuestion.id] !== undefined ? answers[currentQuestion.id] : 50}%)`,
+                          background: `linear-gradient(to right, var(--color-cyc-primary) ${(answers[currentQuestion.id] as number | undefined) !== undefined ? (answers[currentQuestion.id] as number) : 50}%, #e5e7eb ${(answers[currentQuestion.id] as number | undefined) !== undefined ? (answers[currentQuestion.id] as number) : 50}%)`,
                         }}
                       />
                       <div className="w-full flex justify-between text-sm text-gray-500 mt-4 font-medium">
@@ -1381,7 +1458,8 @@ export default function SurveyPage() {
                     <div className="space-y-3 sm:space-y-4">
                       {(() => {
                         const maxSelections = opts.max_selections;
-                        const currentSelected: string[] = answers[currentQuestion.id] || [];
+                        const currentSelected: string[] =
+                          (answers[currentQuestion.id] as string[] | undefined) || [];
 
                         return (
                           <>
@@ -1524,43 +1602,45 @@ export default function SurveyPage() {
                       </p>
                       <Reorder.Group
                         axis="y"
-                        values={answers[currentQuestion.id] || displayChoices}
+                        values={
+                          (answers[currentQuestion.id] as string[] | undefined) || displayChoices
+                        }
                         onReorder={(newOrder) =>
                           setAnswers({ ...answers, [currentQuestion.id]: newOrder })
                         }
                         className="flex flex-col gap-3"
                       >
-                        {(answers[currentQuestion.id] || displayChoices).map(
-                          (opt: string, index: number) => (
-                            <Reorder.Item
-                              key={opt}
-                              value={opt}
-                              className="relative flex items-center p-3 sm:p-4 border-2 border-gray-100 dark:border-white/5 bg-white dark:bg-slate-900 rounded-xl cursor-grab active:cursor-grabbing hover:shadow-md hover:border-teal-200 transition-colors transition-shadow"
-                            >
-                              <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-[var(--color-cyc-primary)]/20 flex items-center justify-center mr-4 font-bold text-[var(--color-cyc-primary)]">
-                                {index + 1}
-                              </div>
-                              <span className="text-base sm:text-lg font-medium text-gray-700 dark:text-slate-200 flex-grow">
-                                {opt}
-                              </span>
-                              <div className="text-gray-400">
-                                <svg
-                                  className="w-6 h-6"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                  />
-                                </svg>
-                              </div>
-                            </Reorder.Item>
-                          )
-                        )}
+                        {(
+                          (answers[currentQuestion.id] as string[] | undefined) || displayChoices
+                        ).map((opt: string, index: number) => (
+                          <Reorder.Item
+                            key={opt}
+                            value={opt}
+                            className="relative flex items-center p-3 sm:p-4 border-2 border-gray-100 dark:border-white/5 bg-white dark:bg-slate-900 rounded-xl cursor-grab active:cursor-grabbing hover:shadow-md hover:border-teal-200 transition-colors transition-shadow"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-teal-50 dark:bg-[var(--color-cyc-primary)]/20 flex items-center justify-center mr-4 font-bold text-[var(--color-cyc-primary)]">
+                              {index + 1}
+                            </div>
+                            <span className="text-base sm:text-lg font-medium text-gray-700 dark:text-slate-200 flex-grow">
+                              {opt}
+                            </span>
+                            <div className="text-gray-400">
+                              <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M4 6h16M4 12h16M4 18h16"
+                                />
+                              </svg>
+                            </div>
+                          </Reorder.Item>
+                        ))}
                       </Reorder.Group>
                     </div>
                   )}
@@ -1613,7 +1693,7 @@ export default function SurveyPage() {
                                 ? 'e.g. M5V'
                                 : 'Share your thoughts here...'
                             }
-                            value={answers[currentQuestion.id] || ''}
+                            value={(answers[currentQuestion.id] as string | undefined) || ''}
                             onChange={(e) => {
                               let val = e.target.value;
                               if (opts.validation?.normalize_uppercase) {
@@ -1633,7 +1713,7 @@ export default function SurveyPage() {
                           rows={4}
                           className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all resize-none text-base sm:text-lg"
                           placeholder={t('Share your thoughts here...')}
-                          value={answers[currentQuestion.id] || ''}
+                          value={(answers[currentQuestion.id] as string | undefined) || ''}
                           onChange={(e) =>
                             setAnswers({ ...answers, [currentQuestion.id]: e.target.value })
                           }

@@ -37,23 +37,71 @@ interface Response {
   is_valid?: boolean;
 }
 
+interface QuestionOptions {
+  choices?: string[];
+  description?: string;
+  validation?: { type: string };
+}
+
 interface Question {
   id: string;
   question_text: string;
   type: string;
   order_index: number;
-  options: any;
+  options?: string[] | QuestionOptions;
+}
+
+interface SurveyData {
+  title: string;
+}
+
+interface ResultsData {
+  survey: SurveyData;
+  questions: Question[];
+  total_responses: number;
+  referral_breakdown?: Record<string, number>;
+  language_breakdown?: Record<string, number>;
+}
+
+interface ModeData {
+  modes: (string | number)[];
+  count: number;
+}
+
+interface Quartiles {
+  q1: number;
+  q3: number;
+  iqr: number;
+}
+
+interface QuestionSummaryStats {
+  counts?: Record<string, number>;
+  mode_data?: ModeData;
+  sample_size: number;
+  total_weighted?: number;
+  avg_ranks?: Record<string, number>;
+  avg?: number;
+  median?: number;
+  std_dev?: number;
+  variance?: number;
+  min?: number;
+  max?: number;
+  quartiles?: Quartiles;
+  outliers?: number[];
+  texts?: string[];
 }
 
 export default function ResultsPage() {
   const params = useParams();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'summary' | 'individual'>('summary');
+  const [tab, setTab] = useState<'summary' | 'individual' | 'ai'>('summary');
   const [showAdvanced, setShowAdvanced] = useState<Record<string, boolean>>({});
 
   // Summary State
-  const [summaryStats, setSummaryStats] = useState<any>(null);
+  const [summaryStats, setSummaryStats] = useState<Record<string, QuestionSummaryStats> | null>(
+    null
+  );
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   // Individual Pagination State
@@ -178,7 +226,7 @@ export default function ResultsPage() {
     survey,
     questions,
     total_responses,
-  }: { survey: any; questions: Question[]; total_responses: number } = data;
+  }: { survey: SurveyData; questions: Question[]; total_responses: number } = data;
 
   const advancedStatsUI = (qId: string, content: React.ReactNode) => (
     <div className="mt-6 pt-4 border-t border-gray-100">
@@ -318,13 +366,13 @@ export default function ResultsPage() {
       const totalN = stat.sample_size || 0;
 
       const sortedItems = Object.entries(avgRanks).sort(
-        ([, a]: [string, any], [, b]: [string, any]) => Number(a) - Number(b)
+        ([, a]: [string, number], [, b]: [string, number]) => a - b
       );
 
       return (
         <div>
           <div className="space-y-3">
-            {sortedItems.map(([opt, avg]: [string, any], i) => {
+            {sortedItems.map(([opt, avg]: [string, number], i) => {
               const optsArray = Array.isArray(q.options) ? q.options : q.options?.choices || [];
               const maxRank = optsArray.length || 5;
               const pct = maxRank > 1 ? Math.max(0, 100 - ((avg - 1) / (maxRank - 1)) * 100) : 100;
@@ -493,7 +541,7 @@ export default function ResultsPage() {
                 <div className="col-span-2">
                   <span className="block text-xs text-gray-500 mb-0.5">Median</span>
                   <span className="font-bold">
-                    {median} ({labels[median] || ''})
+                    {median} ({median !== undefined ? labels[median] || '' : ''})
                   </span>
                 </div>
                 <div>
@@ -504,7 +552,9 @@ export default function ResultsPage() {
                   <div className="col-span-2">
                     <span className="block text-xs text-gray-500 mb-0.5">Statistical Mode</span>
                     <span className="font-bold">
-                      {mode_data.modes.map((m: any) => labels[Number(m)] || m).join(', ')}
+                      {mode_data.modes
+                        .map((m: string | number) => labels[Number(m)] || m)
+                        .join(', ')}
                     </span>
                   </div>
                 )}
@@ -516,7 +566,9 @@ export default function ResultsPage() {
 
     if (q.type === 'short_answer') {
       const texts = stat.texts || [];
-      const validationType = q.options?.validation?.type;
+      const validationType = !Array.isArray(q.options)
+        ? (q.options as QuestionOptions)?.validation?.type
+        : undefined;
       return (
         <div>
           {validationType && validationType !== 'none' && (
@@ -585,8 +637,8 @@ export default function ResultsPage() {
           <User className="w-4 h-4 mr-2" /> Individual
         </button>
         <button
-          onClick={() => setTab('ai' as any)}
-          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${(tab as string) === 'ai' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
+          onClick={() => setTab('ai')}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'ai' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Sparkles className="w-4 h-4 mr-2" /> AI Insights
         </button>
@@ -699,9 +751,12 @@ export default function ResultsPage() {
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1">
                     {idx + 1}. {q.question_text}
                   </h3>
-                  {q.options?.description && (
+                  {!Array.isArray(q.options) && (q.options as QuestionOptions)?.description && (
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">
-                      {q.options.description.replace(/<[^>]*>?/gm, '')}
+                      {((q.options as QuestionOptions).description as string).replace(
+                        /<[^>]*>?/gm,
+                        ''
+                      )}
                     </p>
                   )}
                   <p className="text-xs text-gray-400 mb-4 capitalize">
@@ -864,9 +919,12 @@ export default function ResultsPage() {
                       <h4 className="text-sm font-bold text-[var(--color-cyc-secondary)] mb-1">
                         {idx + 1}. {q.question_text}
                       </h4>
-                      {q.options?.description && (
+                      {!Array.isArray(q.options) && (q.options as QuestionOptions)?.description && (
                         <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 italic">
-                          {q.options.description.replace(/<[^>]*>?/gm, '')}
+                          {((q.options as QuestionOptions).description as string).replace(
+                            /<[^>]*>?/gm,
+                            ''
+                          )}
                         </p>
                       )}
                       <p className="text-base text-gray-700">
@@ -887,7 +945,7 @@ export default function ResultsPage() {
       )}
 
       {/* AI INSIGHTS TAB */}
-      {(tab as string) === 'ai' && (
+      {tab === 'ai' && (
         <AiInsightsTab surveyId={params.id as string} totalRespondents={total_responses} />
       )}
     </div>

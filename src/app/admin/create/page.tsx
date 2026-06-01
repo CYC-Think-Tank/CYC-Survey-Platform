@@ -86,10 +86,13 @@ export default function CreateSurvey() {
   const [error, setError] = useState('');
   const [language, setLanguage] = useState<'en' | 'fr' | 'zh'>('en');
 
-  const getOptionsArray = (options: any): string[] => {
+  const getOptionsArray = (options: unknown): string[] => {
     if (!options) return [];
     if (Array.isArray(options)) return options as string[];
-    return (options.choices || []) as string[];
+    if (typeof options === 'object' && 'choices' in options) {
+      return ((options as Record<string, unknown>).choices as string[]) || [];
+    }
+    return [];
   };
 
   const getOptionsForDisplay = (q: QuestionDraft): string[] => {
@@ -224,7 +227,11 @@ export default function CreateSurvey() {
     setQuestions([...questions, newQ]);
   };
 
-  const updateQuestion = (id: string, field: keyof QuestionDraft, value: any) => {
+  const updateQuestion = <K extends keyof QuestionDraft>(
+    id: string,
+    field: K,
+    value: QuestionDraft[K]
+  ) => {
     setQuestions(questions.map((q) => (q.id === id ? { ...q, [field]: value } : q)));
   };
 
@@ -455,7 +462,7 @@ export default function CreateSurvey() {
         is_active: isActive,
         thumbnail_url: thumbnailUrl || undefined,
         questions: questions.map((q, idx) => {
-          let optionsPayload: any = null;
+          let optionsPayload: Record<string, unknown> | null = null;
           if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
             optionsPayload = {
               choices: q.options,
@@ -527,7 +534,7 @@ export default function CreateSurvey() {
       const payloadFr = payload.questions.map((q, idx) => {
         const draftQ = questions[idx];
         const createdQ = createdSurvey.questions?.[idx];
-        let optionsFr: any = null;
+        let optionsFr: Record<string, unknown> | null = null;
         if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
           optionsFr = {
             choices: draftQ.options_fr || q.options?.choices || [],
@@ -583,7 +590,7 @@ export default function CreateSurvey() {
         };
       });
 
-      const filteredPayloadFr = payloadFr.filter((q: any) => q.id);
+      const filteredPayloadFr = payloadFr.filter((q) => q.id);
       if (filteredPayloadFr.length > 0) {
         const resFr = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
           method: 'PUT',
@@ -598,10 +605,10 @@ export default function CreateSurvey() {
         if (!resFr.ok) throw new Error('Failed to save French translations');
       }
 
-      const payloadZh = payload.questions.map((q: any, idx: number) => {
+      const payloadZh = payload.questions.map((q, idx: number) => {
         const draftQ = questions[idx];
         const createdQ = createdSurvey.questions?.[idx];
-        let optionsZh: any = null;
+        let optionsZh: Record<string, unknown> | null = null;
         if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
           optionsZh = {
             choices: draftQ.options_zh || q.options?.choices || [],
@@ -657,7 +664,7 @@ export default function CreateSurvey() {
         };
       });
 
-      const filteredPayloadZh = payloadZh.filter((q: any) => q.id);
+      const filteredPayloadZh = payloadZh.filter((q) => q.id);
       if (filteredPayloadZh.length > 0) {
         const resZh = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
           method: 'PUT',
@@ -672,8 +679,8 @@ export default function CreateSurvey() {
         if (!resZh.ok) throw new Error('Failed to save Chinese translations');
       }
       router.push('/admin');
-    } catch (err: any) {
-      setError(err.message || 'Error saving survey');
+    } catch (err: unknown) {
+      setError((err as { message?: string }).message || 'Error saving survey');
       setSubmitting(false);
     }
   };
@@ -1206,7 +1213,11 @@ export default function CreateSurvey() {
                         <select
                           value={q.description_alignment || 'left'}
                           onChange={(e) =>
-                            updateQuestion(q.id, 'description_alignment', e.target.value)
+                            updateQuestion(
+                              q.id,
+                              'description_alignment',
+                              e.target.value as 'left' | 'center' | 'justify'
+                            )
                           }
                           className="text-xs border rounded p-1 focus:outline-none"
                         >
@@ -1433,7 +1444,11 @@ export default function CreateSurvey() {
                       <select
                         value={q.logic_gate_match_type || 'all'}
                         onChange={(e) =>
-                          updateQuestion(q.id, 'logic_gate_match_type', e.target.value)
+                          updateQuestion(
+                            q.id,
+                            'logic_gate_match_type',
+                            e.target.value as 'all' | 'any'
+                          )
                         }
                         className={`text-xs border rounded p-1 focus:outline-none ${language !== 'en' ? 'hidden' : ''}`}
                       >

@@ -13,8 +13,97 @@ import {
   Eye,
   Search,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 type AiModuleKey = 'persuadability' | 'mood' | 'beliefs' | 'minority' | 'archetypes' | 'blindspots';
+
+interface AiMeta {
+  total_respondents?: number;
+  generated_at?: string;
+}
+
+interface PersuadabilityFinding {
+  title: string;
+  description: string;
+  confidence: string;
+}
+
+interface DemographicSegment {
+  segment_name: string;
+  size: string;
+  persuadability: number;
+  label: string;
+  key_trait: string;
+}
+
+interface MoodDimension {
+  dimension: string;
+  score: number;
+  insight: string;
+}
+
+interface EmergingConcern {
+  concern: string;
+  urgency: string;
+  evidence: string;
+}
+
+interface BeliefCluster {
+  cluster_name: string;
+  size: string;
+  description: string;
+  beliefs?: string[];
+}
+
+interface SurprisingConnection {
+  connection: string;
+  why_surprising: string;
+  evidence: string;
+}
+
+interface AmplifiedConcern {
+  concern: string;
+  percentage: number;
+  concentration: string;
+  intensity_label: string;
+  intensity: number;
+  why_it_matters: string;
+  evidence: string;
+}
+
+interface Archetype {
+  name: string;
+  percentage: number;
+  description: string;
+  key_traits?: string[];
+  values: string;
+  engagement_level: string;
+}
+
+interface BlindSpot {
+  topic: string;
+  severity: string;
+  evidence: string;
+  suggested_questions?: string[];
+}
+
+interface AiModuleData {
+  meta?: AiMeta;
+  persuadability_score?: { overall?: number; label?: string };
+  overall_summary?: string;
+  key_findings?: PersuadabilityFinding[];
+  demographic_segments?: DemographicSegment[];
+  overall_mood?: { label: string; description: string };
+  mood_dimensions?: MoodDimension[];
+  emerging_concerns?: EmergingConcern[];
+  summary?: string;
+  belief_clusters?: BeliefCluster[];
+  surprising_connections?: SurprisingConnection[];
+  amplified_concerns?: AmplifiedConcern[];
+  archetypes?: Archetype[];
+  coverage_score?: { overall?: number; label?: string };
+  blind_spots?: BlindSpot[];
+}
 
 export default function AiInsightsTab({
   surveyId,
@@ -24,11 +113,11 @@ export default function AiInsightsTab({
   totalRespondents: number;
 }) {
   const [aiSubTab, setAiSubTab] = useState<AiModuleKey>('persuadability');
-  const [aiData, setAiData] = useState<Record<string, any>>({});
+  const [aiData, setAiData] = useState<Record<string, AiModuleData>>({});
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
   const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
 
-  const aiModules: { key: AiModuleKey; label: string; endpoint: string; icon: any }[] = [
+  const aiModules: { key: AiModuleKey; label: string; endpoint: string; icon: LucideIcon }[] = [
     { key: 'persuadability', label: 'Persuadability', endpoint: 'ai-analysis', icon: TrendingUp },
     { key: 'mood', label: 'Mood', endpoint: 'ai-mood', icon: Sparkles },
     { key: 'beliefs', label: 'Beliefs', endpoint: 'ai-beliefs', icon: Brain },
@@ -69,7 +158,7 @@ export default function AiInsightsTab({
   }
 
   const currentMod = aiModules.find((m) => m.key === aiSubTab)!;
-  const data = aiData[aiSubTab];
+  const data: AiModuleData | undefined = aiData[aiSubTab];
   const loading = aiLoading[aiSubTab];
   const error = aiErrors[aiSubTab];
 
@@ -188,14 +277,14 @@ export default function AiInsightsTab({
                 </div>
               </div>
 
-              {data.key_findings?.length > 0 && (
+              {data.key_findings && data.key_findings.length > 0 && (
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
                     <Lightbulb className="w-4 h-4 mr-2 text-[var(--color-cyc-accent)]" />
                     Key Findings
                   </h3>
                   <div className="space-y-3 mt-4">
-                    {data.key_findings.map((f: any, i: number) => {
+                    {data.key_findings.map((f: PersuadabilityFinding, i: number) => {
                       const confColor =
                         f.confidence === 'High'
                           ? 'bg-teal-50 text-[var(--color-cyc-primary)]'
@@ -230,14 +319,14 @@ export default function AiInsightsTab({
                 </div>
               )}
 
-              {data.demographic_segments?.length > 0 && (
+              {data.demographic_segments && data.demographic_segments.length > 0 && (
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center">
                     <Users className="w-4 h-4 mr-2 text-[var(--color-cyc-primary)]" />
                     Demographic Segments
                   </h3>
                   <div className="space-y-4">
-                    {data.demographic_segments.map((seg: any, i: number) => (
+                    {data.demographic_segments.map((seg: DemographicSegment, i: number) => (
                       <div key={i}>
                         <div className="flex justify-between text-sm mb-1">
                           <div className="flex items-center gap-2">
@@ -281,7 +370,7 @@ export default function AiInsightsTab({
                   Mood Dimensions
                 </h3>
                 <div className="space-y-4">
-                  {data.mood_dimensions?.map((dim: any, i: number) => (
+                  {data.mood_dimensions?.map((dim: MoodDimension, i: number) => (
                     <div key={i}>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="font-medium text-gray-700">{dim.dimension}</span>
@@ -299,14 +388,14 @@ export default function AiInsightsTab({
                 </div>
               </div>
 
-              {data.emerging_concerns?.length > 0 && (
+              {data.emerging_concerns && data.emerging_concerns.length > 0 && (
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center">
                     <AlertTriangle className="w-4 h-4 mr-2 text-[var(--color-cyc-accent)]" />
                     Emerging Concerns
                   </h3>
                   <div className="space-y-3">
-                    {data.emerging_concerns.map((ec: any, i: number) => (
+                    {data.emerging_concerns.map((ec: EmergingConcern, i: number) => (
                       <div
                         key={i}
                         className="flex flex-col p-3 rounded-lg border border-gray-100 bg-gray-50"
@@ -339,7 +428,7 @@ export default function AiInsightsTab({
                   Belief Clusters
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {data.belief_clusters?.map((cluster: any, i: number) => (
+                  {data.belief_clusters?.map((cluster: BeliefCluster, i: number) => (
                     <div key={i} className="border border-gray-200 rounded-lg p-4 bg-teal-50/30">
                       <div className="flex justify-between items-center mb-2">
                         <h4 className="font-bold text-[var(--color-cyc-secondary)]">
@@ -365,14 +454,14 @@ export default function AiInsightsTab({
                 </div>
               </div>
 
-              {data.surprising_connections?.length > 0 && (
+              {data.surprising_connections && data.surprising_connections.length > 0 && (
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center">
                     <Zap className="w-4 h-4 mr-2 text-[var(--color-cyc-accent)]" />
                     Surprising Connections
                   </h3>
                   <div className="space-y-3">
-                    {data.surprising_connections.map((sc: any, i: number) => (
+                    {data.surprising_connections.map((sc: SurprisingConnection, i: number) => (
                       <div
                         key={i}
                         className="flex gap-3 p-3 rounded-lg border border-amber-100 bg-amber-50/50"
@@ -406,7 +495,7 @@ export default function AiInsightsTab({
                   Amplified Concerns
                 </h3>
                 <div className="space-y-4">
-                  {data.amplified_concerns?.map((ac: any, i: number) => (
+                  {data.amplified_concerns?.map((ac: AmplifiedConcern, i: number) => (
                     <div key={i} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
@@ -449,7 +538,7 @@ export default function AiInsightsTab({
               <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
                 <p className="text-sm text-gray-600 mb-6">{data.summary}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {data.archetypes?.map((arch: any, i: number) => (
+                  {data.archetypes?.map((arch: Archetype, i: number) => (
                     <div
                       key={i}
                       className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col h-full"
@@ -527,7 +616,7 @@ export default function AiInsightsTab({
                   Survey Blind Spots
                 </h3>
                 <div className="space-y-4 mb-8">
-                  {data.blind_spots?.map((bs: any, i: number) => (
+                  {data.blind_spots?.map((bs: BlindSpot, i: number) => (
                     <div key={i} className="border border-red-100 bg-red-50/30 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold text-[var(--color-cyc-secondary)] text-sm">

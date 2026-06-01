@@ -5,9 +5,20 @@ import { ArrowRight, Clock, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+interface Survey {
+  id: string;
+  title: string;
+  title_fr?: string;
+  title_zh?: string;
+  description?: string;
+  description_fr?: string;
+  description_zh?: string;
+  estimated_minutes?: number;
+}
+
 export default function SurveysPage() {
   const { language, t } = useLanguage();
-  const [surveys, setSurveys] = useState<any[]>([]);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
 
@@ -18,7 +29,7 @@ export default function SurveysPage() {
       .then((r) => r.json())
       .then(async (d) => {
         const withTranslations = await Promise.all(
-          d.map(async (survey: any) => {
+          d.map(async (survey: Survey) => {
             try {
               const tr = await fetch(`/api/surveys/${survey.id}/translation`).then((res) =>
                 res.json()
