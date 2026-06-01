@@ -1,6 +1,6 @@
-import requests
-import pytest
 import time
+
+import requests
 
 
 class TestLimit:

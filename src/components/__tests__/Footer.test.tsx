@@ -29,7 +29,9 @@ describe('Footer', () => {
   it('renders organization info and links', () => {
     render(<Footer />);
     expect(screen.getByText(/The Canadian Youth Champions \(thecyc\.org\)/)).toBeInTheDocument();
-    expect(screen.getByText(/is a registered Canadian non-profit #1260703-4\./)).toBeInTheDocument();
+    expect(
+      screen.getByText(/is a registered Canadian non-profit #1260703-4\./)
+    ).toBeInTheDocument();
   });
 
   it('renders Instagram link with correct href', () => {

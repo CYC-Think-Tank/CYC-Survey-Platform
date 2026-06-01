@@ -68,7 +68,13 @@ describe('HomePage', () => {
 
   it('renders survey cards when surveys are available', async () => {
     const mockSurveys = [
-      { id: 'survey-1', title: 'Test Survey', description: 'A test survey', estimated_minutes: 5, is_active: true },
+      {
+        id: 'survey-1',
+        title: 'Test Survey',
+        description: 'A test survey',
+        estimated_minutes: 5,
+        is_active: true,
+      },
     ];
     vi.mocked(fetch).mockResolvedValue({ json: async () => mockSurveys } as Response);
     render(<HomePage />);
