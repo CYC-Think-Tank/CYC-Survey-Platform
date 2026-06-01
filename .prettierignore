@@ -5,3 +5,25 @@ coverage
 e2e
 tests
 *.lock
+
+# Generated / cache directories
+graphify-out/
+.pytest_cache/
+.opencode/
+.husky/_/
+.git/
+.gitignore
+
+# Python virtual environment
+venv/
+.venv/
+__pycache__/
+
+# IDE
+.vscode/
+.idea/
+
+# Misc
+*.min.js
+*.min.css
+public/

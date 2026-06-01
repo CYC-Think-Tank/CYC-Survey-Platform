@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -14,7 +14,7 @@ export default function AdminLogin() {
     setLoading(true);
 
     // Simulate a tiny delay for UX
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 400));
 
     if (password === 'cycsurveyplatformadmin') {
       localStorage.setItem('cyc_admin_auth', 'true');
@@ -23,7 +23,7 @@ export default function AdminLogin() {
     } else {
       setError('Incorrect password.');
     }
-    
+
     setLoading(false);
   };
 
@@ -36,9 +36,7 @@ export default function AdminLogin() {
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-medium">
-            {error}
-          </div>
+          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-medium">{error}</div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -53,11 +51,7 @@ export default function AdminLogin() {
               placeholder="Enter password"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full btn-primary py-3 mt-6 text-lg"
-          >
+          <button type="submit" disabled={loading} className="w-full btn-primary py-3 mt-6 text-lg">
             {loading ? 'Verifying...' : 'Access Dashboard'}
           </button>
         </form>

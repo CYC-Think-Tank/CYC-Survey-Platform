@@ -4,7 +4,9 @@ import AdminDashboard from '../page';
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush }) }));
-vi.mock('next/link', () => ({ default: ({ children, href }: any) => <a href={href}>{children}</a> }));
+vi.mock('next/link', () => ({
+  default: ({ children, href }: any) => <a href={href}>{children}</a>,
+}));
 
 global.fetch = vi.fn();
 
@@ -26,8 +28,24 @@ describe('AdminDashboard', () => {
 
   it('renders dashboard with surveys after loading', async () => {
     const mockSurveys = [
-      { id: 'survey-1', title: 'Active Survey', description: 'Description', is_active: true, response_count: 10, estimated_minutes: 5, has_been_published: true },
-      { id: 'survey-2', title: 'Draft Survey', description: 'Draft', is_active: false, response_count: 0, estimated_minutes: 3, has_been_published: false },
+      {
+        id: 'survey-1',
+        title: 'Active Survey',
+        description: 'Description',
+        is_active: true,
+        response_count: 10,
+        estimated_minutes: 5,
+        has_been_published: true,
+      },
+      {
+        id: 'survey-2',
+        title: 'Draft Survey',
+        description: 'Draft',
+        is_active: false,
+        response_count: 0,
+        estimated_minutes: 3,
+        has_been_published: false,
+      },
     ];
     vi.mocked(fetch).mockResolvedValue({ json: async () => mockSurveys } as Response);
     render(<AdminDashboard />);
@@ -38,7 +56,16 @@ describe('AdminDashboard', () => {
   });
 
   it('shows survey status badges', async () => {
-    const mockSurveys = [{ id: 'survey-1', title: 'Active Survey', is_active: true, response_count: 10, estimated_minutes: 5, has_been_published: true }];
+    const mockSurveys = [
+      {
+        id: 'survey-1',
+        title: 'Active Survey',
+        is_active: true,
+        response_count: 10,
+        estimated_minutes: 5,
+        has_been_published: true,
+      },
+    ];
     vi.mocked(fetch).mockResolvedValue({ json: async () => mockSurveys } as Response);
     render(<AdminDashboard />);
     await waitFor(() => {

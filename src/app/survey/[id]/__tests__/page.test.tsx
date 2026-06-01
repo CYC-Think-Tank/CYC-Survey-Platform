@@ -23,7 +23,10 @@ vi.mock('framer-motion', () => ({
     h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
-  Reorder: { Group: ({ children }: any) => <div>{children}</div>, Item: ({ children }: any) => <div>{children}</div> },
+  Reorder: {
+    Group: ({ children }: any) => <div>{children}</div>,
+    Item: ({ children }: any) => <div>{children}</div>,
+  },
 }));
 
 vi.mock('lucide-react', () => ({
@@ -35,7 +38,13 @@ vi.mock('lucide-react', () => ({
 
 vi.mock('html-react-parser', () => ({
   default: (html: string) => <span>{html}</span>,
-  domToReact: (nodes: any[]) => <>{nodes.map((n, i) => <span key={i}>{n.data}</span>)}</>,
+  domToReact: (nodes: any[]) => (
+    <>
+      {nodes.map((n, i) => (
+        <span key={i}>{n.data}</span>
+      ))}
+    </>
+  ),
   Element: () => null,
   Text: () => null,
 }));
@@ -69,9 +78,19 @@ describe('SurveyPage', () => {
 
   it('renders survey welcome screen when loaded', async () => {
     const mockSurvey = {
-      id: 'test-survey-id', title: 'Test Survey', description: 'Test description',
+      id: 'test-survey-id',
+      title: 'Test Survey',
+      description: 'Test description',
       estimated_minutes: 5,
-      questions: [{ id: 'q1', question_text: 'What is your favorite color?', type: 'multiple_choice', options: { choices: ['Red', 'Blue', 'Green'] }, is_required: true }],
+      questions: [
+        {
+          id: 'q1',
+          question_text: 'What is your favorite color?',
+          type: 'multiple_choice',
+          options: { choices: ['Red', 'Blue', 'Green'] },
+          is_required: true,
+        },
+      ],
     };
     vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => mockSurvey } as Response);
     render(<SurveyPage />);

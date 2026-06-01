@@ -26,7 +26,9 @@ describe('AdminLogin', () => {
 
   it('shows error for incorrect password', async () => {
     render(<AdminLogin />);
-    fireEvent.change(screen.getByPlaceholderText('Enter password'), { target: { value: 'wrong-password' } });
+    fireEvent.change(screen.getByPlaceholderText('Enter password'), {
+      target: { value: 'wrong-password' },
+    });
     fireEvent.submit(screen.getByRole('button', { name: 'Access Dashboard' }).closest('form')!);
     await waitFor(() => {
       expect(screen.getByText('Incorrect password.')).toBeInTheDocument();
@@ -35,7 +37,9 @@ describe('AdminLogin', () => {
 
   it('redirects to admin on correct password', async () => {
     render(<AdminLogin />);
-    fireEvent.change(screen.getByPlaceholderText('Enter password'), { target: { value: 'cycsurveyplatformadmin' } });
+    fireEvent.change(screen.getByPlaceholderText('Enter password'), {
+      target: { value: 'cycsurveyplatformadmin' },
+    });
     fireEvent.submit(screen.getByRole('button', { name: 'Access Dashboard' }).closest('form')!);
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/admin');
