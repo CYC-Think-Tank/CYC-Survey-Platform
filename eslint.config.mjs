@@ -7,11 +7,18 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
       "@next/next/no-img-element": "off",
       "@typescript-eslint/no-empty-object-type": "off",
       "react-hooks/set-state-in-effect": "off"
+    }
+  },
+  // Allow `any` in test files (mocks are inherently dynamic)
+  {
+    files: ["**/*.test.tsx", "**/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off"
     }
   },
   // Override default ignores of eslint-config-next.
