@@ -1,10 +1,41 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Clock, BarChart3, Globe, Users, Star } from 'lucide-react';
 
-function TiltCard({ _item, _isCompleted, _t, isFront, children, className }: any) {
+interface TiltCardProps {
+  item?: unknown;
+  isCompleted?: unknown;
+  t?: unknown;
+  isFront: boolean;
+  children: ReactNode;
+  className?: string;
+}
+
+interface Survey {
+  id: string;
+  title: string;
+  title_fr?: string;
+  title_zh?: string;
+  description?: string;
+  description_fr?: string;
+  description_zh?: string;
+  estimated_minutes?: number | string;
+  thumbnail_url?: string;
+  displayTitle?: string;
+  displayDescription?: string;
+  isComingSoon?: boolean;
+}
+
+function TiltCard({
+  item: _item,
+  isCompleted: _isCompleted,
+  t: _t,
+  isFront,
+  children,
+  className,
+}: TiltCardProps) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -52,7 +83,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Home() {
   const { t, language } = useLanguage();
-  const [surveys, setSurveys] = useState<any[]>([]);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
   const [angle, setAngle] = useState(0);
@@ -124,7 +155,7 @@ export default function Home() {
       .then((r) => r.json())
       .then(async (d) => {
         const withTranslations = await Promise.all(
-          d.map(async (survey: any) => {
+          d.map(async (survey: Survey) => {
             try {
               const tr = await fetch(`/api/surveys/${survey.id}/translation`).then((res) =>
                 res.json()

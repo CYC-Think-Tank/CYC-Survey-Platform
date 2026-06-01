@@ -28,7 +28,7 @@ interface QuestionDraft {
   id: string;
   question_text: string;
   type: QuestionType;
-  options: any; // will normalize to array in state
+  options: unknown; // will normalize to array in state
   max_selections?: number;
   has_other?: boolean;
   randomize_options?: boolean;
@@ -43,11 +43,11 @@ interface QuestionDraft {
   reference_number?: number;
   definitions?: { term: string; definition: string }[];
   question_text_fr?: string;
-  options_fr?: any;
+  options_fr?: unknown;
   section_description_fr?: string;
   definitions_fr?: { term: string; definition: string }[];
   question_text_zh?: string;
-  options_zh?: any;
+  options_zh?: unknown;
   section_description_zh?: string;
   definitions_zh?: { term: string; definition: string }[];
   question_description?: string;
@@ -57,6 +57,48 @@ interface QuestionDraft {
   validation_regex?: string;
   validation_max_length?: number;
   validation_normalize_uppercase?: boolean;
+}
+
+interface ApiQuestion {
+  id: string;
+  question_text: string;
+  type: QuestionType;
+  options: unknown;
+  is_required: boolean;
+  is_conditional?: boolean;
+}
+
+interface ApiTranslationQuestion {
+  id: string;
+  question_text?: string;
+  options?: unknown;
+}
+
+interface OptionsPayload {
+  choices?: unknown;
+  has_other?: boolean;
+  randomize_options?: boolean;
+  locked_choices?: string[];
+  max_selections?: number;
+  has_calculator?: boolean;
+  description?: string;
+  attachments?: { url: string; name: string; type: string }[];
+  description_alignment?: string;
+  validation?: {
+    type: string;
+    regex: string;
+    max_length?: number;
+    normalize_uppercase?: boolean;
+  };
+  definitions?: { term: string; definition: string }[];
+  logic_gates?: { question_id: string; condition_type: string; value: string }[];
+  logic_gate_match_type?: 'all' | 'any';
+}
+
+interface TranslationPayload {
+  id: string;
+  question_text: string;
+  options: OptionsPayload | null;
 }
 
 const VALIDATION_PRESETS: Record<
@@ -121,8 +163,8 @@ export default function EditSurvey() {
         const timeoutId = setTimeout(() => controller.abort(), 180000);
         res = await fetch(url, { method: 'POST', body: formData, signal: controller.signal });
         clearTimeout(timeoutId);
-      } catch (fetchErr: any) {
-        if (fetchErr.name === 'AbortError') {
+      } catch (fetchErr: unknown) {
+        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
           setTranslationUploadError(
             'Upload timed out after 3 minutes — the server may still be processing. Try refreshing the page to see if translations were saved.'
           );
@@ -154,8 +196,8 @@ export default function EditSurvey() {
 
       await populateTranslations();
       setTranslationUploadSuccess('Translations loaded from PDF — review and save to confirm');
-    } catch (err: any) {
-      setTranslationUploadError(err.message || 'Failed to parse PDF');
+    } catch (err: unknown) {
+      setTranslationUploadError(err instanceof Error ? err.message : 'Failed to parse PDF');
     } finally {
       setTranslationUploading(false);
       e.target.value = '';
@@ -178,19 +220,23 @@ export default function EditSurvey() {
           prev.map((q, idx) => {
             const translated = transData.questions_fr[idx];
             if (!translated) return q;
-            const updates: any = {};
+            const updates: Record<string, unknown> = {};
             if (translated.question_text && translated.question_text.trim()) {
               updates.question_text_fr = translated.question_text;
             }
-            if (translated.options && translated.options.choices !== undefined) {
-              updates.options_fr = translated.options.choices;
+            if (
+              translated.options &&
+              (translated.options as Record<string, unknown>).choices !== undefined
+            ) {
+              updates.options_fr = (translated.options as Record<string, unknown>).choices;
             }
             if (
               translated.options &&
-              translated.options.description !== undefined &&
-              translated.options.description.trim()
+              (translated.options as Record<string, unknown>).description !== undefined &&
+              ((translated.options as Record<string, unknown>).description as string).trim()
             ) {
-              updates.section_description_fr = translated.options.description;
+              updates.section_description_fr = (translated.options as Record<string, unknown>)
+                .description as string;
             }
             return Object.keys(updates).length > 0 ? { ...q, ...updates } : q;
           })
@@ -205,19 +251,23 @@ export default function EditSurvey() {
           prev.map((q, idx) => {
             const translated = transData.questions_zh[idx];
             if (!translated) return q;
-            const updates: any = {};
+            const updates: Record<string, unknown> = {};
             if (translated.question_text && translated.question_text.trim()) {
               updates.question_text_zh = translated.question_text;
             }
-            if (translated.options && translated.options.choices !== undefined) {
-              updates.options_zh = translated.options.choices;
+            if (
+              translated.options &&
+              (translated.options as Record<string, unknown>).choices !== undefined
+            ) {
+              updates.options_zh = (translated.options as Record<string, unknown>).choices;
             }
             if (
               translated.options &&
-              translated.options.description !== undefined &&
-              translated.options.description.trim()
+              (translated.options as Record<string, unknown>).description !== undefined &&
+              ((translated.options as Record<string, unknown>).description as string).trim()
             ) {
-              updates.section_description_zh = translated.options.description;
+              updates.section_description_zh = (translated.options as Record<string, unknown>)
+                .description as string;
             }
             return Object.keys(updates).length > 0 ? { ...q, ...updates } : q;
           })
@@ -254,81 +304,107 @@ export default function EditSurvey() {
         const zhQuestions = transData.questions_zh || [];
 
         // Map questions
-        const loadedQuestions = data.questions.map((q: any) => {
-          const frQ = frQuestions.find((fq: any) => fq.id === q.id) || {};
-          const zhQ = zhQuestions.find((zq: any) => zq.id === q.id) || {};
+        const loadedQuestions = (data.questions as ApiQuestion[]).map((q) => {
+          const frQ = (frQuestions as ApiTranslationQuestion[]).find((fq) => fq.id === q.id);
+          const zhQ = (zhQuestions as ApiTranslationQuestion[]).find((zq) => zq.id === q.id);
           const isArr = !q.options || Array.isArray(q.options);
-          const isFrArr = !frQ.options || Array.isArray(frQ.options);
-          const isZhArr = !zhQ.options || Array.isArray(zhQ.options);
+          const isFrArr = !frQ?.options || Array.isArray(frQ.options);
+          const isZhArr = !zhQ?.options || Array.isArray(zhQ.options);
 
+          const qOpts = q.options as Record<string, unknown>;
           return {
             id: q.id, // Use real ID so we can match properly, or a stable one
             question_text: q.question_text,
             type: q.type,
-            options: isArr ? q.options || [] : q.options.choices,
+            options: isArr ? q.options || [] : (qOpts.choices as string[]),
             max_selections: !isArr
-              ? q.options.max_selections
+              ? (qOpts.max_selections as number | undefined)
               : q.type === 'checkboxes'
                 ? 3
                 : undefined,
-            has_other: !isArr ? q.options.has_other : false,
-            randomize_options: !isArr ? q.options.randomize_options : false,
-            locked_choices: !isArr ? q.options.locked_choices || [] : [],
+            has_other: !isArr ? (qOpts.has_other as boolean) : false,
+            randomize_options: !isArr ? (qOpts.randomize_options as boolean) : false,
+            locked_choices: !isArr ? (qOpts.locked_choices as string[]) || [] : [],
             is_required: q.is_required,
             is_conditional: q.is_conditional || false,
-            logic_gates: !isArr ? q.options.logic_gates || [] : [],
-            logic_gate_match_type: !isArr ? q.options.logic_gate_match_type || 'all' : 'all',
-            section_description: !isArr ? q.options.description : undefined,
+            logic_gates: !isArr
+              ? (qOpts.logic_gates as {
+                  question_id: string;
+                  condition_type: string;
+                  value: string;
+                }[]) || []
+              : [],
+            logic_gate_match_type: !isArr
+              ? (qOpts.logic_gate_match_type as 'all' | 'any') || 'all'
+              : 'all',
+            section_description: !isArr ? (qOpts.description as string) : undefined,
             description_alignment:
-              !isArr && q.options.description_alignment
-                ? q.options.description_alignment
+              !isArr && qOpts.description_alignment
+                ? (qOpts.description_alignment as 'left' | 'center' | 'justify')
                 : undefined,
-            attachments: !isArr ? q.options.attachments : undefined,
-            reference_number: !isArr && q.options.has_calculator ? 1 : undefined,
-            definitions: !isArr ? q.options.definitions : undefined,
+            attachments: !isArr ? (qOpts.attachments as unknown[]) : undefined,
+            reference_number: !isArr && qOpts.has_calculator ? 1 : undefined,
+            definitions: !isArr ? (qOpts.definitions as unknown[]) : undefined,
             question_description:
-              q.type === 'short_answer' && !isArr ? q.options.description || '' : '',
+              q.type === 'short_answer' && !isArr ? (qOpts.description as string) || '' : '',
             validation_type:
-              q.type === 'short_answer' && !isArr && q.options.validation
-                ? q.options.validation.type || 'none'
+              q.type === 'short_answer' && !isArr && qOpts.validation
+                ? ((qOpts.validation as Record<string, unknown>).type as string) || 'none'
                 : 'none',
             validation_regex:
-              q.type === 'short_answer' && !isArr && q.options.validation
-                ? q.options.validation.regex || ''
+              q.type === 'short_answer' && !isArr && qOpts.validation
+                ? ((qOpts.validation as Record<string, unknown>).regex as string) || ''
                 : '',
             validation_max_length:
-              q.type === 'short_answer' && !isArr && q.options.validation
-                ? q.options.validation.max_length
+              q.type === 'short_answer' && !isArr && qOpts.validation
+                ? ((qOpts.validation as Record<string, unknown>).max_length as number)
                 : undefined,
             validation_normalize_uppercase:
-              q.type === 'short_answer' && !isArr && q.options.validation
-                ? q.options.validation.normalize_uppercase || false
+              q.type === 'short_answer' && !isArr && qOpts.validation
+                ? ((qOpts.validation as Record<string, unknown>).normalize_uppercase as boolean) ||
+                  false
                 : false,
 
             // French fields
-            question_text_fr: frQ.question_text || '',
-            options_fr: isFrArr ? frQ.options || [] : frQ.options?.choices || [],
+            question_text_fr: frQ?.question_text || '',
+            options_fr: isFrArr
+              ? frQ?.options || []
+              : (frQ?.options as Record<string, unknown>)?.choices || [],
             section_description_fr:
-              !isFrArr && frQ.options?.description ? frQ.options.description : '',
-            definitions_fr: !isFrArr ? frQ.options?.definitions : undefined,
+              !isFrArr && (frQ?.options as Record<string, unknown>)?.description
+                ? ((frQ?.options as Record<string, unknown>).description as string)
+                : '',
+            definitions_fr: !isFrArr
+              ? (frQ?.options as Record<string, unknown>)?.definitions
+              : undefined,
             question_description_fr:
-              q.type === 'short_answer' && !isFrArr && frQ.options?.description
-                ? frQ.options.description
+              q.type === 'short_answer' &&
+              !isFrArr &&
+              (frQ?.options as Record<string, unknown>)?.description
+                ? ((frQ?.options as Record<string, unknown>).description as string)
                 : '',
 
             // Chinese fields
-            question_text_zh: zhQ.question_text || '',
-            options_zh: isZhArr ? zhQ.options || [] : zhQ.options?.choices || [],
+            question_text_zh: zhQ?.question_text || '',
+            options_zh: isZhArr
+              ? zhQ?.options || []
+              : (zhQ?.options as Record<string, unknown>)?.choices || [],
             section_description_zh:
-              !isZhArr && zhQ.options?.description ? zhQ.options.description : '',
-            definitions_zh: !isZhArr ? zhQ.options?.definitions : undefined,
+              !isZhArr && (zhQ?.options as Record<string, unknown>)?.description
+                ? ((zhQ?.options as Record<string, unknown>).description as string)
+                : '',
+            definitions_zh: !isZhArr
+              ? (zhQ?.options as Record<string, unknown>)?.definitions
+              : undefined,
             question_description_zh:
-              q.type === 'short_answer' && !isZhArr && zhQ.options?.description
-                ? zhQ.options.description
+              q.type === 'short_answer' &&
+              !isZhArr &&
+              (zhQ?.options as Record<string, unknown>)?.description
+                ? ((zhQ?.options as Record<string, unknown>).description as string)
                 : '',
           };
         });
-        setQuestions(loadedQuestions);
+        setQuestions(loadedQuestions as QuestionDraft[]);
         setLoading(false);
       })
       .catch((err) => {
@@ -337,10 +413,10 @@ export default function EditSurvey() {
       });
   }, [params.id]);
 
-  const getOptionsArray = (options: any): string[] => {
+  const getOptionsArray = (options: unknown): string[] => {
     if (!options) return [];
     if (Array.isArray(options)) return options as string[];
-    return (options.choices || []) as string[];
+    return ((options as Record<string, unknown>).choices as string[]) || [];
   };
 
   const getOptionsForDisplay = (q: QuestionDraft): string[] => {
@@ -389,7 +465,7 @@ export default function EditSurvey() {
     setQuestions([...questions, newQ]);
   };
 
-  const updateQuestion = (id: string, field: keyof QuestionDraft, value: any) => {
+  const updateQuestion = (id: string, field: keyof QuestionDraft, value: unknown) => {
     setQuestions(questions.map((q) => (q.id === id ? { ...q, [field]: value } : q)));
   };
 
@@ -409,9 +485,14 @@ export default function EditSurvey() {
           return { ...q, options_zh: arr };
         } else {
           const isArr = Array.isArray(q.options);
-          const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+          const arr = isArr
+            ? [...(q.options as string[])]
+            : [...(((q.options as Record<string, unknown>).choices as string[]) || [])];
           arr[index] = value;
-          return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+          return {
+            ...q,
+            options: isArr ? arr : { ...(q.options as Record<string, unknown>), choices: arr },
+          };
         }
       })
     );
@@ -508,9 +589,14 @@ export default function EditSurvey() {
           return { ...q, options_zh: arr };
         } else {
           const isArr = Array.isArray(q.options);
-          const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+          const arr = isArr
+            ? [...(q.options as string[])]
+            : [...(((q.options as Record<string, unknown>).choices as string[]) || [])];
           arr.push(`Option ${arr.length + 1}`);
-          return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+          return {
+            ...q,
+            options: isArr ? arr : { ...(q.options as Record<string, unknown>), choices: arr },
+          };
         }
       })
     );
@@ -618,9 +704,14 @@ export default function EditSurvey() {
           return { ...q, options_zh: arr };
         } else {
           const isArr = Array.isArray(q.options);
-          const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+          const arr = isArr
+            ? [...(q.options as string[])]
+            : [...(((q.options as Record<string, unknown>).choices as string[]) || [])];
           arr.splice(index, 1);
-          return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+          return {
+            ...q,
+            options: isArr ? arr : { ...(q.options as Record<string, unknown>), choices: arr },
+          };
         }
       })
     );
@@ -707,7 +798,7 @@ export default function EditSurvey() {
         estimated_minutes: estimatedMinutes,
         is_active: isActive,
         questions: questions.map((q, idx) => {
-          let optionsPayload: any = null;
+          let optionsPayload: OptionsPayload | null = null;
           if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
             optionsPayload = {
               choices: q.options,
@@ -786,7 +877,7 @@ export default function EditSurvey() {
       const payload_fr = payload.questions.map((q, idx) => {
         const draftQ = questions[idx];
         const updatedQ = isLocked ? draftQ : updatedSurvey.questions?.[idx];
-        let optionsFr: any = null;
+        let optionsFr: OptionsPayload | null = null;
         if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
           optionsFr = {
             choices: draftQ.options_fr || q.options?.choices || [],
@@ -845,7 +936,7 @@ export default function EditSurvey() {
       const payload_zh = payload.questions.map((q, idx) => {
         const draftQ = questions[idx];
         const updatedQ = isLocked ? draftQ : updatedSurvey.questions?.[idx];
-        let optionsZh: any = null;
+        let optionsZh: OptionsPayload | null = null;
         if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
           optionsZh = {
             choices: draftQ.options_zh || q.options?.choices || [],
@@ -901,11 +992,11 @@ export default function EditSurvey() {
         };
       });
 
-      const filteredPayloadFr = payload_fr.filter((q: any) => q.id);
-      const filteredPayloadZh = payload_zh.filter((q: any) => q.id);
+      const filteredPayloadFr = payload_fr.filter((q: TranslationPayload) => q.id);
+      const filteredPayloadZh = payload_zh.filter((q: TranslationPayload) => q.id);
 
       if (filteredPayloadFr.length > 0 || filteredPayloadZh.length > 0) {
-        const transPayload: any = {};
+        const transPayload: Record<string, TranslationPayload[] | string> = {};
         if (filteredPayloadFr.length > 0) {
           transPayload.questions_fr = filteredPayloadFr;
           transPayload.title_fr = titleFr || '';
@@ -929,8 +1020,8 @@ export default function EditSurvey() {
       }
 
       router.push('/admin');
-    } catch (err: any) {
-      setError(err.message || 'Error saving survey');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error saving survey');
       setSubmitting(false);
     }
   };

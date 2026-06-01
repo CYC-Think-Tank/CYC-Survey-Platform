@@ -18,11 +18,28 @@ import {
   X,
 } from 'lucide-react';
 
+interface Survey {
+  id: string;
+  title: string;
+  is_active: boolean;
+  has_been_published?: boolean;
+  description?: string;
+  response_count?: number;
+  estimated_minutes?: number;
+}
+
+interface ShareLink {
+  id: string;
+  code: string;
+  label?: string | null;
+  response_count?: number;
+}
+
 export default function AdminDashboard() {
-  const [surveys, setSurveys] = useState<any[]>([]);
+  const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareModal, setShareModal] = useState<{ id: string; title: string } | null>(null);
-  const [shareLinks, setShareLinks] = useState<any[]>([]);
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
   const [shareLabel, setShareLabel] = useState('');
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -48,7 +65,7 @@ export default function AdminDashboard() {
     fetchSurveys();
   }, []);
 
-  const handleToggleActive = async (survey: any) => {
+  const handleToggleActive = async (survey: Survey) => {
     if (!survey.is_active) {
       const confirmed = window.confirm(
         'WARNING: Activating this survey will make it visible to users and PERMANENTLY LOCK it from future edits. Are you sure you want to proceed?'
@@ -89,7 +106,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDelete = async (survey: any) => {
+  const handleDelete = async (survey: Survey) => {
     const confirmMessage = survey.is_active
       ? `CRITICAL WARNING: "${survey.title}" is currently ACTIVE! Deleting it will instantly remove it from the live site and PERMANENTLY DESTROY all respondent data collected so far. Type "DELETE" to confirm.`
       : `WARNING: Are you sure you want to permanently delete "${survey.title}"? This will also destroy all respondent data collected for this survey. This cannot be undone.`;
@@ -120,7 +137,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDuplicate = async (survey: any) => {
+  const handleDuplicate = async (survey: Survey) => {
     try {
       const res = await fetch(`/api/surveys/${survey.id}/duplicate`, {
         method: 'POST',
@@ -143,7 +160,7 @@ export default function AdminDashboard() {
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-  const openShareModal = async (survey: any) => {
+  const openShareModal = async (survey: Survey) => {
     setShareModal({ id: survey.id, title: survey.title });
     setShareLinks([]);
     setShareLabel('');

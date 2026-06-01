@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+interface IncompleteSession {
+  id: string;
+  email: string;
+  survey_id: string;
+  current_step: number;
+}
+
+interface ActiveSurvey {
+  id: string;
+  title: string;
+}
+
+interface CompletedSession {
+  email: string;
+  survey_id: string;
+}
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {
@@ -29,7 +46,7 @@ export async function GET(request: NextRequest) {
       `${SUPABASE_URL}/rest/v1/response_sessions?is_completed=eq.false&reminder_sent=eq.false&started_at=lt.${cutoff}&select=id,email,survey_id,current_step`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
-    const incompleteSessions = await sessionsRes.json();
+    const incompleteSessions: IncompleteSession[] = await sessionsRes.json();
 
     if (!incompleteSessions?.length) {
       return NextResponse.json({ message: 'No reminders needed', sent: 0 });
@@ -39,13 +56,13 @@ export async function GET(request: NextRequest) {
       `${SUPABASE_URL}/rest/v1/surveys?is_active=eq.true&select=id,title`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
-    const activeSurveys = await surveysRes.json();
+    const activeSurveys: ActiveSurvey[] = await surveysRes.json();
 
     const completedRes = await fetch(
       `${SUPABASE_URL}/rest/v1/response_sessions?is_completed=eq.true&select=email,survey_id`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
-    const completedSessions = await completedRes.json();
+    const completedSessions: CompletedSession[] = await completedRes.json();
 
     const completedMap: Record<string, Set<string>> = {};
     for (const s of completedSessions || []) {
@@ -65,15 +82,13 @@ export async function GET(request: NextRequest) {
       const completed = completedMap[email] || new Set();
 
       // remainingSurveys: all active surveys that aren't completed yet
-      const remainingSurveys = activeSurveys.filter((s: any) => !completed.has(s.id));
+      const remainingSurveys = activeSurveys.filter((s) => !completed.has(s.id));
 
       const unfinishedCount = sessions.length;
 
       // Set of unfinished survey IDs to identify which remaining ones haven't been started at all
-      const unfinishedSurveyIds = new Set(sessions.map((s: any) => s.survey_id));
-      const unstartedCount = remainingSurveys.filter(
-        (s: any) => !unfinishedSurveyIds.has(s.id)
-      ).length;
+      const unfinishedSurveyIds = new Set(sessions.map((s) => s.survey_id));
+      const unstartedCount = remainingSurveys.filter((s) => !unfinishedSurveyIds.has(s.id)).length;
 
       const subjectText =
         unfinishedCount > 0 && unstartedCount > 0
@@ -144,8 +159,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ message: `Sent ${sentCount} reminder emails`, sent: sentCount });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Cron error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
