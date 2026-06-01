@@ -8,7 +8,7 @@ import string
 import traceback
 import uuid
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Any
 
 import httpx
 import pdfplumber
@@ -86,16 +86,17 @@ class AnswerCreate(BaseModel):
 
 
 class ResponseSubmission(BaseModel):
-    survey_id: str
     email: str
     answers: list[AnswerCreate]
+    language: str | None = None
+    referral_source: str | None = None
 
 
 # Routes
 
 
 @app.post("/api/upload")
-async def upload_file(file: Annotated[UploadFile, File(...)]):
+async def upload_file(file: UploadFile = File(...)):
     """Upload a file to Supabase Storage and return the public URL."""
     try:
         content = await file.read()
@@ -117,7 +118,7 @@ async def upload_file(file: Annotated[UploadFile, File(...)]):
         import traceback
 
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/surveys", response_model=list[SurveyList])
@@ -156,7 +157,7 @@ async def get_surveys(include_inactive: bool = False):
         import traceback
 
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/surveys/{survey_id}", response_model=SurveyDetail)
@@ -184,7 +185,7 @@ async def get_survey(survey_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class QuestionCreate(BaseModel):
@@ -290,7 +291,7 @@ async def create_survey(survey: SurveyCreate):
 
         return created_survey
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/surveys/{survey_id}/duplicate", response_model=SurveyDetail)
@@ -444,7 +445,7 @@ async def duplicate_survey(survey_id: str):
         return new_survey
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/surveys/{survey_id}/translation")
@@ -495,7 +496,7 @@ async def get_survey_translation(survey_id: str):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/surveys/{survey_id}/translation")
@@ -564,7 +565,7 @@ async def update_survey_translation(survey_id: str, request: Request):
 
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/test-gemini")
@@ -591,12 +592,12 @@ async def test_gemini():
         }
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/surveys/{survey_id}/translation/upload")
 async def upload_translation_pdf(
-    survey_id: str, language: str = "fr", *, file: Annotated[UploadFile, File(...)]
+    survey_id: str, language: str = "fr", file: UploadFile = File(...)
 ):
     """Upload a PDF containing translated survey questions and auto-populate translations."""
 
@@ -794,14 +795,16 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
                     "options": gemini_q.get("options"),
                 }
             else:
+                # No translation found in PDF for this question — leave it empty so
+                # the frontend can fall back to English and manual edits are preserved.
                 translated = {
                     "id": q["id"],
-                    "question_text": q["question_text"],
+                    "question_text": "",
                     "type": q["type"],
                     "order_index": q["order_index"],
                     "is_required": q.get("is_required", True),
                     "is_conditional": q.get("is_conditional", False),
-                    "options": q.get("options"),
+                    "options": None,
                 }
             questions_translated.append(translated)
 
@@ -847,10 +850,10 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/surveys/{survey_id}", response_model=SurveyDetail)
@@ -965,7 +968,7 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class SessionCreate(BaseModel):
@@ -999,7 +1002,7 @@ async def check_survey_status(survey_id: str, body: CheckStatusRequest):
         )
         return {"has_submitted": bool(existing.data)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/user/profile-data")
@@ -1040,7 +1043,7 @@ async def get_user_profile_data(email: str):
 
         return profile_data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/surveys/{survey_id}/sessions")
@@ -1091,7 +1094,7 @@ async def create_session(survey_id: str, body: SessionCreate):
             "resumed": False,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/api/sessions/{session_id}/answers")
@@ -1136,23 +1139,37 @@ async def upsert_answer(session_id: str, body: AnswerUpsert):
                                 detail=f"Answer must match pattern: {regex_str}",
                             )
 
-        supabase.table("answers").upsert(
-            {
-                "session_id": session_id,
-                "question_id": body.question_id,
-                "answer_text": body.answer_text,
-                "answer_numeric": body.answer_numeric,
-                "answer_options": body.answer_options,
-                "time_spent": body.time_spent,
-            },
-            on_conflict="session_id,question_id",
-        ).execute()
+        answer_data = {
+            "session_id": session_id,
+            "question_id": body.question_id,
+            "answer_text": body.answer_text,
+            "answer_numeric": body.answer_numeric,
+            "answer_options": body.answer_options,
+        }
+        if body.time_spent is not None:
+            answer_data["time_spent"] = body.time_spent
+        try:
+            supabase.table("answers").upsert(
+                answer_data, on_conflict="session_id,question_id"
+            ).execute()
+        except Exception as insert_err:
+            err_str = str(insert_err).lower()
+            if "time_spent" in err_str and (
+                "does not exist" in err_str or "column" in err_str
+            ):
+                print("[upsert_answer] time_spent column missing, retrying without it")
+                answer_data.pop("time_spent", None)
+                supabase.table("answers").upsert(
+                    answer_data, on_conflict="session_id,question_id"
+                ).execute()
+            else:
+                raise
 
         return {"status": "saved"}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.patch("/api/sessions/{session_id}/step")
@@ -1164,7 +1181,7 @@ async def update_step(session_id: str, body: dict):
         ).eq("id", session_id).execute()
         return {"status": "updated"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/sessions/{session_id}/attention-failure")
@@ -1209,7 +1226,7 @@ async def report_attention_failure(session_id: str):
             "is_valid": is_valid,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.patch("/api/sessions/{session_id}/complete")
@@ -1221,47 +1238,62 @@ async def complete_session(session_id: str):
         ).eq("id", session_id).execute()
         return {"status": "completed"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/surveys/{survey_id}/responses")
 async def submit_response(survey_id: str, submission: ResponseSubmission):
     """Legacy: Submit a full response at once (fallback)."""
     try:
-        session_res = (
-            supabase.table("response_sessions")
-            .insert(
-                {
-                    "survey_id": survey_id,
-                    "email": submission.email,
-                    "is_completed": True,
-                    "completed_at": datetime.utcnow().isoformat(),
-                }
-            )
-            .execute()
-        )
+        session_data = {
+            "survey_id": survey_id,
+            "email": submission.email,
+            "is_completed": True,
+            "completed_at": datetime.utcnow().isoformat(),
+        }
+        if submission.language:
+            session_data["language"] = submission.language
+        if submission.referral_source:
+            session_data["referral_source"] = submission.referral_source
+        session_res = supabase.table("response_sessions").insert(session_data).execute()
 
         session_id = session_res.data[0]["id"]
 
         answers_to_insert = []
         for answer in submission.answers:
-            answers_to_insert.append(
-                {
-                    "session_id": session_id,
-                    "question_id": answer.question_id,
-                    "answer_text": answer.answer_text,
-                    "answer_numeric": answer.answer_numeric,
-                    "answer_options": answer.answer_options,
-                    "time_spent": answer.time_spent,
-                }
-            )
+            item = {
+                "session_id": session_id,
+                "question_id": answer.question_id,
+                "answer_text": answer.answer_text,
+                "answer_numeric": answer.answer_numeric,
+                "answer_options": answer.answer_options,
+            }
+            if answer.time_spent is not None:
+                item["time_spent"] = answer.time_spent
+            answers_to_insert.append(item)
 
         if answers_to_insert:
-            supabase.table("answers").insert(answers_to_insert).execute()
+            try:
+                supabase.table("answers").insert(answers_to_insert).execute()
+            except Exception as insert_err:
+                err_str = str(insert_err).lower()
+                # If time_spent column is missing, retry without it
+                if "time_spent" in err_str and (
+                    "does not exist" in err_str or "column" in err_str
+                ):
+                    print(
+                        "[submit_response] time_spent column missing, retrying without it"
+                    )
+                    for item in answers_to_insert:
+                        item.pop("time_spent", None)
+                    supabase.table("answers").insert(answers_to_insert).execute()
+                else:
+                    raise
 
         return {"status": "success", "session_id": session_id}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def _get_random_email_position(num_emails: int = 5) -> list:
@@ -1289,7 +1321,7 @@ async def _get_random_email_position(num_emails: int = 5) -> list:
         return random.sample(range(total_emails), num_emails)
     #    return random.randint(0, total_emails - 1)
     except Exception as e:
-        raise Exception(f"Failed to determine raffle position: {e}") from e
+        raise Exception(f"Failed to determine raffle position: {e}")
 
 
 @app.get("/api/admin/raffle-email")
@@ -1320,7 +1352,7 @@ async def get_raffle_email():
 
         return {"emails": emails}
     except Exception as e:
-        raise Exception(f"Failed to select raffle email: {e}") from e
+        raise Exception(f"Failed to select raffle email: {e}")
 
 
 @app.get("/api/surveys/{survey_id}/results")
@@ -1364,16 +1396,29 @@ async def get_survey_results(survey_id: str):
             ref = row.get("referral_source") or "Direct"
             referral_counts[ref] = referral_counts.get(ref, 0) + 1
 
+        # Get language breakdown
+        lang_res = (
+            supabase.table("response_sessions")
+            .select("language")
+            .eq("survey_id", survey_id)
+            .execute()
+        )
+        language_counts = {}
+        for row in lang_res.data:
+            lang = row.get("language") or "Unknown"
+            language_counts[lang] = language_counts.get(lang, 0) + 1
+
         return {
             "survey": survey,
             "questions": questions,
             "total_responses": total_responses,
             "referral_breakdown": referral_counts,
+            "language_breakdown": language_counts,
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/surveys/{survey_id}/responses/paginated")
@@ -1429,6 +1474,7 @@ async def get_survey_responses_paginated(
                     "session_id": s["id"],
                     "completed_at": s.get("completed_at"),
                     "referral_source": s.get("referral_source"),
+                    "language": s.get("language"),
                     "attention_check_failures": s.get("attention_check_failures", 0),
                     "weight": s.get("weight", 1.0),
                     "is_valid": s.get("is_valid", True),
@@ -1438,7 +1484,7 @@ async def get_survey_responses_paginated(
 
         return {"responses": responses, "total": total}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/surveys/{survey_id}/summary")
@@ -1634,7 +1680,7 @@ async def get_survey_summary(survey_id: str):
         import traceback
 
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/api/surveys/{survey_id}/responses")
@@ -1647,7 +1693,7 @@ async def delete_all_responses(survey_id: str):
         ).execute()
         return {"success": True, "message": "All responses deleted"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/api/responses/{session_id}")
@@ -1657,7 +1703,7 @@ async def delete_single_response(session_id: str):
         supabase.table("response_sessions").delete().eq("id", session_id).execute()
         return {"success": True, "message": "Response deleted"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/api/surveys/{survey_id}")
@@ -1677,7 +1723,7 @@ async def delete_survey(survey_id: str):
             "message": "Survey and all related data deleted successfully",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.patch("/api/surveys/{survey_id}/toggle", response_model=SurveyList)
@@ -1715,7 +1761,7 @@ async def toggle_survey_status(survey_id: str):
         updated["response_count"] = 0
         return updated
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- SHARE LINKS ---
@@ -1734,7 +1780,7 @@ async def create_share_link(survey_id: str, body: ShareLinkCreate):
         res = supabase.table("share_links").insert(row).execute()
         return res.data[0]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/surveys/{survey_id}/share-links")
@@ -1774,7 +1820,7 @@ async def get_share_links(survey_id: str):
 
         return links
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/api/share-links/{link_id}")
@@ -1784,7 +1830,7 @@ async def delete_share_link(link_id: str):
         supabase.table("share_links").delete().eq("id", link_id).execute()
         return {"success": True}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- AI ANALYSIS SUITE ---
@@ -2073,7 +2119,9 @@ Representative Sample of Respondent Profiles (Sampled {len(respondent_profiles)}
 
 
 @app.post("/api/surveys/{survey_id}/ai-analysis")
-async def ai_persuadability_analysis(survey_id: str, body: AIAnalysisRequest):
+async def ai_persuadability_analysis(
+    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+):
     try:
         prompt_suffix = """
 
@@ -2097,16 +2145,18 @@ Guidelines: High variance in rating/likert = persuadable. Split multiple choice 
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- 2. PUBLIC MOOD HEATMAP ---
 
 
 @app.post("/api/surveys/{survey_id}/ai-mood")
-async def ai_mood_heatmap(survey_id: str, body: AIAnalysisRequest):
+async def ai_mood_heatmap(
+    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+):
     try:
         prompt_suffix = """
 
@@ -2131,16 +2181,18 @@ Guidelines: Focus on emotional valence and intensity across responses. Look for 
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- 3. BELIEF NETWORK GRAPH ---
 
 
 @app.post("/api/surveys/{survey_id}/ai-beliefs")
-async def ai_belief_network(survey_id: str, body: AIAnalysisRequest):
+async def ai_belief_network(
+    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+):
     try:
         prompt_suffix = """
 
@@ -2165,16 +2217,18 @@ Guidelines: Look for correlations in how people answer seemingly unrelated quest
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- 4. MINORITY INSIGHT AMPLIFIER ---
 
 
 @app.post("/api/surveys/{survey_id}/ai-minority")
-async def ai_minority_insights(survey_id: str, body: AIAnalysisRequest):
+async def ai_minority_insights(
+    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+):
     try:
         prompt_suffix = """
 
@@ -2206,16 +2260,16 @@ Guidelines: Focus on issues raised by <25% of respondents but with unusually hig
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- 5. RESPONDENT ARCHETYPE GENERATOR ---
 
 
 @app.post("/api/surveys/{survey_id}/ai-archetypes")
-async def ai_archetypes(survey_id: str, body: AIAnalysisRequest):
+async def ai_archetypes(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
     try:
         prompt_suffix = """
 
@@ -2250,16 +2304,16 @@ Guidelines: Cluster respondents by recurring patterns in attitudes, values, and 
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- 6. SURVEY BLIND SPOT ANALYZER ---
 
 
 @app.post("/api/surveys/{survey_id}/ai-blindspots")
-async def ai_blindspots(survey_id: str, body: AIAnalysisRequest):
+async def ai_blindspots(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
     try:
         prompt_suffix = """
 
@@ -2296,9 +2350,9 @@ Guidelines: Review which topics the survey covers well and where gaps exist. Loo
     except json_module.JSONDecodeError as e:
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
-        ) from e
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

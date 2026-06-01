@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
+  PlusCircle,
   Trash2,
   ArrowLeft,
   Save,
@@ -164,37 +165,62 @@ export default function EditSurvey() {
 
   const populateTranslations = async () => {
     const transRes = await fetch(`/api/surveys/${params.id}/translation`);
-    if (transRes.ok) {
-      const transData = await transRes.json();
+    if (!transRes.ok) return;
+    const transData = await transRes.json();
 
-      if (language === 'fr') {
-        setTitleFr(transData.title_fr || '');
-        setDescriptionFr(transData.description_fr || '');
+    // Only overwrite fields that are actually present and non-empty in the parsed
+    // PDF data. This prevents an incomplete PDF from wiping manual entries.
+    if (language === 'fr') {
+      if (transData.title_fr && transData.title_fr.trim()) setTitleFr(transData.title_fr);
+      if (transData.description_fr && transData.description_fr.trim())
+        setDescriptionFr(transData.description_fr);
+      if (transData.questions_fr) {
         setQuestions((prev) =>
           prev.map((q, idx) => {
-            const translated = transData.questions_fr?.[idx];
+            const translated = transData.questions_fr[idx];
             if (!translated) return q;
-            return {
-              ...q,
-              question_text_fr: translated.question_text || '',
-              options_fr: translated.options?.choices || null,
-              section_description_fr: translated.options?.description || '',
-            };
+            const updates: any = {};
+            if (translated.question_text && translated.question_text.trim()) {
+              updates.question_text_fr = translated.question_text;
+            }
+            if (translated.options && translated.options.choices !== undefined) {
+              updates.options_fr = translated.options.choices;
+            }
+            if (
+              translated.options &&
+              translated.options.description !== undefined &&
+              translated.options.description.trim()
+            ) {
+              updates.section_description_fr = translated.options.description;
+            }
+            return Object.keys(updates).length > 0 ? { ...q, ...updates } : q;
           })
         );
-      } else if (language === 'zh') {
-        setTitleZh(transData.title_zh || '');
-        setDescriptionZh(transData.description_zh || '');
+      }
+    } else if (language === 'zh') {
+      if (transData.title_zh && transData.title_zh.trim()) setTitleZh(transData.title_zh);
+      if (transData.description_zh && transData.description_zh.trim())
+        setDescriptionZh(transData.description_zh);
+      if (transData.questions_zh) {
         setQuestions((prev) =>
           prev.map((q, idx) => {
-            const translated = transData.questions_zh?.[idx];
+            const translated = transData.questions_zh[idx];
             if (!translated) return q;
-            return {
-              ...q,
-              question_text_zh: translated.question_text || '',
-              options_zh: translated.options?.choices || null,
-              section_description_zh: translated.options?.description || '',
-            };
+            const updates: any = {};
+            if (translated.question_text && translated.question_text.trim()) {
+              updates.question_text_zh = translated.question_text;
+            }
+            if (translated.options && translated.options.choices !== undefined) {
+              updates.options_zh = translated.options.choices;
+            }
+            if (
+              translated.options &&
+              translated.options.description !== undefined &&
+              translated.options.description.trim()
+            ) {
+              updates.section_description_zh = translated.options.description;
+            }
+            return Object.keys(updates).length > 0 ? { ...q, ...updates } : q;
           })
         );
       }
@@ -377,6 +403,11 @@ export default function EditSurvey() {
           const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
           arr[index] = value;
           return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr[index] = value;
+          return { ...q, options_zh: arr };
         } else {
           const isArr = Array.isArray(q.options);
           const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
@@ -466,10 +497,22 @@ export default function EditSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        const isArr = Array.isArray(q.options);
-        const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
-        arr.push(`Option ${arr.length + 1}`);
-        return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+        if (language === 'fr') {
+          const base = getOptionsArray(q.options_fr);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options_zh: arr };
+        } else {
+          const isArr = Array.isArray(q.options);
+          const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+        }
       })
     );
   };
@@ -478,7 +521,19 @@ export default function EditSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
+        if (language === 'fr') {
+          return {
+            ...q,
+            definitions_fr: [...(q.definitions_fr || []), { term: '', definition: '' }],
+          };
+        } else if (language === 'zh') {
+          return {
+            ...q,
+            definitions_zh: [...(q.definitions_zh || []), { term: '', definition: '' }],
+          };
+        } else {
+          return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
+        }
       })
     );
   };
@@ -497,6 +552,11 @@ export default function EditSurvey() {
           if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
           newDefs[index] = { ...newDefs[index], [field]: value };
           return { ...q, definitions_fr: newDefs };
+        } else if (language === 'zh') {
+          const newDefs = [...(q.definitions_zh || q.definitions || [])];
+          if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
+          newDefs[index] = { ...newDefs[index], [field]: value };
+          return { ...q, definitions_zh: newDefs };
         } else {
           const newDefs = [...(q.definitions || [])];
           if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
@@ -511,9 +571,19 @@ export default function EditSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        const newDefs = [...(q.definitions || [])];
-        newDefs.splice(index, 1);
-        return { ...q, definitions: newDefs };
+        if (language === 'fr') {
+          const newDefs = [...(q.definitions_fr || [])];
+          newDefs.splice(index, 1);
+          return { ...q, definitions_fr: newDefs };
+        } else if (language === 'zh') {
+          const newDefs = [...(q.definitions_zh || [])];
+          newDefs.splice(index, 1);
+          return { ...q, definitions_zh: newDefs };
+        } else {
+          const newDefs = [...(q.definitions || [])];
+          newDefs.splice(index, 1);
+          return { ...q, definitions: newDefs };
+        }
       })
     );
   };
@@ -537,10 +607,22 @@ export default function EditSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        const isArr = Array.isArray(q.options);
-        const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
-        arr.splice(index, 1);
-        return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+        if (language === 'fr') {
+          const base = getOptionsArray(q.options_fr);
+          const arr = base.slice();
+          arr.splice(index, 1);
+          return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = base.slice();
+          arr.splice(index, 1);
+          return { ...q, options_zh: arr };
+        } else {
+          const isArr = Array.isArray(q.options);
+          const arr = isArr ? [...q.options] : [...(q.options.choices || [])];
+          arr.splice(index, 1);
+          return { ...q, options: isArr ? arr : { ...q.options, choices: arr } };
+        }
       })
     );
   };
@@ -925,13 +1007,23 @@ export default function EditSurvey() {
             <input
               type="text"
               required={language === 'en'}
-              value={language === 'en' ? title : titleFr}
+              value={language === 'en' ? title : language === 'fr' ? titleFr : titleZh}
               onChange={(e) =>
-                language === 'en' ? setTitle(e.target.value) : setTitleFr(e.target.value)
+                language === 'en'
+                  ? setTitle(e.target.value)
+                  : language === 'fr'
+                    ? setTitleFr(e.target.value)
+                    : setTitleZh(e.target.value)
               }
               disabled={isLocked && language === 'en'}
               className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
-              placeholder={language === 'fr' ? 'Titre en francais' : 'Survey Title'}
+              placeholder={
+                language === 'fr'
+                  ? 'Titre en francais'
+                  : language === 'zh'
+                    ? '中文标题'
+                    : 'Survey Title'
+              }
             />
           </div>
           <div>
@@ -959,10 +1051,24 @@ export default function EditSurvey() {
               </div>
             )}
             <RichTextEditor
-              value={language === 'en' ? description : descriptionFr}
-              onChange={(val) => (language === 'en' ? setDescription(val) : setDescriptionFr(val))}
+              value={
+                language === 'en' ? description : language === 'fr' ? descriptionFr : descriptionZh
+              }
+              onChange={(val) =>
+                language === 'en'
+                  ? setDescription(val)
+                  : language === 'fr'
+                    ? setDescriptionFr(val)
+                    : setDescriptionZh(val)
+              }
               readOnly={isLocked && language === 'en'}
-              placeholder={language === 'fr' ? "De quoi s'agit-il?" : 'What is this survey about?'}
+              placeholder={
+                language === 'fr'
+                  ? "De quoi s'agit-il?"
+                  : language === 'zh'
+                    ? '调查描述'
+                    : 'What is this survey about?'
+              }
             />
           </div>
           {/* Thumbnail Upload */}
@@ -1139,16 +1245,32 @@ export default function EditSurvey() {
                     <input
                       type="text"
                       required={language === 'en'}
-                      value={language === 'en' ? q.question_text : q.question_text_fr || ''}
+                      value={
+                        language === 'en'
+                          ? q.question_text
+                          : language === 'fr'
+                            ? q.question_text_fr || ''
+                            : q.question_text_zh || ''
+                      }
                       onChange={(e) =>
                         updateQuestion(
                           q.id,
-                          language === 'en' ? 'question_text' : 'question_text_fr',
+                          language === 'en'
+                            ? 'question_text'
+                            : language === 'fr'
+                              ? 'question_text_fr'
+                              : 'question_text_zh',
                           e.target.value
                         )
                       }
                       disabled={isLocked && language === 'en'}
-                      placeholder={language === 'fr' ? 'Traduction française' : 'Question Text'}
+                      placeholder={
+                        language === 'fr'
+                          ? 'Traduction française'
+                          : language === 'zh'
+                            ? '中文翻译'
+                            : 'Question Text'
+                      }
                       className="w-full p-2 border rounded font-medium focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                     />
                   </div>
@@ -1399,7 +1521,9 @@ export default function EditSurvey() {
                           placeholder={
                             language === 'fr'
                               ? getOptionsArray(q.options)[oIdx] || `Option ${oIdx + 1} (Francais)`
-                              : `Option ${oIdx + 1}`
+                              : language === 'zh'
+                                ? getOptionsArray(q.options)[oIdx] || `选项 ${oIdx + 1}`
+                                : `Option ${oIdx + 1}`
                           }
                           onChange={(e) => updateOption(q.id, oIdx, e.target.value)}
                           className={`flex-grow p-1.5 border-b focus:border-[var(--color-cyc-primary)] focus:outline-none bg-transparent ${language === 'fr' ? 'border-blue-200 focus:border-blue-500' : ''}`}
@@ -1466,12 +1590,18 @@ export default function EditSurvey() {
                         value={
                           language === 'en'
                             ? q.section_description || ''
-                            : q.section_description_fr || ''
+                            : language === 'fr'
+                              ? q.section_description_fr || ''
+                              : q.section_description_zh || ''
                         }
                         onChange={(val) =>
                           updateQuestion(
                             q.id,
-                            language === 'en' ? 'section_description' : 'section_description_fr',
+                            language === 'en'
+                              ? 'section_description'
+                              : language === 'fr'
+                                ? 'section_description_fr'
+                                : 'section_description_zh',
                             val
                           )
                         }
@@ -1479,7 +1609,9 @@ export default function EditSurvey() {
                         placeholder={
                           language === 'en'
                             ? 'Provide context or instructions before the next set of questions...'
-                            : 'Traduction française du contexte...'
+                            : language === 'fr'
+                              ? 'Traduction française du contexte...'
+                              : '中文描述...'
                         }
                       />
                     </div>
@@ -1544,37 +1676,55 @@ export default function EditSurvey() {
                       + Add Definition
                     </button>
                   </div>
-                  {q.definitions && q.definitions.length > 0 && (
-                    <div className="space-y-2">
-                      {(language === 'en' ? q.definitions : q.definitions_fr || q.definitions).map(
-                        (def, dIdx) => (
+                  {(language === 'en'
+                    ? q.definitions
+                    : language === 'fr'
+                      ? q.definitions_fr || q.definitions
+                      : q.definitions_zh || q.definitions) &&
+                    (language === 'en'
+                      ? q.definitions
+                      : language === 'fr'
+                        ? q.definitions_fr || q.definitions
+                        : q.definitions_zh || q.definitions)!.length > 0 && (
+                      <div className="space-y-2">
+                        {(language === 'en'
+                          ? q.definitions
+                          : language === 'fr'
+                            ? q.definitions_fr || q.definitions
+                            : q.definitions_zh || q.definitions)!.map((def, dIdx) => (
                           <div key={dIdx} className="flex items-start space-x-2">
                             <div className="w-1/3">
                               <input
                                 type="text"
                                 placeholder={
-                                  language === 'fr' ? q.definitions![dIdx]?.term || 'Terme' : 'Term'
+                                  language === 'fr'
+                                    ? q.definitions![dIdx]?.term || 'Terme'
+                                    : language === 'zh'
+                                      ? q.definitions![dIdx]?.term || '术语'
+                                      : 'Term'
                                 }
                                 value={def.term}
                                 onChange={(e) =>
                                   updateDefinition(q.id, dIdx, 'term', e.target.value)
                                 }
-                                className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none ${language === 'fr' ? 'border-blue-200' : ''}`}
+                                className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none ${language === 'fr' ? 'border-blue-200' : language === 'zh' ? 'border-red-200' : ''}`}
                               />
                             </div>
                             <div className="flex-grow">
                               <textarea
                                 placeholder={
                                   language === 'fr'
-                                    ? q.definitions![dIdx]?.definition || 'Définition'
-                                    : 'Definition'
+                                    ? q.definitions![dIdx]?.definition || 'Definition'
+                                    : language === 'zh'
+                                      ? q.definitions![dIdx]?.definition || '定义'
+                                      : 'Definition text...'
                                 }
                                 value={def.definition}
                                 onChange={(e) =>
                                   updateDefinition(q.id, dIdx, 'definition', e.target.value)
                                 }
                                 rows={1}
-                                className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none resize-none ${language === 'fr' ? 'border-blue-200' : ''}`}
+                                className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none resize-none ${language === 'fr' ? 'border-blue-200' : language === 'zh' ? 'border-red-200' : ''}`}
                               />
                             </div>
                             <button
@@ -1585,10 +1735,9 @@ export default function EditSurvey() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                        )
-                      )}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
                 </div>
 
                 {/* Logic Gating Section */}

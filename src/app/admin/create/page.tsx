@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  PlusCircle,
   Trash2,
   ArrowLeft,
   Save,
@@ -72,10 +73,10 @@ export default function CreateSurvey() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [titleFr, setTitleFr] = useState('');
-  const [titleZh, _setTitleZh] = useState('');
+  const [titleZh, setTitleZh] = useState('');
   const [description, setDescription] = useState('');
   const [descriptionFr, setDescriptionFr] = useState('');
-  const [descriptionZh, _setDescriptionZh] = useState('');
+  const [descriptionZh, setDescriptionZh] = useState('');
   const [descriptionAlignment, setDescriptionAlignment] = useState('left');
   const [estimatedMinutes, setEstimatedMinutes] = useState(5);
   const [isActive, setIsActive] = useState(false);
@@ -237,6 +238,11 @@ export default function CreateSurvey() {
           const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
           arr[index] = value;
           return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr[index] = value;
+          return { ...q, options_zh: arr };
         }
         const newOptions = [...q.options];
         newOptions[index] = value;
@@ -249,6 +255,17 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
+        if (language === 'fr') {
+          const base = getOptionsArray(q.options_fr);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options_zh: arr };
+        }
         return { ...q, options: [...q.options, `Option ${q.options.length + 1}`] };
       })
     );
@@ -262,6 +279,11 @@ export default function CreateSurvey() {
           return {
             ...q,
             definitions_fr: [...(q.definitions_fr || []), { term: '', definition: '' }],
+          };
+        } else if (language === 'zh') {
+          return {
+            ...q,
+            definitions_zh: [...(q.definitions_zh || []), { term: '', definition: '' }],
           };
         }
         return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
@@ -283,6 +305,11 @@ export default function CreateSurvey() {
           if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
           newDefs[index] = { ...newDefs[index], [field]: value };
           return { ...q, definitions_fr: newDefs };
+        } else if (language === 'zh') {
+          const newDefs = [...(q.definitions_zh || q.definitions || [])];
+          if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
+          newDefs[index] = { ...newDefs[index], [field]: value };
+          return { ...q, definitions_zh: newDefs };
         }
         const newDefs = [...(q.definitions || [])];
         newDefs[index] = { ...newDefs[index], [field]: value };
@@ -295,6 +322,15 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
+        if (language === 'fr') {
+          const newDefs = [...(q.definitions_fr || [])];
+          newDefs.splice(index, 1);
+          return { ...q, definitions_fr: newDefs };
+        } else if (language === 'zh') {
+          const newDefs = [...(q.definitions_zh || [])];
+          newDefs.splice(index, 1);
+          return { ...q, definitions_zh: newDefs };
+        }
         const newDefs = [...(q.definitions || [])];
         newDefs.splice(index, 1);
         return { ...q, definitions: newDefs };
@@ -321,6 +357,17 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
+        if (language === 'fr') {
+          const base = getOptionsArray(q.options_fr);
+          const arr = base.slice();
+          arr.splice(index, 1);
+          return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = base.slice();
+          arr.splice(index, 1);
+          return { ...q, options_zh: arr };
+        }
         const newOptions = [...q.options];
         newOptions.splice(index, 1);
         return { ...q, options: newOptions };
@@ -688,13 +735,21 @@ export default function CreateSurvey() {
             <input
               type="text"
               required={language === 'en'}
-              value={language === 'en' ? title : titleFr}
+              value={language === 'en' ? title : language === 'fr' ? titleFr : titleZh}
               onChange={(e) =>
-                language === 'en' ? setTitle(e.target.value) : setTitleFr(e.target.value)
+                language === 'en'
+                  ? setTitle(e.target.value)
+                  : language === 'fr'
+                    ? setTitleFr(e.target.value)
+                    : setTitleZh(e.target.value)
               }
               className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
               placeholder={
-                language === 'fr' ? 'Titre en francais' : 'e.g. Mental Health Perspectives 2026'
+                language === 'fr'
+                  ? 'Titre en francais'
+                  : language === 'zh'
+                    ? '中文标题'
+                    : 'e.g. Mental Health Perspectives 2026'
               }
             />
           </div>
@@ -722,9 +777,23 @@ export default function CreateSurvey() {
               </div>
             )}
             <RichTextEditor
-              value={language === 'en' ? description : descriptionFr}
-              onChange={(val) => (language === 'en' ? setDescription(val) : setDescriptionFr(val))}
-              placeholder={language === 'fr' ? "De quoi s'agit-il?" : 'What is this survey about?'}
+              value={
+                language === 'en' ? description : language === 'fr' ? descriptionFr : descriptionZh
+              }
+              onChange={(val) =>
+                language === 'en'
+                  ? setDescription(val)
+                  : language === 'fr'
+                    ? setDescriptionFr(val)
+                    : setDescriptionZh(val)
+              }
+              placeholder={
+                language === 'fr'
+                  ? "De quoi s'agit-il?"
+                  : language === 'zh'
+                    ? '调查描述'
+                    : 'What is this survey about?'
+              }
             />
           </div>
 
@@ -871,11 +940,21 @@ export default function CreateSurvey() {
                     </div>
                   )}
                   <RichTextEditor
-                    value={language === 'en' ? q.question_text : q.question_text_fr || ''}
+                    value={
+                      language === 'en'
+                        ? q.question_text
+                        : language === 'fr'
+                          ? q.question_text_fr || ''
+                          : q.question_text_zh || ''
+                    }
                     onChange={(val) =>
                       updateQuestion(
                         q.id,
-                        language === 'en' ? 'question_text' : 'question_text_fr',
+                        language === 'en'
+                          ? 'question_text'
+                          : language === 'fr'
+                            ? 'question_text_fr'
+                            : 'question_text_zh',
                         val
                       )
                     }
@@ -884,7 +963,9 @@ export default function CreateSurvey() {
                         ? q.type === 'section_header'
                           ? 'Section Title'
                           : 'Type your question here...'
-                        : 'Traduction francaise'
+                        : language === 'fr'
+                          ? 'Traduction francaise'
+                          : '中文翻译'
                     }
                   />
                 </div>
@@ -1140,19 +1221,27 @@ export default function CreateSurvey() {
                       value={
                         language === 'en'
                           ? q.section_description || ''
-                          : q.section_description_fr || ''
+                          : language === 'fr'
+                            ? q.section_description_fr || ''
+                            : q.section_description_zh || ''
                       }
                       onChange={(val) =>
                         updateQuestion(
                           q.id,
-                          language === 'en' ? 'section_description' : 'section_description_fr',
+                          language === 'en'
+                            ? 'section_description'
+                            : language === 'fr'
+                              ? 'section_description_fr'
+                              : 'section_description_zh',
                           val
                         )
                       }
                       placeholder={
                         language === 'en'
                           ? 'Provide context or instructions before the next set of questions...'
-                          : 'Traduction francaise du contexte...'
+                          : language === 'fr'
+                            ? 'Traduction francaise du contexte...'
+                            : '中文描述...'
                       }
                     />
                   </div>
@@ -1278,12 +1367,19 @@ export default function CreateSurvey() {
                     + Add Definition
                   </button>
                 </div>
-                {((language === 'en' ? q.definitions : q.definitions_fr || q.definitions) || [])
-                  .length > 0 && (
+                {(
+                  (language === 'en'
+                    ? q.definitions
+                    : language === 'fr'
+                      ? q.definitions_fr || q.definitions
+                      : q.definitions_zh || q.definitions) || []
+                ).length > 0 && (
                   <div className="space-y-2">
                     {(language === 'en'
                       ? q.definitions || []
-                      : q.definitions_fr || q.definitions || []
+                      : language === 'fr'
+                        ? q.definitions_fr || q.definitions || []
+                        : q.definitions_zh || q.definitions || []
                     ).map((def, dIdx) => (
                       <div key={dIdx} className="flex items-start space-x-2">
                         <input
@@ -1293,9 +1389,11 @@ export default function CreateSurvey() {
                           placeholder={
                             language === 'fr'
                               ? q.definitions?.[dIdx]?.term || 'Terme'
-                              : 'Term to bold'
+                              : language === 'zh'
+                                ? q.definitions?.[dIdx]?.term || '术语'
+                                : 'Term to bold'
                           }
-                          className={`w-1/3 p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm ${language === 'fr' ? 'border-blue-200' : ''}`}
+                          className={`w-1/3 p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm ${language === 'fr' ? 'border-blue-200' : language === 'zh' ? 'border-red-200' : ''}`}
                         />
                         <textarea
                           value={def.definition}
@@ -1305,9 +1403,11 @@ export default function CreateSurvey() {
                           placeholder={
                             language === 'fr'
                               ? q.definitions?.[dIdx]?.definition || 'Definition'
-                              : 'Definition text...'
+                              : language === 'zh'
+                                ? q.definitions?.[dIdx]?.definition || '定义'
+                                : 'Definition text...'
                           }
-                          className={`flex-grow p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm resize-none ${language === 'fr' ? 'border-blue-200' : ''}`}
+                          className={`flex-grow p-1.5 border rounded focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm resize-none ${language === 'fr' ? 'border-blue-200' : language === 'zh' ? 'border-red-200' : ''}`}
                           rows={2}
                         />
                         <button

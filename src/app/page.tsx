@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Clock, BarChart3, Globe, Users, Star } from 'lucide-react';
 
-function TiltCard({ _item, _isCompleted, _t, isFront, children, className }: any) {
+function TiltCard({ item, isCompleted, t, isFront, children, className }: any) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -133,6 +133,8 @@ export default function Home() {
                 ...survey,
                 title_fr: tr?.title_fr,
                 description_fr: tr?.description_fr,
+                title_zh: tr?.title_zh,
+                description_zh: tr?.description_zh,
               };
             } catch {
               return survey;
@@ -191,10 +193,17 @@ export default function Home() {
 
   const baseItems = surveys.slice(0, 3).map((item) => {
     const displayTitle =
-      (language === 'fr' && item.title_fr ? item.title_fr : item.title) || item.title;
+      (language === 'zh' && item.title_zh
+        ? item.title_zh
+        : language === 'fr' && item.title_fr
+          ? item.title_fr
+          : item.title) || item.title;
     const displayDescription =
-      (language === 'fr' && item.description_fr ? item.description_fr : item.description) ||
-      item.description;
+      (language === 'zh' && item.description_zh
+        ? item.description_zh
+        : language === 'fr' && item.description_fr
+          ? item.description_fr
+          : item.description) || item.description;
     return { ...item, displayTitle, displayDescription };
   });
   const items = [...baseItems];
@@ -217,7 +226,7 @@ export default function Home() {
   }
 
   const STEP = 360 / Math.max(items.length, 1);
-  // const RX = 260;
+  const RX = 260;
 
   // Floating decoration data with varying depth (blur, scale, opacity, z-index)
   const decos = [
