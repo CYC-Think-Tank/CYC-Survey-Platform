@@ -70,7 +70,7 @@ export function Footer() {
               href="https://www.instagram.com/youth.champions/?hl=en"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Follow Youth Champions on Instagram"
+              aria-label="'Follow The Canadian Youth Champions on Instagram'"
               className="inline-flex items-center gap-2.5 text-sm font-semibold text-[#04377E] px-4 py-2.5 rounded-lg border-2 border-[#04377E] hover:bg-[#04377E] hover:text-white transition-colors duration-200"
             >
               <InstagramIcon className="w-4.5 h-4.5" />
