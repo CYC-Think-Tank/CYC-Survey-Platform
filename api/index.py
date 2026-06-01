@@ -642,14 +642,16 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
                     "options": gemini_q.get("options"),
                 }
             else:
+                # No translation found in PDF for this question — leave it empty so
+                # the frontend can fall back to English and manual edits are preserved.
                 translated = {
                     "id": q["id"],
-                    "question_text": q["question_text"],
+                    "question_text": "",
                     "type": q["type"],
                     "order_index": q["order_index"],
                     "is_required": q.get("is_required", True),
                     "is_conditional": q.get("is_conditional", False),
-                    "options": q.get("options"),
+                    "options": None,
                 }
             questions_translated.append(translated)
         
