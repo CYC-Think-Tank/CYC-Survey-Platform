@@ -24,8 +24,11 @@ export default function ThankYouPage() {
     fetch('/api/surveys?include_inactive=false')
       .then((res) => res.json())
       .then(async (data: Survey[]) => {
+        const completedSurveys = JSON.parse(localStorage.getItem('cyc_completed_surveys') || '[]');
+        const filteredData = data.filter((survey: Survey) => !completedSurveys.includes(survey.id));
+        
         const withTranslations = await Promise.all(
-          data.map(async (survey: Survey) => {
+          filteredData.map(async (survey: Survey) => {
             try {
               const tr = await fetch(`/api/surveys/${survey.id}/translation`).then((res) =>
                 res.json()
