@@ -81,6 +81,7 @@ class ResponseSubmission(BaseModel):
     email: str
     answers: List[AnswerCreate]
     language: Optional[str] = None
+    referral_source: Optional[str] = None
 
 # Routes
 
@@ -988,6 +989,8 @@ async def submit_response(survey_id: str, submission: ResponseSubmission):
         }
         if submission.language:
             session_data["language"] = submission.language
+        if submission.referral_source:
+            session_data["referral_source"] = submission.referral_source
         session_res = supabase.table("response_sessions").insert(session_data).execute()
         
         session_id = session_res.data[0]["id"]
