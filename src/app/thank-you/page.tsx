@@ -11,8 +11,13 @@ interface Survey {
   description: string;
   estimated_minutes: number;
   thumbnail_url?: string;
-  title_fr?: string;
-  description_fr?: string;
+  translations?: Record<
+    string,
+    {
+      title?: string;
+      description?: string;
+    }
+  >;
 }
 
 export default function ThankYouPage() {
@@ -26,7 +31,7 @@ export default function ThankYouPage() {
       .then(async (data: Survey[]) => {
         const completedSurveys = JSON.parse(localStorage.getItem('cyc_completed_surveys') || '[]');
         const filteredData = data.filter((survey: Survey) => !completedSurveys.includes(survey.id));
-        
+
         const withTranslations = await Promise.all(
           filteredData.map(async (survey: Survey) => {
             try {
@@ -35,8 +40,7 @@ export default function ThankYouPage() {
               );
               return {
                 ...survey,
-                title_fr: tr?.title_fr,
-                description_fr: tr?.description_fr,
+                translations: tr?.translations || {},
               };
             } catch {
               return survey;
@@ -97,13 +101,9 @@ export default function ThankYouPage() {
         ) : surveys.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {surveys.map((survey, i) => {
-              const displayTitle =
-                (language === 'fr' && survey.title_fr ? survey.title_fr : survey.title) ||
-                survey.title;
+              const displayTitle = survey.translations?.[language]?.title || survey.title;
               const displayDescription =
-                (language === 'fr' && survey.description_fr
-                  ? survey.description_fr
-                  : survey.description) || survey.description;
+                survey.translations?.[language]?.description || survey.description;
               return (
                 <motion.div
                   key={survey.id}
