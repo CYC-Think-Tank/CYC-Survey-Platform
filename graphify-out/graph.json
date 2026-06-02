@@ -2014,7 +2014,7 @@
       "source_file": "api/models.py",
       "source_location": "L6",
       "id": "api_models_question",
-      "community": 26,
+      "community": 5,
       "norm_label": "question"
     },
     {
@@ -2050,7 +2050,7 @@
       "source_file": "api/models.py",
       "source_location": "L32",
       "id": "api_models_answercreate",
-      "community": 26,
+      "community": 5,
       "norm_label": "answercreate"
     },
     {
@@ -2068,7 +2068,7 @@
       "source_file": "api/models.py",
       "source_location": "L47",
       "id": "api_models_questioncreate",
-      "community": 26,
+      "community": 5,
       "norm_label": "questioncreate"
     },
     {
@@ -2113,7 +2113,7 @@
       "source_file": "api/models.py",
       "source_location": "L85",
       "id": "api_models_sharelinkcreate",
-      "community": 18,
+      "community": 50,
       "norm_label": "sharelinkcreate"
     },
     {
@@ -2446,7 +2446,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L1",
       "id": "api_routes_share_links_py",
-      "community": 18,
+      "community": 50,
       "norm_label": "share_links.py"
     },
     {
@@ -2455,7 +2455,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L13",
       "id": "routes_share_links_create_share_link",
-      "community": 18,
+      "community": 50,
       "norm_label": "create_share_link()"
     },
     {
@@ -2464,7 +2464,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L13",
       "id": "api_routes_share_links_py_str",
-      "community": 18,
+      "community": 50,
       "norm_label": "str"
     },
     {
@@ -2473,7 +2473,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L13",
       "id": "sharelinkcreate",
-      "community": 18,
+      "community": 50,
       "norm_label": "sharelinkcreate"
     },
     {
@@ -2482,7 +2482,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L25",
       "id": "routes_share_links_get_share_links",
-      "community": 18,
+      "community": 50,
       "norm_label": "get_share_links()"
     },
     {
@@ -2491,7 +2491,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L65",
       "id": "routes_share_links_delete_share_link",
-      "community": 18,
+      "community": 50,
       "norm_label": "delete_share_link()"
     },
     {
@@ -2500,7 +2500,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L14",
       "id": "routes_share_links_rationale_14",
-      "community": 18,
+      "community": 50,
       "norm_label": "generate a unique share link code for a survey."
     },
     {
@@ -2509,7 +2509,7 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L26",
       "id": "routes_share_links_rationale_26",
-      "community": 18,
+      "community": 50,
       "norm_label": "get all share links for a survey with their response counts."
     },
     {
@@ -2705,7 +2705,7 @@
       "label": "get_survey()",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L54",
+      "source_location": "L60",
       "id": "routes_surveys_get_survey",
       "community": 32,
       "norm_label": "get_survey()"
@@ -2714,7 +2714,7 @@
       "label": "str",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L54",
+      "source_location": "L60",
       "id": "api_routes_surveys_py_str",
       "community": 32,
       "norm_label": "str"
@@ -2723,7 +2723,7 @@
       "label": "create_survey()",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L82",
+      "source_location": "L93",
       "id": "routes_surveys_create_survey",
       "community": 32,
       "norm_label": "create_survey()"
@@ -2732,7 +2732,7 @@
       "label": "SurveyCreate",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L82",
+      "source_location": "L93",
       "id": "surveycreate",
       "community": 32,
       "norm_label": "surveycreate"
@@ -2741,7 +2741,7 @@
       "label": "duplicate_survey()",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L167",
+      "source_location": "L184",
       "id": "routes_surveys_duplicate_survey",
       "community": 32,
       "norm_label": "duplicate_survey()"
@@ -2750,7 +2750,7 @@
       "label": "update_survey()",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L321",
+      "source_location": "L345",
       "id": "routes_surveys_update_survey",
       "community": 32,
       "norm_label": "update_survey()"
@@ -2759,7 +2759,7 @@
       "label": "delete_survey()",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L436",
+      "source_location": "L460",
       "id": "routes_surveys_delete_survey",
       "community": 32,
       "norm_label": "delete_survey()"
@@ -2768,53 +2768,53 @@
       "label": "toggle_survey_status()",
       "file_type": "code",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L456",
+      "source_location": "L480",
       "id": "routes_surveys_toggle_survey_status",
       "community": 32,
       "norm_label": "toggle_survey_status()"
     },
     {
-      "label": "Get surveys and their response counts",
+      "label": "Return surveys and their response counts for the survey listing UI.      By defa",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
       "source_location": "L16",
       "id": "routes_surveys_rationale_16",
       "community": 32,
-      "norm_label": "get surveys and their response counts"
+      "norm_label": "return surveys and their response counts for the survey listing ui.      by defa"
     },
     {
-      "label": "Get a specific survey with its questions",
+      "label": "Return a single survey and its ordered questions.      Used by survey editing, r",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L55",
-      "id": "routes_surveys_rationale_55",
+      "source_location": "L61",
+      "id": "routes_surveys_rationale_61",
       "community": 32,
-      "norm_label": "get a specific survey with its questions"
+      "norm_label": "return a single survey and its ordered questions.      used by survey editing, r"
     },
     {
-      "label": "Create a new survey and its questions",
+      "label": "Create a survey and its questions, including logic gate ID remapping.      The f",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L83",
-      "id": "routes_surveys_rationale_83",
+      "source_location": "L94",
+      "id": "routes_surveys_rationale_94",
       "community": 32,
-      "norm_label": "create a new survey and its questions"
+      "norm_label": "create a survey and its questions, including logic gate id remapping.      the f"
     },
     {
-      "label": "Duplicate an existing survey and its questions",
+      "label": "Duplicate a survey, its questions, logic gates, and stored translations.      Th",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L168",
-      "id": "routes_surveys_rationale_168",
+      "source_location": "L185",
+      "id": "routes_surveys_rationale_185",
       "community": 32,
-      "norm_label": "duplicate an existing survey and its questions"
+      "norm_label": "duplicate a survey, its questions, logic gates, and stored translations.      th"
     },
     {
       "label": "Update an existing survey and its questions. Fails if the survey has ever been p",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L322",
-      "id": "routes_surveys_rationale_322",
+      "source_location": "L346",
+      "id": "routes_surveys_rationale_346",
       "community": 32,
       "norm_label": "update an existing survey and its questions. fails if the survey has ever been p"
     },
@@ -2822,8 +2822,8 @@
       "label": "Delete a survey and all its associated data (cascade).",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L437",
-      "id": "routes_surveys_rationale_437",
+      "source_location": "L461",
+      "id": "routes_surveys_rationale_461",
       "community": 32,
       "norm_label": "delete a survey and all its associated data (cascade)."
     },
@@ -2831,8 +2831,8 @@
       "label": "Toggle a survey's active status.",
       "file_type": "rationale",
       "source_file": "api/routes/surveys.py",
-      "source_location": "L457",
-      "id": "routes_surveys_rationale_457",
+      "source_location": "L481",
+      "id": "routes_surveys_rationale_481",
       "community": 32,
       "norm_label": "toggle a survey's active status."
     },
@@ -2867,7 +2867,7 @@
       "label": "get_survey_translation()",
       "file_type": "code",
       "source_file": "api/routes/translations.py",
-      "source_location": "L45",
+      "source_location": "L51",
       "id": "routes_translations_get_survey_translation",
       "community": 18,
       "norm_label": "get_survey_translation()"
@@ -2876,7 +2876,7 @@
       "label": "str",
       "file_type": "code",
       "source_file": "api/routes/translations.py",
-      "source_location": "L45",
+      "source_location": "L51",
       "id": "api_routes_translations_py_str",
       "community": 18,
       "norm_label": "str"
@@ -2885,7 +2885,7 @@
       "label": "update_survey_translation()",
       "file_type": "code",
       "source_file": "api/routes/translations.py",
-      "source_location": "L96",
+      "source_location": "L102",
       "id": "routes_translations_update_survey_translation",
       "community": 18,
       "norm_label": "update_survey_translation()"
@@ -2894,7 +2894,7 @@
       "label": "Request",
       "file_type": "code",
       "source_file": "api/routes/translations.py",
-      "source_location": "L96",
+      "source_location": "L102",
       "id": "request",
       "community": 18,
       "norm_label": "request"
@@ -2903,7 +2903,7 @@
       "label": "test_gemini()",
       "file_type": "code",
       "source_file": "api/routes/translations.py",
-      "source_location": "L165",
+      "source_location": "L171",
       "id": "routes_translations_test_gemini",
       "community": 18,
       "norm_label": "test_gemini()"
@@ -2912,26 +2912,26 @@
       "label": "upload_translation_pdf()",
       "file_type": "code",
       "source_file": "api/routes/translations.py",
-      "source_location": "L192",
+      "source_location": "L198",
       "id": "routes_translations_upload_translation_pdf",
       "community": 18,
       "norm_label": "upload_translation_pdf()"
     },
     {
-      "label": "Upload a file to Supabase Storage and return the public URL.",
+      "label": "Upload a file to Supabase Storage and return its public URL.      Used primarily",
       "file_type": "rationale",
       "source_file": "api/routes/translations.py",
       "source_location": "L20",
       "id": "routes_translations_rationale_20",
       "community": 18,
-      "norm_label": "upload a file to supabase storage and return the public url."
+      "norm_label": "upload a file to supabase storage and return its public url.      used primarily"
     },
     {
       "label": "Fetch the translated questions if they exist.",
       "file_type": "rationale",
       "source_file": "api/routes/translations.py",
-      "source_location": "L46",
-      "id": "routes_translations_rationale_46",
+      "source_location": "L52",
+      "id": "routes_translations_rationale_52",
       "community": 18,
       "norm_label": "fetch the translated questions if they exist."
     },
@@ -2939,8 +2939,8 @@
       "label": "Manually update the translated questions JSON.",
       "file_type": "rationale",
       "source_file": "api/routes/translations.py",
-      "source_location": "L97",
-      "id": "routes_translations_rationale_97",
+      "source_location": "L103",
+      "id": "routes_translations_rationale_103",
       "community": 18,
       "norm_label": "manually update the translated questions json."
     },
@@ -2948,8 +2948,8 @@
       "label": "Quick test endpoint to verify Gemini API connectivity.",
       "file_type": "rationale",
       "source_file": "api/routes/translations.py",
-      "source_location": "L166",
-      "id": "routes_translations_rationale_166",
+      "source_location": "L172",
+      "id": "routes_translations_rationale_172",
       "community": 18,
       "norm_label": "quick test endpoint to verify gemini api connectivity."
     },
@@ -2957,8 +2957,8 @@
       "label": "Upload a PDF containing translated survey questions and auto-populate translatio",
       "file_type": "rationale",
       "source_file": "api/routes/translations.py",
-      "source_location": "L195",
-      "id": "routes_translations_rationale_195",
+      "source_location": "L201",
+      "id": "routes_translations_rationale_201",
       "community": 18,
       "norm_label": "upload a pdf containing translated survey questions and auto-populate translatio"
     },
@@ -4475,6 +4475,96 @@
       "norm_label": "backend module layout"
     },
     {
+      "label": "Get a specific survey with its questions",
+      "file_type": "rationale",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L55",
+      "community": 32,
+      "norm_label": "get a specific survey with its questions",
+      "id": "routes_surveys_rationale_55"
+    },
+    {
+      "label": "Create a new survey and its questions",
+      "file_type": "rationale",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L83",
+      "community": 32,
+      "norm_label": "create a new survey and its questions",
+      "id": "routes_surveys_rationale_83"
+    },
+    {
+      "label": "Duplicate an existing survey and its questions",
+      "file_type": "rationale",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L168",
+      "community": 32,
+      "norm_label": "duplicate an existing survey and its questions",
+      "id": "routes_surveys_rationale_168"
+    },
+    {
+      "label": "Update an existing survey and its questions. Fails if the survey has ever been p",
+      "file_type": "rationale",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L322",
+      "community": 32,
+      "norm_label": "update an existing survey and its questions. fails if the survey has ever been p",
+      "id": "routes_surveys_rationale_322"
+    },
+    {
+      "label": "Delete a survey and all its associated data (cascade).",
+      "file_type": "rationale",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L437",
+      "community": 32,
+      "norm_label": "delete a survey and all its associated data (cascade).",
+      "id": "routes_surveys_rationale_437"
+    },
+    {
+      "label": "Toggle a survey's active status.",
+      "file_type": "rationale",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L457",
+      "community": 32,
+      "norm_label": "toggle a survey's active status.",
+      "id": "routes_surveys_rationale_457"
+    },
+    {
+      "label": "Fetch the translated questions if they exist.",
+      "file_type": "rationale",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L46",
+      "community": 18,
+      "norm_label": "fetch the translated questions if they exist.",
+      "id": "routes_translations_rationale_46"
+    },
+    {
+      "label": "Manually update the translated questions JSON.",
+      "file_type": "rationale",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L97",
+      "community": 18,
+      "norm_label": "manually update the translated questions json.",
+      "id": "routes_translations_rationale_97"
+    },
+    {
+      "label": "Quick test endpoint to verify Gemini API connectivity.",
+      "file_type": "rationale",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L166",
+      "community": 18,
+      "norm_label": "quick test endpoint to verify gemini api connectivity.",
+      "id": "routes_translations_rationale_166"
+    },
+    {
+      "label": "Upload a PDF containing translated survey questions and auto-populate translatio",
+      "file_type": "rationale",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L195",
+      "community": 18,
+      "norm_label": "upload a pdf containing translated survey questions and auto-populate translatio",
+      "id": "routes_translations_rationale_195"
+    },
+    {
       "label": "Question",
       "file_type": "code",
       "source_file": "api/index.py",
@@ -4606,7 +4696,7 @@
       "file_type": "code",
       "source_file": "api/index.py",
       "source_location": "L459",
-      "community": 55,
+      "community": 10,
       "norm_label": "get_survey_translation()",
       "id": "api_index_get_survey_translation"
     },
@@ -4615,7 +4705,7 @@
       "file_type": "code",
       "source_file": "api/index.py",
       "source_location": "L510",
-      "community": 10,
+      "community": 61,
       "norm_label": "update_survey_translation()",
       "id": "api_index_update_survey_translation"
     },
@@ -4690,7 +4780,7 @@
       "file_type": "code",
       "source_file": "api/index.py",
       "source_location": "L1016",
-      "community": 10,
+      "community": 55,
       "norm_label": "get_user_profile_data()",
       "rationale": "Fetch past answers for an email to populate conditional fields.",
       "id": "api_index_get_user_profile_data"
@@ -4730,7 +4820,7 @@
       "file_type": "code",
       "source_file": "api/index.py",
       "source_location": "L1195",
-      "community": 61,
+      "community": 10,
       "norm_label": "report_attention_failure()",
       "rationale": "Report a failed attention check for a session.",
       "id": "api_index_report_attention_failure"
@@ -4851,7 +4941,7 @@
       "file_type": "code",
       "source_file": "api/index.py",
       "source_location": "L1707",
-      "community": 50,
+      "community": 10,
       "norm_label": "delete_single_response()",
       "rationale": "Delete a single response session and its answers.",
       "id": "api_index_delete_single_response"
@@ -5066,7 +5156,7 @@
       "file_type": "rationale",
       "source_file": "api/index.py",
       "source_location": "L278",
-      "community": 55,
+      "community": 10,
       "norm_label": "fetch the translated questions if they exist.",
       "id": "api_index_rationale_278"
     },
@@ -5075,7 +5165,7 @@
       "file_type": "rationale",
       "source_file": "api/index.py",
       "source_location": "L312",
-      "community": 10,
+      "community": 61,
       "norm_label": "manually update the translated questions json.",
       "id": "api_index_rationale_312"
     },
@@ -5120,7 +5210,7 @@
       "file_type": "rationale",
       "source_file": "api/index.py",
       "source_location": "L682",
-      "community": 10,
+      "community": 55,
       "norm_label": "fetch past answers for an email to populate conditional fields.",
       "id": "api_index_rationale_682"
     },
@@ -5156,7 +5246,7 @@
       "file_type": "rationale",
       "source_file": "api/index.py",
       "source_location": "L794",
-      "community": 61,
+      "community": 10,
       "norm_label": "report a failed attention check for a session.",
       "id": "api_index_rationale_794"
     },
@@ -5219,7 +5309,7 @@
       "file_type": "rationale",
       "source_file": "api/index.py",
       "source_location": "L1144",
-      "community": 50,
+      "community": 10,
       "norm_label": "delete a single response session and its answers.",
       "id": "api_index_rationale_1144"
     },
@@ -6570,7 +6660,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 1,
       "norm_label": "fastapi application",
       "id": "fastapi_app"
     },
@@ -6596,7 +6686,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 1,
       "norm_label": "gemini ai model config",
       "id": "gemini_model_config"
     },
@@ -6609,7 +6699,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 1,
       "norm_label": "pydantic models (question, surveylist, etc.)",
       "id": "pydantic_models"
     },
@@ -6713,7 +6803,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 6,
+      "community": 1,
       "norm_label": "post /api/surveys/{id}/translation/upload",
       "id": "api_translation_upload_pdf"
     },
@@ -7469,7 +7559,7 @@
       "file_type": "document",
       "source_file": "docs/superpowers/plans/2026-01-26-pdf-translation-upload.md",
       "rationale": "Python library for extracting text from PDFs. Chosen over other PDF libraries because it provides clean text extraction suitable for LLM ingestion.",
-      "community": 0,
+      "community": 18,
       "norm_label": "pdfplumber",
       "id": "pdfplumber"
     },
@@ -10972,9 +11062,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -10982,9 +11072,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_call_gemini_requires_api_key",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_call_gemini_requires_api_key"
     },
     {
       "relation": "contains",
@@ -10992,9 +11082,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L138",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_gather_survey_data_requires_three_valid_sessions",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_gather_survey_data_requires_three_valid_sessions"
     },
     {
       "relation": "contains",
@@ -11002,9 +11092,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L88",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_handle_ai_analysis_force_refresh_bypasses_cache",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_handle_ai_analysis_force_refresh_bypasses_cache"
     },
     {
       "relation": "contains",
@@ -11012,9 +11102,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L56",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_handle_ai_analysis_returns_cached_data_without_refresh",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_handle_ai_analysis_returns_cached_data_without_refresh"
     },
     {
       "relation": "contains",
@@ -11022,9 +11112,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L35",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_parse_gemini_json_raises_for_malformed_json",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_parse_gemini_json_raises_for_malformed_json"
     },
     {
       "relation": "contains",
@@ -11032,9 +11122,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_parse_gemini_json_unwraps_markdown_and_adds_meta",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_parse_gemini_json_unwraps_markdown_and_adds_meta"
     },
     {
       "relation": "contains",
@@ -11042,9 +11132,9 @@
       "source_file": "tests/unit/test_ai_analysis_service.py",
       "source_location": "L24",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "tests_unit_test_ai_analysis_service_py",
-      "target": "unit_test_ai_analysis_service_test_parse_gemini_json_wraps_multi_item_array",
-      "confidence_score": 1.0
+      "target": "unit_test_ai_analysis_service_test_parse_gemini_json_wraps_multi_item_array"
     },
     {
       "relation": "contains",
@@ -11082,9 +11172,9 @@
       "source_file": "tests/integration/conftest.py",
       "source_location": "L18",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "integration_conftest_rationale_18",
-      "target": "integration_conftest_cleanup_surveys",
-      "confidence_score": 1.0
+      "target": "integration_conftest_cleanup_surveys"
     },
     {
       "relation": "calls",
@@ -11240,9 +11330,9 @@
       "source_file": "tests/integration/test_logic_gating_persistence.py",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "integration_test_logic_gating_persistence_rationale_1",
-      "target": "tests_integration_test_logic_gating_persistence_py",
-      "confidence_score": 1.0
+      "target": "tests_integration_test_logic_gating_persistence_py"
     },
     {
       "relation": "contains",
@@ -11360,9 +11450,9 @@
       "source_file": "tests/integration/test_logic_gating_persistence.py",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "integration_test_logic_gating_persistence_rationale_15",
-      "target": "integration_test_logic_gating_persistence_testlogicgatingpersistence_created_survey",
-      "confidence_score": 1.0
+      "target": "integration_test_logic_gating_persistence_testlogicgatingpersistence_created_survey"
     },
     {
       "relation": "calls",
@@ -11613,9 +11703,9 @@
       "source_file": "tests/integration/test_short_answer_validation.py",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "integration_test_short_answer_validation_rationale_1",
-      "target": "tests_integration_test_short_answer_validation_py",
-      "confidence_score": 1.0
+      "target": "tests_integration_test_short_answer_validation_py"
     },
     {
       "relation": "contains",
@@ -11643,9 +11733,9 @@
       "source_file": "tests/integration/test_short_answer_validation.py",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "integration_test_short_answer_validation_rationale_7",
-      "target": "integration_test_short_answer_validation_validate_postal_code_prefix",
-      "confidence_score": 1.0
+      "target": "integration_test_short_answer_validation_validate_postal_code_prefix"
     },
     {
       "relation": "calls",
@@ -11902,9 +11992,9 @@
       "source_file": "api/models.py",
       "source_location": "L89",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "api_models_aianalysisrequest"
     },
     {
       "relation": "contains",
@@ -11912,9 +12002,9 @@
       "source_file": "api/models.py",
       "source_location": "L32",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_answercreate",
-      "confidence_score": 1.0
+      "target": "api_models_answercreate"
     },
     {
       "relation": "contains",
@@ -11922,9 +12012,9 @@
       "source_file": "api/models.py",
       "source_location": "L73",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_answerupsert",
-      "confidence_score": 1.0
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "contains",
@@ -11932,9 +12022,9 @@
       "source_file": "api/models.py",
       "source_location": "L81",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 1.0
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "contains",
@@ -11942,9 +12032,9 @@
       "source_file": "api/models.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_question",
-      "confidence_score": 1.0
+      "target": "api_models_question"
     },
     {
       "relation": "contains",
@@ -11952,9 +12042,9 @@
       "source_file": "api/models.py",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_questioncreate",
-      "confidence_score": 1.0
+      "target": "api_models_questioncreate"
     },
     {
       "relation": "contains",
@@ -11962,9 +12052,9 @@
       "source_file": "api/models.py",
       "source_location": "L40",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 1.0
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "contains",
@@ -11972,9 +12062,9 @@
       "source_file": "api/models.py",
       "source_location": "L68",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 1.0
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "contains",
@@ -11982,9 +12072,9 @@
       "source_file": "api/models.py",
       "source_location": "L85",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_sharelinkcreate",
-      "confidence_score": 1.0
+      "target": "api_models_sharelinkcreate"
     },
     {
       "relation": "contains",
@@ -11992,9 +12082,9 @@
       "source_file": "api/models.py",
       "source_location": "L57",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_surveycreate",
-      "confidence_score": 1.0
+      "target": "api_models_surveycreate"
     },
     {
       "relation": "contains",
@@ -12002,9 +12092,9 @@
       "source_file": "api/models.py",
       "source_location": "L28",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_surveydetail",
-      "confidence_score": 1.0
+      "target": "api_models_surveydetail"
     },
     {
       "relation": "contains",
@@ -12012,9 +12102,9 @@
       "source_file": "api/models.py",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_py",
-      "target": "api_models_surveylist",
-      "confidence_score": 1.0
+      "target": "api_models_surveylist"
     },
     {
       "relation": "inherits",
@@ -12022,9 +12112,9 @@
       "source_file": "api/models.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_question",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12142,9 +12232,9 @@
       "source_file": "api/models.py",
       "source_location": "L89",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_aianalysisrequest",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12152,9 +12242,9 @@
       "source_file": "api/models.py",
       "source_location": "L32",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_answercreate",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12162,9 +12252,9 @@
       "source_file": "api/models.py",
       "source_location": "L73",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_answerupsert",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12172,9 +12262,9 @@
       "source_file": "api/models.py",
       "source_location": "L81",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_checkstatusrequest",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12182,9 +12272,9 @@
       "source_file": "api/models.py",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_questioncreate",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12192,9 +12282,9 @@
       "source_file": "api/models.py",
       "source_location": "L40",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_responsesubmission",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12202,9 +12292,9 @@
       "source_file": "api/models.py",
       "source_location": "L68",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_sessioncreate",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12212,9 +12302,9 @@
       "source_file": "api/models.py",
       "source_location": "L85",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_sharelinkcreate",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12222,9 +12312,9 @@
       "source_file": "api/models.py",
       "source_location": "L57",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_surveycreate",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12232,9 +12322,9 @@
       "source_file": "api/models.py",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_surveylist",
-      "target": "basemodel",
-      "confidence_score": 1.0
+      "target": "basemodel"
     },
     {
       "relation": "inherits",
@@ -12242,9 +12332,9 @@
       "source_file": "api/models.py",
       "source_location": "L28",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_models_surveydetail",
-      "target": "api_models_surveylist",
-      "confidence_score": 1.0
+      "target": "api_models_surveylist"
     },
     {
       "relation": "imports",
@@ -12253,9 +12343,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "api_models_surveylist",
-      "confidence_score": 1.0
+      "target": "api_models_surveylist"
     },
     {
       "relation": "uses",
@@ -12263,9 +12353,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_surveys_py_bool",
-      "target": "api_models_surveylist",
-      "confidence_score": 0.5
+      "target": "api_models_surveylist"
     },
     {
       "relation": "uses",
@@ -12273,9 +12363,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_surveys_py_str",
-      "target": "api_models_surveylist",
-      "confidence_score": 0.5
+      "target": "api_models_surveylist"
     },
     {
       "relation": "uses",
@@ -12283,9 +12373,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "surveycreate",
-      "target": "api_models_surveylist",
-      "confidence_score": 0.5
+      "target": "api_models_surveylist"
     },
     {
       "relation": "imports",
@@ -12294,9 +12384,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "api_models_surveydetail",
-      "confidence_score": 1.0
+      "target": "api_models_surveydetail"
     },
     {
       "relation": "uses",
@@ -12304,9 +12394,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_surveys_py_bool",
-      "target": "api_models_surveydetail",
-      "confidence_score": 0.5
+      "target": "api_models_surveydetail"
     },
     {
       "relation": "uses",
@@ -12314,9 +12404,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_surveys_py_str",
-      "target": "api_models_surveydetail",
-      "confidence_score": 0.5
+      "target": "api_models_surveydetail"
     },
     {
       "relation": "uses",
@@ -12324,9 +12414,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "surveycreate",
-      "target": "api_models_surveydetail",
-      "confidence_score": 0.5
+      "target": "api_models_surveydetail"
     },
     {
       "relation": "uses",
@@ -12334,9 +12424,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "answerupsert",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 0.5
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "imports",
@@ -12345,9 +12435,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 1.0
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "uses",
@@ -12355,9 +12445,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_sessions_py_str",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 0.5
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "uses",
@@ -12365,9 +12455,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "checkstatusrequest",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 0.5
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "uses",
@@ -12375,9 +12465,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "responsesubmission",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 0.5
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "uses",
@@ -12385,9 +12475,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "sessioncreate",
-      "target": "api_models_responsesubmission",
-      "confidence_score": 0.5
+      "target": "api_models_responsesubmission"
     },
     {
       "relation": "imports",
@@ -12396,9 +12486,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "api_models_surveycreate",
-      "confidence_score": 1.0
+      "target": "api_models_surveycreate"
     },
     {
       "relation": "uses",
@@ -12406,9 +12496,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_surveys_py_bool",
-      "target": "api_models_surveycreate",
-      "confidence_score": 0.5
+      "target": "api_models_surveycreate"
     },
     {
       "relation": "uses",
@@ -12416,9 +12506,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_surveys_py_str",
-      "target": "api_models_surveycreate",
-      "confidence_score": 0.5
+      "target": "api_models_surveycreate"
     },
     {
       "relation": "uses",
@@ -12426,9 +12516,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L9",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "surveycreate",
-      "target": "api_models_surveycreate",
-      "confidence_score": 0.5
+      "target": "api_models_surveycreate"
     },
     {
       "relation": "uses",
@@ -12436,9 +12526,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "answerupsert",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 0.5
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "imports",
@@ -12447,9 +12537,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 1.0
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "uses",
@@ -12457,9 +12547,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_sessions_py_str",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 0.5
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "uses",
@@ -12467,9 +12557,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "checkstatusrequest",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 0.5
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "uses",
@@ -12477,9 +12567,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "responsesubmission",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 0.5
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "uses",
@@ -12487,9 +12577,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "sessioncreate",
-      "target": "api_models_sessioncreate",
-      "confidence_score": 0.5
+      "target": "api_models_sessioncreate"
     },
     {
       "relation": "uses",
@@ -12497,9 +12587,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "answerupsert",
-      "target": "api_models_answerupsert",
-      "confidence_score": 0.5
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "imports",
@@ -12508,9 +12598,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "api_models_answerupsert",
-      "confidence_score": 1.0
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "uses",
@@ -12518,9 +12608,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_sessions_py_str",
-      "target": "api_models_answerupsert",
-      "confidence_score": 0.5
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "uses",
@@ -12528,9 +12618,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "checkstatusrequest",
-      "target": "api_models_answerupsert",
-      "confidence_score": 0.5
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "uses",
@@ -12538,9 +12628,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "responsesubmission",
-      "target": "api_models_answerupsert",
-      "confidence_score": 0.5
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "uses",
@@ -12548,9 +12638,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "sessioncreate",
-      "target": "api_models_answerupsert",
-      "confidence_score": 0.5
+      "target": "api_models_answerupsert"
     },
     {
       "relation": "uses",
@@ -12558,9 +12648,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "answerupsert",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 0.5
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "imports",
@@ -12569,9 +12659,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 1.0
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "uses",
@@ -12579,9 +12669,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_sessions_py_str",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 0.5
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "uses",
@@ -12589,9 +12679,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "checkstatusrequest",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 0.5
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "uses",
@@ -12599,9 +12689,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "responsesubmission",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 0.5
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "uses",
@@ -12609,9 +12699,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L8",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "sessioncreate",
-      "target": "api_models_checkstatusrequest",
-      "confidence_score": 0.5
+      "target": "api_models_checkstatusrequest"
     },
     {
       "relation": "imports",
@@ -12620,9 +12710,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_share_links_py",
-      "target": "api_models_sharelinkcreate",
-      "confidence_score": 1.0
+      "target": "api_models_sharelinkcreate"
     },
     {
       "relation": "uses",
@@ -12630,9 +12720,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L7",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_share_links_py_str",
-      "target": "api_models_sharelinkcreate",
-      "confidence_score": 0.5
+      "target": "api_models_sharelinkcreate"
     },
     {
       "relation": "uses",
@@ -12640,9 +12730,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L7",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "sharelinkcreate",
-      "target": "api_models_sharelinkcreate",
-      "confidence_score": 0.5
+      "target": "api_models_sharelinkcreate"
     },
     {
       "relation": "uses",
@@ -12650,9 +12740,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L5",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "aianalysisrequest",
-      "target": "api_models_aianalysisrequest",
-      "confidence_score": 0.5
+      "target": "api_models_aianalysisrequest"
     },
     {
       "relation": "imports",
@@ -12661,9 +12751,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "api_models_aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "api_models_aianalysisrequest"
     },
     {
       "relation": "uses",
@@ -12671,9 +12761,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L5",
       "weight": 0.8,
+      "confidence_score": 0.5,
       "source": "api_routes_ai_insights_py_str",
-      "target": "api_models_aianalysisrequest",
-      "confidence_score": 0.5
+      "target": "api_models_aianalysisrequest"
     },
     {
       "relation": "contains",
@@ -13410,9 +13500,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "utils_survey_utils_calculate_median",
-      "confidence_score": 1.0
+      "target": "utils_survey_utils_calculate_median"
     },
     {
       "relation": "calls",
@@ -13498,9 +13588,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "utils_survey_utils_calculate_std_dev",
-      "confidence_score": 1.0
+      "target": "utils_survey_utils_calculate_std_dev"
     },
     {
       "relation": "calls",
@@ -13531,9 +13621,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "utils_survey_utils_calculate_quartiles",
-      "confidence_score": 1.0
+      "target": "utils_survey_utils_calculate_quartiles"
     },
     {
       "relation": "calls",
@@ -13564,9 +13654,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "utils_survey_utils_find_outliers",
-      "confidence_score": 1.0
+      "target": "utils_survey_utils_find_outliers"
     },
     {
       "relation": "calls",
@@ -13597,9 +13687,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "utils_survey_utils_calculate_mode",
-      "confidence_score": 1.0
+      "target": "utils_survey_utils_calculate_mode"
     },
     {
       "relation": "calls",
@@ -13641,9 +13731,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -13651,9 +13741,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_check_survey_status",
-      "confidence_score": 1.0
+      "target": "routes_sessions_check_survey_status"
     },
     {
       "relation": "contains",
@@ -13661,9 +13751,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L260",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_complete_session",
-      "confidence_score": 1.0
+      "target": "routes_sessions_complete_session"
     },
     {
       "relation": "contains",
@@ -13671,9 +13761,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_create_session",
-      "confidence_score": 1.0
+      "target": "routes_sessions_create_session"
     },
     {
       "relation": "contains",
@@ -13681,9 +13771,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L36",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_get_user_profile_data",
-      "confidence_score": 1.0
+      "target": "routes_sessions_get_user_profile_data"
     },
     {
       "relation": "contains",
@@ -13691,9 +13781,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L215",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_report_attention_failure",
-      "confidence_score": 1.0
+      "target": "routes_sessions_report_attention_failure"
     },
     {
       "relation": "contains",
@@ -13701,9 +13791,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L272",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_submit_response",
-      "confidence_score": 1.0
+      "target": "routes_sessions_submit_response"
     },
     {
       "relation": "contains",
@@ -13711,9 +13801,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L203",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_update_step",
-      "confidence_score": 1.0
+      "target": "routes_sessions_update_step"
     },
     {
       "relation": "contains",
@@ -13721,9 +13811,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L128",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_sessions_py",
-      "target": "routes_sessions_upsert_answer",
-      "confidence_score": 1.0
+      "target": "routes_sessions_upsert_answer"
     },
     {
       "relation": "references",
@@ -13732,9 +13822,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_check_survey_status",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13743,9 +13833,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_check_survey_status",
-      "target": "checkstatusrequest",
-      "confidence_score": 1.0
+      "target": "checkstatusrequest"
     },
     {
       "relation": "rationale_for",
@@ -13753,9 +13843,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_20",
-      "target": "routes_sessions_check_survey_status",
-      "confidence_score": 1.0
+      "target": "routes_sessions_check_survey_status"
     },
     {
       "relation": "references",
@@ -13764,9 +13854,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L260",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_complete_session",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13775,9 +13865,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_create_session",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13786,9 +13876,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L36",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_get_user_profile_data",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13797,9 +13887,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L215",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_report_attention_failure",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13808,9 +13898,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L272",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_submit_response",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13819,9 +13909,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L203",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_update_step",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "references",
@@ -13830,9 +13920,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L128",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_upsert_answer",
-      "target": "api_routes_sessions_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_sessions_py_str"
     },
     {
       "relation": "rationale_for",
@@ -13840,9 +13930,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L37",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_37",
-      "target": "routes_sessions_get_user_profile_data",
-      "confidence_score": 1.0
+      "target": "routes_sessions_get_user_profile_data"
     },
     {
       "relation": "references",
@@ -13851,9 +13941,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_create_session",
-      "target": "sessioncreate",
-      "confidence_score": 1.0
+      "target": "sessioncreate"
     },
     {
       "relation": "rationale_for",
@@ -13861,9 +13951,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L78",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_78",
-      "target": "routes_sessions_create_session",
-      "confidence_score": 1.0
+      "target": "routes_sessions_create_session"
     },
     {
       "relation": "rationale_for",
@@ -13871,9 +13961,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L129",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_129",
-      "target": "routes_sessions_upsert_answer",
-      "confidence_score": 1.0
+      "target": "routes_sessions_upsert_answer"
     },
     {
       "relation": "references",
@@ -13882,9 +13972,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L128",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_upsert_answer",
-      "target": "answerupsert",
-      "confidence_score": 1.0
+      "target": "answerupsert"
     },
     {
       "relation": "rationale_for",
@@ -13892,9 +13982,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L204",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_204",
-      "target": "routes_sessions_update_step",
-      "confidence_score": 1.0
+      "target": "routes_sessions_update_step"
     },
     {
       "relation": "rationale_for",
@@ -13902,9 +13992,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L216",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_216",
-      "target": "routes_sessions_report_attention_failure",
-      "confidence_score": 1.0
+      "target": "routes_sessions_report_attention_failure"
     },
     {
       "relation": "rationale_for",
@@ -13912,9 +14002,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L261",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_261",
-      "target": "routes_sessions_complete_session",
-      "confidence_score": 1.0
+      "target": "routes_sessions_complete_session"
     },
     {
       "relation": "rationale_for",
@@ -13922,9 +14012,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L273",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_rationale_273",
-      "target": "routes_sessions_submit_response",
-      "confidence_score": 1.0
+      "target": "routes_sessions_submit_response"
     },
     {
       "relation": "references",
@@ -13933,9 +14023,9 @@
       "source_file": "api/routes/sessions.py",
       "source_location": "L272",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_sessions_submit_response",
-      "target": "responsesubmission",
-      "confidence_score": 1.0
+      "target": "responsesubmission"
     },
     {
       "relation": "imports_from",
@@ -13944,9 +14034,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_share_links_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -13954,9 +14044,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_share_links_py",
-      "target": "routes_share_links_create_share_link",
-      "confidence_score": 1.0
+      "target": "routes_share_links_create_share_link"
     },
     {
       "relation": "contains",
@@ -13964,9 +14054,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L65",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_share_links_py",
-      "target": "routes_share_links_delete_share_link",
-      "confidence_score": 1.0
+      "target": "routes_share_links_delete_share_link"
     },
     {
       "relation": "contains",
@@ -13974,9 +14064,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_share_links_py",
-      "target": "routes_share_links_get_share_links",
-      "confidence_score": 1.0
+      "target": "routes_share_links_get_share_links"
     },
     {
       "relation": "references",
@@ -13985,9 +14075,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_share_links_create_share_link",
-      "target": "api_routes_share_links_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_share_links_py_str"
     },
     {
       "relation": "references",
@@ -13996,9 +14086,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L13",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_share_links_create_share_link",
-      "target": "sharelinkcreate",
-      "confidence_score": 1.0
+      "target": "sharelinkcreate"
     },
     {
       "relation": "rationale_for",
@@ -14006,9 +14096,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L14",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_share_links_rationale_14",
-      "target": "routes_share_links_create_share_link",
-      "confidence_score": 1.0
+      "target": "routes_share_links_create_share_link"
     },
     {
       "relation": "references",
@@ -14017,9 +14107,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L65",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_share_links_delete_share_link",
-      "target": "api_routes_share_links_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_share_links_py_str"
     },
     {
       "relation": "references",
@@ -14028,9 +14118,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_share_links_get_share_links",
-      "target": "api_routes_share_links_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_share_links_py_str"
     },
     {
       "relation": "rationale_for",
@@ -14038,9 +14128,9 @@
       "source_file": "api/routes/share_links.py",
       "source_location": "L26",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_share_links_rationale_26",
-      "target": "routes_share_links_get_share_links",
-      "confidence_score": 1.0
+      "target": "routes_share_links_get_share_links"
     },
     {
       "relation": "imports_from",
@@ -14049,9 +14139,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -14059,9 +14149,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L405",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_delete_all_responses",
-      "confidence_score": 1.0
+      "target": "routes_results_delete_all_responses"
     },
     {
       "relation": "contains",
@@ -14069,9 +14159,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L418",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_delete_single_response",
-      "confidence_score": 1.0
+      "target": "routes_results_delete_single_response"
     },
     {
       "relation": "contains",
@@ -14079,9 +14169,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L46",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_get_raffle_email",
-      "confidence_score": 1.0
+      "target": "routes_results_get_raffle_email"
     },
     {
       "relation": "contains",
@@ -14089,9 +14179,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_get_random_email_position",
-      "confidence_score": 1.0
+      "target": "routes_results_get_random_email_position"
     },
     {
       "relation": "contains",
@@ -14099,9 +14189,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L143",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_get_survey_responses_paginated",
-      "confidence_score": 1.0
+      "target": "routes_results_get_survey_responses_paginated"
     },
     {
       "relation": "contains",
@@ -14109,9 +14199,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_get_survey_results",
-      "confidence_score": 1.0
+      "target": "routes_results_get_survey_results"
     },
     {
       "relation": "contains",
@@ -14119,9 +14209,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L209",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_results_py",
-      "target": "routes_results_get_survey_summary",
-      "confidence_score": 1.0
+      "target": "routes_results_get_survey_summary"
     },
     {
       "relation": "calls",
@@ -14130,9 +14220,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L52",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_raffle_email",
-      "target": "routes_results_get_random_email_position",
-      "confidence_score": 1.0
+      "target": "routes_results_get_random_email_position"
     },
     {
       "relation": "references",
@@ -14141,9 +14231,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_random_email_position",
-      "target": "api_routes_results_py_int",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_int"
     },
     {
       "relation": "rationale_for",
@@ -14151,9 +14241,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L18",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_18",
-      "target": "routes_results_get_random_email_position",
-      "confidence_score": 1.0
+      "target": "routes_results_get_random_email_position"
     },
     {
       "relation": "references",
@@ -14162,9 +14252,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L143",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_survey_responses_paginated",
-      "target": "api_routes_results_py_int",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_int"
     },
     {
       "relation": "rationale_for",
@@ -14172,9 +14262,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_47",
-      "target": "routes_results_get_raffle_email",
-      "confidence_score": 1.0
+      "target": "routes_results_get_raffle_email"
     },
     {
       "relation": "references",
@@ -14183,9 +14273,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_survey_results",
-      "target": "api_routes_results_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_str"
     },
     {
       "relation": "rationale_for",
@@ -14193,9 +14283,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L78",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_78",
-      "target": "routes_results_get_survey_results",
-      "confidence_score": 1.0
+      "target": "routes_results_get_survey_results"
     },
     {
       "relation": "references",
@@ -14204,9 +14294,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L405",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_delete_all_responses",
-      "target": "api_routes_results_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_str"
     },
     {
       "relation": "references",
@@ -14215,9 +14305,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L418",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_delete_single_response",
-      "target": "api_routes_results_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_str"
     },
     {
       "relation": "references",
@@ -14226,9 +14316,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L143",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_survey_responses_paginated",
-      "target": "api_routes_results_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_str"
     },
     {
       "relation": "references",
@@ -14237,9 +14327,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L209",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_survey_summary",
-      "target": "api_routes_results_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_str"
     },
     {
       "relation": "references",
@@ -14248,9 +14338,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L143",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_get_survey_responses_paginated",
-      "target": "api_routes_results_py_bool",
-      "confidence_score": 1.0
+      "target": "api_routes_results_py_bool"
     },
     {
       "relation": "rationale_for",
@@ -14258,9 +14348,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L146",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_146",
-      "target": "routes_results_get_survey_responses_paginated",
-      "confidence_score": 1.0
+      "target": "routes_results_get_survey_responses_paginated"
     },
     {
       "relation": "rationale_for",
@@ -14268,9 +14358,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L210",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_210",
-      "target": "routes_results_get_survey_summary",
-      "confidence_score": 1.0
+      "target": "routes_results_get_survey_summary"
     },
     {
       "relation": "rationale_for",
@@ -14278,9 +14368,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L406",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_406",
-      "target": "routes_results_delete_all_responses",
-      "confidence_score": 1.0
+      "target": "routes_results_delete_all_responses"
     },
     {
       "relation": "rationale_for",
@@ -14288,9 +14378,9 @@
       "source_file": "api/routes/results.py",
       "source_location": "L419",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_results_rationale_419",
-      "target": "routes_results_delete_single_response",
-      "confidence_score": 1.0
+      "target": "routes_results_delete_single_response"
     },
     {
       "relation": "imports_from",
@@ -14299,9 +14389,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -14309,9 +14399,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L82",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_create_survey",
-      "confidence_score": 1.0
+      "target": "routes_surveys_create_survey"
     },
     {
       "relation": "contains",
@@ -14319,9 +14409,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L436",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_delete_survey",
-      "confidence_score": 1.0
+      "target": "routes_surveys_delete_survey"
     },
     {
       "relation": "contains",
@@ -14329,9 +14419,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L167",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_duplicate_survey",
-      "confidence_score": 1.0
+      "target": "routes_surveys_duplicate_survey"
     },
     {
       "relation": "contains",
@@ -14339,9 +14429,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L54",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_get_survey",
-      "confidence_score": 1.0
+      "target": "routes_surveys_get_survey"
     },
     {
       "relation": "contains",
@@ -14349,9 +14439,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_get_surveys",
-      "confidence_score": 1.0
+      "target": "routes_surveys_get_surveys"
     },
     {
       "relation": "contains",
@@ -14359,9 +14449,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L456",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_toggle_survey_status",
-      "confidence_score": 1.0
+      "target": "routes_surveys_toggle_survey_status"
     },
     {
       "relation": "contains",
@@ -14369,9 +14459,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L321",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_surveys_py",
-      "target": "routes_surveys_update_survey",
-      "confidence_score": 1.0
+      "target": "routes_surveys_update_survey"
     },
     {
       "relation": "references",
@@ -14380,9 +14470,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L15",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_get_surveys",
-      "target": "api_routes_surveys_py_bool",
-      "confidence_score": 1.0
+      "target": "api_routes_surveys_py_bool"
     },
     {
       "relation": "rationale_for",
@@ -14390,9 +14480,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L16",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_16",
-      "target": "routes_surveys_get_surveys",
-      "confidence_score": 1.0
+      "target": "routes_surveys_get_surveys"
     },
     {
       "relation": "references",
@@ -14401,9 +14491,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L54",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_get_survey",
-      "target": "api_routes_surveys_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_surveys_py_str"
     },
     {
       "relation": "rationale_for",
@@ -14411,7 +14501,17 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L55",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_55",
+      "target": "routes_surveys_get_survey"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L61",
+      "weight": 1.0,
+      "source": "routes_surveys_rationale_61",
       "target": "routes_surveys_get_survey",
       "confidence_score": 1.0
     },
@@ -14422,9 +14522,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L436",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_delete_survey",
-      "target": "api_routes_surveys_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_surveys_py_str"
     },
     {
       "relation": "references",
@@ -14433,9 +14533,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L167",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_duplicate_survey",
-      "target": "api_routes_surveys_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_surveys_py_str"
     },
     {
       "relation": "references",
@@ -14444,9 +14544,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L456",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_toggle_survey_status",
-      "target": "api_routes_surveys_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_surveys_py_str"
     },
     {
       "relation": "references",
@@ -14455,9 +14555,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L321",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_update_survey",
-      "target": "api_routes_surveys_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_surveys_py_str"
     },
     {
       "relation": "references",
@@ -14466,9 +14566,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L82",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_create_survey",
-      "target": "surveycreate",
-      "confidence_score": 1.0
+      "target": "surveycreate"
     },
     {
       "relation": "rationale_for",
@@ -14476,7 +14576,17 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L83",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_83",
+      "target": "routes_surveys_create_survey"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L94",
+      "weight": 1.0,
+      "source": "routes_surveys_rationale_94",
       "target": "routes_surveys_create_survey",
       "confidence_score": 1.0
     },
@@ -14487,9 +14597,9 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L321",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_update_survey",
-      "target": "surveycreate",
-      "confidence_score": 1.0
+      "target": "surveycreate"
     },
     {
       "relation": "rationale_for",
@@ -14497,7 +14607,17 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L168",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_168",
+      "target": "routes_surveys_duplicate_survey"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L185",
+      "weight": 1.0,
+      "source": "routes_surveys_rationale_185",
       "target": "routes_surveys_duplicate_survey",
       "confidence_score": 1.0
     },
@@ -14507,7 +14627,17 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L322",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_322",
+      "target": "routes_surveys_update_survey"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L346",
+      "weight": 1.0,
+      "source": "routes_surveys_rationale_346",
       "target": "routes_surveys_update_survey",
       "confidence_score": 1.0
     },
@@ -14517,7 +14647,17 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L437",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_437",
+      "target": "routes_surveys_delete_survey"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L461",
+      "weight": 1.0,
+      "source": "routes_surveys_rationale_461",
       "target": "routes_surveys_delete_survey",
       "confidence_score": 1.0
     },
@@ -14527,7 +14667,17 @@
       "source_file": "api/routes/surveys.py",
       "source_location": "L457",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_surveys_rationale_457",
+      "target": "routes_surveys_toggle_survey_status"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/surveys.py",
+      "source_location": "L481",
+      "weight": 1.0,
+      "source": "routes_surveys_rationale_481",
       "target": "routes_surveys_toggle_survey_status",
       "confidence_score": 1.0
     },
@@ -14538,9 +14688,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "imports",
@@ -14549,9 +14699,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "pdfplumber",
-      "confidence_score": 1.0
+      "target": "pdfplumber"
     },
     {
       "relation": "contains",
@@ -14559,9 +14709,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "routes_translations_get_survey_translation",
-      "confidence_score": 1.0
+      "target": "routes_translations_get_survey_translation"
     },
     {
       "relation": "contains",
@@ -14569,9 +14719,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L165",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "routes_translations_test_gemini",
-      "confidence_score": 1.0
+      "target": "routes_translations_test_gemini"
     },
     {
       "relation": "contains",
@@ -14579,9 +14729,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L96",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "routes_translations_update_survey_translation",
-      "confidence_score": 1.0
+      "target": "routes_translations_update_survey_translation"
     },
     {
       "relation": "contains",
@@ -14589,9 +14739,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "routes_translations_upload_file",
-      "confidence_score": 1.0
+      "target": "routes_translations_upload_file"
     },
     {
       "relation": "contains",
@@ -14599,9 +14749,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L192",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_translations_py",
-      "target": "routes_translations_upload_translation_pdf",
-      "confidence_score": 1.0
+      "target": "routes_translations_upload_translation_pdf"
     },
     {
       "relation": "rationale_for",
@@ -14609,9 +14759,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_rationale_20",
-      "target": "routes_translations_upload_file",
-      "confidence_score": 1.0
+      "target": "routes_translations_upload_file"
     },
     {
       "relation": "references",
@@ -14620,9 +14770,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_upload_file",
-      "target": "uploadfile",
-      "confidence_score": 1.0
+      "target": "uploadfile"
     },
     {
       "relation": "references",
@@ -14653,9 +14803,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L192",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_upload_translation_pdf",
-      "target": "uploadfile",
-      "confidence_score": 1.0
+      "target": "uploadfile"
     },
     {
       "relation": "references",
@@ -14664,9 +14814,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L45",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_get_survey_translation",
-      "target": "api_routes_translations_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_translations_py_str"
     },
     {
       "relation": "rationale_for",
@@ -14674,7 +14824,17 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L46",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_rationale_46",
+      "target": "routes_translations_get_survey_translation"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L52",
+      "weight": 1.0,
+      "source": "routes_translations_rationale_52",
       "target": "routes_translations_get_survey_translation",
       "confidence_score": 1.0
     },
@@ -14685,9 +14845,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L96",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_update_survey_translation",
-      "target": "api_routes_translations_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_translations_py_str"
     },
     {
       "relation": "references",
@@ -14696,8 +14856,18 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L192",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_upload_translation_pdf",
-      "target": "api_routes_translations_py_str",
+      "target": "api_routes_translations_py_str"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L103",
+      "weight": 1.0,
+      "source": "routes_translations_rationale_103",
+      "target": "routes_translations_update_survey_translation",
       "confidence_score": 1.0
     },
     {
@@ -14706,9 +14876,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L97",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_rationale_97",
-      "target": "routes_translations_update_survey_translation",
-      "confidence_score": 1.0
+      "target": "routes_translations_update_survey_translation"
     },
     {
       "relation": "references",
@@ -14717,9 +14887,9 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L96",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_update_survey_translation",
-      "target": "request",
-      "confidence_score": 1.0
+      "target": "request"
     },
     {
       "relation": "references",
@@ -14738,7 +14908,17 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L166",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_rationale_166",
+      "target": "routes_translations_test_gemini"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L172",
+      "weight": 1.0,
+      "source": "routes_translations_rationale_172",
       "target": "routes_translations_test_gemini",
       "confidence_score": 1.0
     },
@@ -14748,7 +14928,17 @@
       "source_file": "api/routes/translations.py",
       "source_location": "L195",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_translations_rationale_195",
+      "target": "routes_translations_upload_translation_pdf"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "api/routes/translations.py",
+      "source_location": "L201",
+      "weight": 1.0,
+      "source": "routes_translations_rationale_201",
       "target": "routes_translations_upload_translation_pdf",
       "confidence_score": 1.0
     },
@@ -14759,9 +14949,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -14769,9 +14959,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L162",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "routes_ai_insights_ai_archetypes",
-      "confidence_score": 1.0
+      "target": "routes_ai_insights_ai_archetypes"
     },
     {
       "relation": "contains",
@@ -14779,9 +14969,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L83",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "routes_ai_insights_ai_belief_network",
-      "confidence_score": 1.0
+      "target": "routes_ai_insights_ai_belief_network"
     },
     {
       "relation": "contains",
@@ -14789,9 +14979,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L206",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "routes_ai_insights_ai_blindspots",
-      "confidence_score": 1.0
+      "target": "routes_ai_insights_ai_blindspots"
     },
     {
       "relation": "contains",
@@ -14799,9 +14989,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L119",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "routes_ai_insights_ai_minority_insights",
-      "confidence_score": 1.0
+      "target": "routes_ai_insights_ai_minority_insights"
     },
     {
       "relation": "contains",
@@ -14809,9 +14999,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "routes_ai_insights_ai_mood_heatmap",
-      "confidence_score": 1.0
+      "target": "routes_ai_insights_ai_mood_heatmap"
     },
     {
       "relation": "contains",
@@ -14819,9 +15009,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "routes_ai_insights_ai_persuadability_analysis",
-      "confidence_score": 1.0
+      "target": "routes_ai_insights_ai_persuadability_analysis"
     },
     {
       "relation": "imports",
@@ -14830,9 +15020,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_routes_ai_insights_py",
-      "target": "services_ai_analysis_handle_ai_analysis",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_handle_ai_analysis"
     },
     {
       "relation": "references",
@@ -14841,9 +15031,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_persuadability_analysis",
-      "target": "aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "aianalysisrequest"
     },
     {
       "relation": "references",
@@ -14852,9 +15042,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L12",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_persuadability_analysis",
-      "target": "api_routes_ai_insights_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_ai_insights_py_str"
     },
     {
       "relation": "calls",
@@ -14874,9 +15064,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L162",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_archetypes",
-      "target": "api_routes_ai_insights_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_ai_insights_py_str"
     },
     {
       "relation": "references",
@@ -14885,9 +15075,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L83",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_belief_network",
-      "target": "api_routes_ai_insights_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_ai_insights_py_str"
     },
     {
       "relation": "references",
@@ -14896,9 +15086,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L206",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_blindspots",
-      "target": "api_routes_ai_insights_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_ai_insights_py_str"
     },
     {
       "relation": "references",
@@ -14907,9 +15097,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L119",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_minority_insights",
-      "target": "api_routes_ai_insights_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_ai_insights_py_str"
     },
     {
       "relation": "references",
@@ -14918,9 +15108,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_mood_heatmap",
-      "target": "api_routes_ai_insights_py_str",
-      "confidence_score": 1.0
+      "target": "api_routes_ai_insights_py_str"
     },
     {
       "relation": "references",
@@ -14929,9 +15119,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L162",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_archetypes",
-      "target": "aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "aianalysisrequest"
     },
     {
       "relation": "references",
@@ -14940,9 +15130,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L83",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_belief_network",
-      "target": "aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "aianalysisrequest"
     },
     {
       "relation": "references",
@@ -14951,9 +15141,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L206",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_blindspots",
-      "target": "aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "aianalysisrequest"
     },
     {
       "relation": "references",
@@ -14962,9 +15152,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L119",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_minority_insights",
-      "target": "aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "aianalysisrequest"
     },
     {
       "relation": "references",
@@ -14973,9 +15163,9 @@
       "source_file": "api/routes/ai_insights.py",
       "source_location": "L47",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routes_ai_insights_ai_mood_heatmap",
-      "target": "aianalysisrequest",
-      "confidence_score": 1.0
+      "target": "aianalysisrequest"
     },
     {
       "relation": "calls",
@@ -15039,9 +15229,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "fastapi",
-      "confidence_score": 1.0
+      "target": "fastapi"
     },
     {
       "relation": "contains",
@@ -15049,9 +15239,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L273",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "services_ai_analysis_base_context",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_base_context"
     },
     {
       "relation": "contains",
@@ -15059,9 +15249,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L174",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "services_ai_analysis_call_gemini",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_call_gemini"
     },
     {
       "relation": "contains",
@@ -15069,9 +15259,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L41",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "services_ai_analysis_gather_survey_data",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_gather_survey_data"
     },
     {
       "relation": "contains",
@@ -15079,9 +15269,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L207",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "services_ai_analysis_handle_ai_analysis",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_handle_ai_analysis"
     },
     {
       "relation": "contains",
@@ -15089,9 +15279,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "services_ai_analysis_parse_gemini_analysis",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_parse_gemini_analysis"
     },
     {
       "relation": "contains",
@@ -15099,9 +15289,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "api_services_ai_analysis_py",
-      "target": "services_ai_analysis_supabase",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_supabase"
     },
     {
       "relation": "calls",
@@ -15110,9 +15300,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L43",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_gather_survey_data",
-      "target": "services_ai_analysis_supabase",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_supabase"
     },
     {
       "relation": "calls",
@@ -15121,9 +15311,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L211",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_handle_ai_analysis",
-      "target": "services_ai_analysis_supabase",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_supabase"
     },
     {
       "relation": "calls",
@@ -15132,9 +15322,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L204",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_call_gemini",
-      "target": "services_ai_analysis_parse_gemini_analysis",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_parse_gemini_analysis"
     },
     {
       "relation": "references",
@@ -15143,9 +15333,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_parse_gemini_analysis",
-      "target": "api_services_ai_analysis_py_int",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_int"
     },
     {
       "relation": "references",
@@ -15154,9 +15344,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_parse_gemini_analysis",
-      "target": "api_services_ai_analysis_py_str",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_str"
     },
     {
       "relation": "references",
@@ -15165,9 +15355,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L174",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_call_gemini",
-      "target": "api_services_ai_analysis_py_str",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_str"
     },
     {
       "relation": "references",
@@ -15176,9 +15366,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L41",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_gather_survey_data",
-      "target": "api_services_ai_analysis_py_str",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_str"
     },
     {
       "relation": "references",
@@ -15187,9 +15377,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L207",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_handle_ai_analysis",
-      "target": "api_services_ai_analysis_py_str",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_str"
     },
     {
       "relation": "references",
@@ -15198,9 +15388,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L174",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_call_gemini",
-      "target": "api_services_ai_analysis_py_int",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_int"
     },
     {
       "relation": "calls",
@@ -15209,9 +15399,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L227",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_handle_ai_analysis",
-      "target": "services_ai_analysis_gather_survey_data",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_gather_survey_data"
     },
     {
       "relation": "rationale_for",
@@ -15219,9 +15409,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L42",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_rationale_42",
-      "target": "services_ai_analysis_gather_survey_data",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_gather_survey_data"
     },
     {
       "relation": "calls",
@@ -15230,9 +15420,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L241",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_handle_ai_analysis",
-      "target": "services_ai_analysis_call_gemini",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_call_gemini"
     },
     {
       "relation": "rationale_for",
@@ -15240,9 +15430,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L175",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_rationale_175",
-      "target": "services_ai_analysis_call_gemini",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_call_gemini"
     },
     {
       "relation": "references",
@@ -15251,9 +15441,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L207",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_handle_ai_analysis",
-      "target": "api_services_ai_analysis_py_bool",
-      "confidence_score": 1.0
+      "target": "api_services_ai_analysis_py_bool"
     },
     {
       "relation": "calls",
@@ -15262,9 +15452,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L235",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_handle_ai_analysis",
-      "target": "services_ai_analysis_base_context",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_base_context"
     },
     {
       "relation": "rationale_for",
@@ -15272,9 +15462,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L210",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_rationale_210",
-      "target": "services_ai_analysis_handle_ai_analysis",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_handle_ai_analysis"
     },
     {
       "relation": "rationale_for",
@@ -15282,9 +15472,9 @@
       "source_file": "api/services/ai_analysis.py",
       "source_location": "L280",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_ai_analysis_rationale_280",
-      "target": "services_ai_analysis_base_context",
-      "confidence_score": 1.0
+      "target": "services_ai_analysis_base_context"
     },
     {
       "relation": "contains",
@@ -16763,9 +16953,9 @@
       "source_file": "README.md",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "readme_md",
-      "target": "cyc_survey_platform_readme_cyc_survey_platform",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_cyc_survey_platform"
     },
     {
       "relation": "contains",
@@ -16773,9 +16963,9 @@
       "source_file": "README.md",
       "source_location": "L77",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_admin_page",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_admin_page"
     },
     {
       "relation": "contains",
@@ -16783,9 +16973,9 @@
       "source_file": "README.md",
       "source_location": "L93",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_backend_module_layout",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_backend_module_layout"
     },
     {
       "relation": "contains",
@@ -16793,9 +16983,9 @@
       "source_file": "README.md",
       "source_location": "L68",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_ci_cd",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_ci_cd"
     },
     {
       "relation": "contains",
@@ -16803,9 +16993,9 @@
       "source_file": "README.md",
       "source_location": "L5",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_environment_variables",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_environment_variables"
     },
     {
       "relation": "contains",
@@ -16813,9 +17003,9 @@
       "source_file": "README.md",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_quick_start_docker",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_quick_start_docker"
     },
     {
       "relation": "contains",
@@ -16823,9 +17013,9 @@
       "source_file": "README.md",
       "source_location": "L44",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_quick_start_no_docker",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_quick_start_no_docker"
     },
     {
       "relation": "contains",
@@ -16833,9 +17023,9 @@
       "source_file": "README.md",
       "source_location": "L58",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_scripts",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_scripts"
     },
     {
       "relation": "contains",
@@ -16843,9 +17033,9 @@
       "source_file": "README.md",
       "source_location": "L85",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_cyc_survey_platform",
-      "target": "cyc_survey_platform_readme_tech_stack",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_tech_stack"
     },
     {
       "relation": "contains",
@@ -16853,9 +17043,9 @@
       "source_file": "README.md",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_environment_variables",
-      "target": "cyc_survey_platform_readme_codeblock_1",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_codeblock_1"
     },
     {
       "relation": "contains",
@@ -16863,9 +17053,9 @@
       "source_file": "README.md",
       "source_location": "L27",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_quick_start_docker",
-      "target": "cyc_survey_platform_readme_codeblock_2",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_codeblock_2"
     },
     {
       "relation": "contains",
@@ -16873,9 +17063,9 @@
       "source_file": "README.md",
       "source_location": "L46",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "cyc_survey_platform_readme_quick_start_no_docker",
-      "target": "cyc_survey_platform_readme_codeblock_3",
-      "confidence_score": 1.0
+      "target": "cyc_survey_platform_readme_codeblock_3"
     },
     {
       "relation": "inherits",
@@ -23064,5 +23254,5 @@
       "source_file": ".github/workflows/ci.yml"
     }
   ],
-  "built_at_commit": "4c1f0715d5d40ca93a1cf66169ae4d5414de7145"
+  "built_at_commit": "2f2dd28383cc526ae640e8d89603a7c8baf5c7b2"
 }

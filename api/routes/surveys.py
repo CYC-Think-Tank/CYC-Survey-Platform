@@ -13,7 +13,13 @@ router = APIRouter()
 
 @router.get("/api/surveys", response_model=list[SurveyList])
 async def get_surveys(include_inactive: bool = False):
-    """Get surveys and their response counts"""
+    """
+    Return surveys and their response counts for the survey listing UI.
+
+    By default, only active surveys are returned. When `include_inactive` is true,
+    inactive surveys are included as well. Each returned row gets a `response_count`
+    derived from the joined `response_sessions` count.
+    """
     try:
         query = supabase.table("surveys").select("*, response_sessions(count)")
         if not include_inactive:
@@ -52,7 +58,12 @@ async def get_surveys(include_inactive: bool = False):
 
 @router.get("/api/surveys/{survey_id}", response_model=SurveyDetail)
 async def get_survey(survey_id: str):
-    """Get a specific survey with its questions"""
+    """
+    Return a single survey and its ordered questions.
+
+    Used by survey editing, response viewing, and respondent-facing flows. Returns
+    404 when the survey does not exist.
+    """
     try:
         # Fetch survey
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
@@ -80,7 +91,13 @@ async def get_survey(survey_id: str):
 
 @router.post("/api/surveys", response_model=SurveyDetail)
 async def create_survey(survey: SurveyCreate):
-    """Create a new survey and its questions"""
+    """
+    Create a survey and its questions, including logic gate ID remapping.
+
+    The frontend may send temporary question IDs so conditional logic can refer to
+    questions before they have database UUIDs. After inserting questions, this route
+    maps temporary IDs to real UUIDs and updates any logic gate references.
+    """
     try:
         has_been_published = survey.is_active
 
@@ -165,7 +182,14 @@ async def create_survey(survey: SurveyCreate):
 
 @router.post("/api/surveys/{survey_id}/duplicate", response_model=SurveyDetail)
 async def duplicate_survey(survey_id: str):
-    """Duplicate an existing survey and its questions"""
+    """
+    Duplicate a survey, its questions, logic gates, and stored translations.
+
+    The duplicated survey is inactive by default. Question options are deep-copied,
+    old question IDs are mapped to new question IDs, logic gate references are
+    remapped, and stored translation payloads are copied with translated question IDs
+    updated for the new survey.
+    """
     try:
         # 1. Fetch original survey
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
