@@ -83,21 +83,24 @@ async def get_survey(survey_id: str):
 
         survey["questions"] = questions_res.data
 
-        # Fetch translations from new table
-        trans_res = (
-            supabase.table("translations")
-            .select("language_code, title, description, questions")
-            .eq("survey_id", survey_id)
-            .execute()
-        )
-        survey["translations"] = {}
-        if trans_res.data:
-            for row in trans_res.data:
-                survey["translations"][row["language_code"]] = {
-                    "title": row.get("title", ""),
-                    "description": row.get("description", ""),
-                    "questions": row.get("questions", []),
-                }
+        # Fetch translations from new table (gracefully skip if table doesn't exist yet)
+        try:
+            trans_res = (
+                supabase.table("translations")
+                .select("language_code, title, description, questions")
+                .eq("survey_id", survey_id)
+                .execute()
+            )
+            survey["translations"] = {}
+            if trans_res.data:
+                for row in trans_res.data:
+                    survey["translations"][row["language_code"]] = {
+                        "title": row.get("title", ""),
+                        "description": row.get("description", ""),
+                        "questions": row.get("questions", []),
+                    }
+        except Exception:
+            survey["translations"] = {}
 
         return survey
     except HTTPException:
