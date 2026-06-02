@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SUPPORTED_LANGUAGES } from '@/config/languages';
 
 export function Header() {
   const pathname = usePathname();
@@ -38,22 +39,17 @@ export function Header() {
             />
           </Link>
           <nav className="flex items-center space-x-2 sm:space-x-6 relative">
-            {language !== 'en' && (
-              <button
-                onClick={() => setLanguage('en')}
-                className="text-gray-700 hover:text-[var(--color-cyc-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors"
-              >
-                English
-              </button>
-            )}
-            {language !== 'fr' && (
-              <button
-                onClick={() => setLanguage('fr')}
-                className="text-gray-700 hover:text-[var(--color-cyc-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors"
-              >
-                Français
-              </button>
-            )}
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] cursor-pointer"
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.nativeName}
+                </option>
+              ))}
+            </select>
           </nav>
         </div>
       </div>
