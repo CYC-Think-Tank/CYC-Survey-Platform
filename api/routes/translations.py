@@ -17,7 +17,13 @@ router = APIRouter()
 
 @router.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Upload a file to Supabase Storage and return the public URL."""
+    """
+    Upload a file to Supabase Storage and return its public URL.
+
+    Used primarily for survey question thumbnails and other assets. The file is
+    stored in the "survey-assets" bucket under a UUID-based filename, then the
+    endpoint returns the public URL and original filename.
+    """
     try:
         content = await file.read()
         ext = file.filename.split(".")[-1] if file.filename else "bin"

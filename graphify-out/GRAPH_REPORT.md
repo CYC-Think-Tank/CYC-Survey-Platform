@@ -1,16 +1,16 @@
 # Graph Report - CYC-Survey-Platform  (2026-06-02)
 
 ## Corpus Check
-- 99 files · ~52,640 words
+- 99 files · ~52,818 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 939 nodes · 1341 edges · 96 communities (64 shown, 32 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 114 edges (avg confidence: 0.72)
+- 949 nodes · 1351 edges · 96 communities (65 shown, 31 thin omitted)
+- Extraction: 91% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 114 edges (avg confidence: 0.72)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4c1f0715`
+- Built from commit: `2f2dd283`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -117,15 +117,15 @@
 - **Docker Compose Services** — docker_compose_frontend, docker_compose_backend, docker_compose_postgres [EXTRACTED 1.00]
 - **CI Pipeline Jobs** — ci_frontend, ci_backend, ci_docker [EXTRACTED 1.00]
 
-## Communities (96 total, 32 thin omitted)
+## Communities (96 total, 31 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
-Nodes (62): Admin Create Page, Admin survey edit page, Admin Results Page, ai_analyses Table, answers Table, GET /api/cron/reminders Route, Custom Regex Validation, CYC Survey Platform (+54 more)
+Nodes (61): Admin Create Page, Admin survey edit page, Admin Results Page, ai_analyses Table, answers Table, GET /api/cron/reminders Route, Custom Regex Validation, CYC Survey Platform (+53 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.06
-Nodes (57): AdminDashboard Component, AdminLayout Component, AdminLogin Component, POST /api/sessions/{id}/attention-failure, POST /api/surveys/{id}/check-status, POST /api/surveys/{id}/check-status, PATCH /api/sessions/{session_id}/complete, POST /api/surveys/{survey_id}/sessions (+49 more)
+Nodes (61): AdminDashboard Component, AdminLayout Component, AdminLogin Component, POST /api/sessions/{id}/attention-failure, POST /api/surveys/{id}/check-status, POST /api/surveys/{id}/check-status, PATCH /api/sessions/{session_id}/complete, POST /api/surveys/{survey_id}/sessions (+53 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.06
@@ -140,12 +140,12 @@ Cohesion: 0.06
 Nodes (38): Any, Gather Survey Data for AI, calculate_median(), calculate_mode(), calculate_quartiles(), calculate_std_dev(), find_outliers(), get_survey_summary() (+30 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.13
-Nodes (23): AnswerCreate, AnswerUpsert, check_survey_status(), CheckStatusRequest, create_session(), create_share_link(), Question, QuestionCreate (+15 more)
+Cohesion: 0.11
+Nodes (26): AnswerCreate, AnswerUpsert, check_survey_status(), CheckStatusRequest, create_session(), create_share_link(), Question, QuestionCreate (+18 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.08
-Nodes (40): AiInsightsTab Component, POST /api/surveys/{id}/ai-archetypes (Archetypes), POST /api/surveys/{id}/ai-beliefs (Belief Network), POST /api/surveys/{id}/ai-blindspots (Blind Spots), POST /api/surveys/{id}/ai-minority (Minority Insights), POST /api/surveys/{id}/ai-mood (Mood Heatmap), POST /api/surveys/{id}/ai-analysis (Persuadability), _base_context (AI Prompt Builder) (+32 more)
+Cohesion: 0.09
+Nodes (36): AiInsightsTab Component, POST /api/surveys/{id}/ai-archetypes (Archetypes), POST /api/surveys/{id}/ai-beliefs (Belief Network), POST /api/surveys/{id}/ai-blindspots (Blind Spots), POST /api/surveys/{id}/ai-minority (Minority Insights), POST /api/surveys/{id}/ai-mood (Mood Heatmap), POST /api/surveys/{id}/ai-analysis (Persuadability), _base_context (AI Prompt Builder) (+28 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.07
@@ -160,8 +160,8 @@ Cohesion: 0.11
 Nodes (27): CI Backend Job, CI Docker Build Job, CI E2E Tests Job, CI Frontend Job, CodeQL Security Analysis, CodeQL JavaScript Analysis, CodeQL Python Analysis, Dependabot NPM Updates (+19 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.10
-Nodes (20): complete_session(), delete_all_responses(), delete_share_link(), delete_survey(), get_share_links(), get_survey(), get_survey_results(), get_user_profile_data() (+12 more)
+Cohesion: 0.09
+Nodes (22): complete_session(), delete_all_responses(), delete_share_link(), delete_single_response(), delete_survey(), get_share_links(), get_survey(), get_survey_results() (+14 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.09
@@ -192,8 +192,8 @@ Cohesion: 0.13
 Nodes (14): 1. Problem, 2.1 New API Endpoint, 2.2 Gemini Prompt Strategy, 2.3 Authentication, 2.4 Frontend Change (Admin Edit Page), 2. Architecture, 3. Error Handling, 4. Data Flow (+6 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.06
-Nodes (33): Upload a file to Supabase Storage and return the public URL., upload_file(), ShareLinkCreate, str, str, Database check script, Insert check script, python-dotenv (+25 more)
+Cohesion: 0.07
+Nodes (30): Upload a file to Supabase Storage and return the public URL., upload_file(), str, Database check script, Insert check script, python-dotenv, FastAPI framework, List questions script (+22 more)
 
 ### Community 19 - "Community 19"
 Cohesion: 0.13
@@ -224,8 +224,8 @@ Cohesion: 0.20
 Nodes (12): _call_gemini(), get_raffle_email(), _get_random_email_position(), get_survey_responses_paginated(), get_surveys(), bool, int, Get surveys and their response counts (+4 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.14
-Nodes (28): AnswerUpsert, AnswerCreate, AnswerUpsert, CheckStatusRequest, Question, QuestionCreate, ResponseSubmission, SessionCreate (+20 more)
+Cohesion: 0.16
+Nodes (25): AnswerUpsert, AnswerUpsert, CheckStatusRequest, ResponseSubmission, SessionCreate, str, CheckStatusRequest, ResponseSubmission (+17 more)
 
 ### Community 27 - "Community 27"
 Cohesion: 0.18
@@ -248,8 +248,8 @@ Cohesion: 0.33
 Nodes (5): ActiveSurvey, CompletedSession, GET(), IncompleteSession, request
 
 ### Community 32 - "Community 32"
-Cohesion: 0.17
-Nodes (20): SurveyCreate, SurveyDetail, SurveyList, bool, str, create_survey(), delete_survey(), duplicate_survey() (+12 more)
+Cohesion: 0.12
+Nodes (26): SurveyCreate, SurveyDetail, SurveyList, bool, str, create_survey(), delete_survey(), duplicate_survey() (+18 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.33
@@ -275,6 +275,10 @@ Nodes (6): Call Gemini API, FastAPI CYC Survey API, Toggle a survey's active sta
 Cohesion: 0.67
 Nodes (3): tailwindcss, PostCSS configuration, Tailwind CSS
 
+### Community 50 - "Community 50"
+Cohesion: 0.33
+Nodes (8): ShareLinkCreate, str, create_share_link(), delete_share_link(), get_share_links(), Generate a unique share link code for a survey., Get all share links for a survey with their response counts., ShareLinkCreate
+
 ### Community 72 - "Community 72"
 Cohesion: 0.15
 Nodes (12): Admin Page, Backend Module Layout, CI/CD, code:bash (cp .env.example .env.local), code:bash (git clone https://github.com/CYC-Think-Tank/CYC-Survey-Platf), code:bash (# Backend), CYC Survey Platform, Environment Variables (+4 more)
@@ -286,22 +290,22 @@ Nodes (12): Admin Page, Backend Module Layout, CI/CD, code:bash (cp .env.example
 ## Knowledge Gaps
 - **305 isolated node(s):** `*.{ts,tsx}`, `*.{js,jsx}`, `*.{json,md,yml,yaml,css,scss}`, `buildCommand`, `installCommand` (+300 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **32 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Backend Docker Service` and `PostgreSQL Docker Service`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `FastAPI framework` connect `Community 18` to `Community 32`, `Community 4`, `Community 5`, `Community 36`, `Community 26`, `Community 27`?**
-  _High betweenness centrality (0.096) - this node is a cross-community bridge._
-- **Why does `pdfplumber` connect `Community 0` to `Community 18`, `Community 5`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `FastAPI framework` connect `Community 18` to `Community 32`, `Community 4`, `Community 5`, `Community 36`, `Community 50`, `Community 26`, `Community 27`?**
+  _High betweenness centrality (0.103) - this node is a cross-community bridge._
+- **Why does `pdfplumber` connect `Community 18` to `Community 0`, `Community 5`?**
+  _High betweenness centrality (0.078) - this node is a cross-community bridge._
 - **Why does `FastAPI CYC Survey API` connect `Community 40` to `Community 9`, `Community 14`, `Community 6`?**
   _High betweenness centrality (0.076) - this node is a cross-community bridge._
 - **What connects `*.{ts,tsx}`, `*.{js,jsx}`, `*.{json,md,yml,yaml,css,scss}` to the rest of the system?**
-  _374 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _384 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.053763440860215055 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05446853516657853 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.06140350877192982 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05573770491803279 - nodes in this community are weakly interconnected._
