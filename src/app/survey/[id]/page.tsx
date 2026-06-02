@@ -52,16 +52,18 @@ interface Question {
 interface Survey {
   id: string;
   title: string;
-  title_fr?: string;
-  title_zh?: string;
   description?: string;
-  description_fr?: string;
-  description_zh?: string;
   estimated_minutes?: number;
   description_alignment?: string;
   questions: Question[];
-  questions_fr?: Question[];
-  questions_zh?: Question[];
+  translations?: Record<
+    string,
+    {
+      title?: string;
+      description?: string;
+      questions?: Question[];
+    }
+  >;
 }
 
 const RichTextRenderer = ({
@@ -233,23 +235,33 @@ export default function SurveyPage() {
           setAlreadyCompleted(true);
         }
 
+        // Merge new translations table format with legacy format
+        const mergedTranslations: Record<
+          string,
+          { title?: string; description?: string; questions?: Question[] }
+        > = {
+          ...(translationData?.translations && Object.keys(translationData.translations).length > 0
+            ? translationData.translations
+            : {}),
+        };
+
+        // Also pull from legacy fields if present
         if (translationData?.questions_fr !== undefined) {
-          data.questions_fr = translationData.questions_fr;
-        }
-        if (translationData?.title_fr !== undefined) {
-          data.title_fr = translationData.title_fr;
-        }
-        if (translationData?.description_fr !== undefined) {
-          data.description_fr = translationData.description_fr;
+          mergedTranslations.fr = {
+            title: translationData.title_fr,
+            description: translationData.description_fr,
+            questions: translationData.questions_fr,
+          };
         }
         if (translationData?.questions_zh !== undefined) {
-          data.questions_zh = translationData.questions_zh;
+          mergedTranslations.zh = {
+            title: translationData.title_zh,
+            description: translationData.description_zh,
+            questions: translationData.questions_zh,
+          };
         }
-        if (translationData?.title_zh !== undefined) {
-          data.title_zh = translationData.title_zh;
-        }
-        if (translationData?.description_zh !== undefined) {
-          data.description_zh = translationData.description_zh;
+        if (Object.keys(mergedTranslations).length > 0) {
+          data.translations = mergedTranslations;
         }
 
         setSurvey(data);
@@ -449,18 +461,13 @@ export default function SurveyPage() {
               : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
             const optIndex = enOptions.indexOf(gate.value);
             if (optIndex !== -1) {
-              if (language === 'fr' && survey.questions_fr) {
-                const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
-                const frOpts = Array.isArray(frQ?.options)
-                  ? frQ.options
-                  : (frQ?.options as QuestionOptions | undefined)?.choices || [];
-                if (frOpts[optIndex]) targetValue = frOpts[optIndex];
-              } else if (language === 'zh' && survey.questions_zh) {
-                const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
-                const zhOpts = Array.isArray(zhQ?.options)
-                  ? zhQ.options
-                  : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
-                if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
+              const transQuestions = survey.translations?.[language]?.questions;
+              if (transQuestions) {
+                const transQ = transQuestions.find((x: Question) => x.id === gate.question_id);
+                const transOpts = Array.isArray(transQ?.options)
+                  ? transQ.options
+                  : (transQ?.options as QuestionOptions | undefined)?.choices || [];
+                if (transOpts[optIndex]) targetValue = transOpts[optIndex];
               }
             }
           }
@@ -519,45 +526,59 @@ export default function SurveyPage() {
     if (!currentQuestionRaw) return null;
     const finalQ = { ...currentQuestionRaw };
 
-    if (language === 'fr' && survey?.questions_fr) {
-      const frQ = survey.questions_fr.find((q: Question) => q.id === finalQ.id);
-      if (frQ) {
-        if (frQ.question_text && frQ.question_text.trim()) finalQ.question_text = frQ.question_text;
-        finalQ.options = frQ.options;
-      }
-    } else if (language === 'zh' && survey?.questions_zh) {
-      const zhQ = survey.questions_zh.find((q: Question) => q.id === finalQ.id);
-      if (zhQ) {
-        if (zhQ.question_text && zhQ.question_text.trim()) finalQ.question_text = zhQ.question_text;
-        finalQ.options = zhQ.options;
+    const transQuestions = survey?.translations?.[language]?.questions;
+    if (transQuestions && language !== 'en') {
+      const transQ = transQuestions.find((q: Question) => q.id === finalQ.id);
+      if (transQ) {
+        if (transQ.question_text && transQ.question_text.trim())
+          finalQ.question_text = transQ.question_text;
+        finalQ.options = transQ.options;
       }
     }
 
-    // Manually translate injected attention checks
-    if (language === 'fr' && finalQ.id.startsWith('attn-')) {
-      if (finalQ.id === 'attn-fixed-1') {
-        finalQ.question_text =
-          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Lorsque vous répondez à des questions sur la politique économique, il est important de lire attentivement chaque énoncé. Pour démontrer que vous êtes attentif, veuillez sélectionner l\'option de réponse "4 (D\'accord)" pour cette question spécifique.</span>Dans quelle mesure êtes-vous d\'accord ou en désaccord avec le calendrier des projets d\'infrastructure fédéraux actuels ?';
-      } else if (finalQ.id === 'attn-fixed-2') {
-        finalQ.question_text =
-          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Pour nous assurer que nos normes de qualité des données sont respectées, veuillez répondre à cet énoncé :</span>"Le gouvernement du Canada a officiellement dissous la monnaie du pays et interdit l\'échange de tous biens et services."';
-        finalQ.options = { choices: ['Vrai', 'Faux'] };
-      } else if (finalQ.id === 'attn-inact-1') {
-        finalQ.question_text =
-          'Êtes-vous toujours là ? Veuillez sélectionner "Oui" pour continuer.';
-        finalQ.options = { choices: ['Non', 'Oui', 'Peut-être'] };
-      }
-    } else if (language === 'zh' && finalQ.id.startsWith('attn-')) {
-      if (finalQ.id === 'attn-fixed-1') {
-        finalQ.question_text =
-          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">在回答有关住房和经济政策的问题时，仔细阅读每项声明非常重要。为了表明您正在集中注意力，请在此特定问题中选择“4（同意）”选项。</span>您对当前联邦基础设施项目时间表的同意或不同意程度如何？';
-      } else if (finalQ.id === 'attn-fixed-2') {
-        finalQ.question_text =
-          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">为确保我们的数据质量标准得到满足，请回答以下简单的声明：</span>“加拿大政府已正式解散该国货币并禁止所有商品和服务的交换。”';
-        finalQ.options = { choices: ['正确', '错误'] };
-      } else if (finalQ.id === 'attn-inact-1') {
-        finalQ.question_text = '您还在吗？请选择“是”以继续。';
-        finalQ.options = { choices: ['否', '是', '也许'] };
+    // Translate injected attention checks using locale files
+    if (language !== 'en' && finalQ.id.startsWith('attn-')) {
+      // Attention checks use the same keys as the locale files
+      // For now, only fr and zh have manual attention check translations
+      // Others will fall back to English
+      const attnTranslations: Record<
+        string,
+        Record<string, { text: string; choices?: string[] }>
+      > = {
+        fr: {
+          'attn-fixed-1': {
+            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Lorsque vous répondez à des questions sur la politique économique, il est important de lire attentivement chaque énoncé. Pour démontrer que vous êtes attentif, veuillez sélectionner l\'option de réponse "4 (D\'accord)" pour cette question spécifique.</span>Dans quelle mesure êtes-vous d\'accord ou en désaccord avec le calendrier des projets d\'infrastructure fédéraux actuels ?',
+          },
+          'attn-fixed-2': {
+            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Pour nous assurer que nos normes de qualité des données sont respectées, veuillez répondre à cet énoncé :</span>"Le gouvernement du Canada a officiellement dissous la monnaie du pays et interdit l\'échange de tous biens et services."',
+            choices: ['Vrai', 'Faux'],
+          },
+          'attn-inact-1': {
+            text: 'Êtes-vous toujours là ? Veuillez sélectionner "Oui" pour continuer.',
+            choices: ['Non', 'Oui', 'Peut-être'],
+          },
+        },
+        zh: {
+          'attn-fixed-1': {
+            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">在回答有关住房和经济政策的问题时，仔细阅读每项声明非常重要。为了表明您正在集中注意力，请在此特定问题中选择“4（同意）”选项。</span>您对当前联邦基础设施项目时间表的同意或不同意程度如何？',
+          },
+          'attn-fixed-2': {
+            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">为确保我们的数据质量标准得到满足，请回答以下简单的声明：</span>“加拿大政府已正式解散该国货币并禁止所有商品和服务的交换。”',
+            choices: ['正确', '错误'],
+          },
+          'attn-inact-1': {
+            text: '您还在吗？请选择“是”以继续。',
+            choices: ['否', '是', '也许'],
+          },
+        },
+      };
+
+      const attnTrans = attnTranslations[language]?.[finalQ.id];
+      if (attnTrans) {
+        finalQ.question_text = attnTrans.text;
+        if (attnTrans.choices) {
+          finalQ.options = { choices: attnTrans.choices };
+        }
       }
     }
     return finalQ;
@@ -568,18 +589,8 @@ export default function SurveyPage() {
     : survey && visibleCount > 0
       ? (safeVisiblePosition / Math.max(1, visibleCount - 1)) * 100
       : 0;
-  const displayTitle =
-    language === 'fr' && survey?.title_fr
-      ? survey.title_fr
-      : language === 'zh' && survey?.title_zh
-        ? survey.title_zh
-        : survey?.title;
-  const displayDescription =
-    language === 'fr' && survey?.description_fr
-      ? survey.description_fr
-      : language === 'zh' && survey?.description_zh
-        ? survey.description_zh
-        : survey?.description;
+  const displayTitle = survey?.translations?.[language]?.title || survey?.title;
+  const displayDescription = survey?.translations?.[language]?.description || survey?.description;
 
   // Helper to shuffle array (Fisher-Yates)
   const shuffleArray = (array: string[]) => {
@@ -594,7 +605,7 @@ export default function SurveyPage() {
   // Get the translated version of a question for a given language
   const getTranslatedQuestion = (q: Question, lang: string, surveyData: Survey) => {
     if (lang === 'en') return q;
-    const translatedList = lang === 'fr' ? surveyData.questions_fr : surveyData.questions_zh;
+    const translatedList = surveyData.translations?.[lang]?.questions;
     if (!translatedList) return q;
     return translatedList.find((tq: Question) => tq.id === q.id) || q;
   };
@@ -985,7 +996,7 @@ export default function SurveyPage() {
     }
 
     // For regular questions, map by option index using the translation data
-    const translatedList = language === 'fr' ? survey?.questions_fr : survey?.questions_zh;
+    const translatedList = survey?.translations?.[language]?.questions;
     if (!translatedList) return value;
     const transQ = translatedList.find((tq: Question) => tq.id === qId);
     if (!transQ) return value;
