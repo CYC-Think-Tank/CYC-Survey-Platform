@@ -50,3 +50,6 @@ __pycache__/
 AGENTS.md
 docs/superpowers/
 .opencode/opencode.json
+
+# graphify
+graphify-out/
