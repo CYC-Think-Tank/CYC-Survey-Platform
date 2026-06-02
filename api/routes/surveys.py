@@ -82,6 +82,23 @@ async def get_survey(survey_id: str):
         )
 
         survey["questions"] = questions_res.data
+
+        # Fetch translations from new table
+        trans_res = (
+            supabase.table("translations")
+            .select("language_code, title, description, questions")
+            .eq("survey_id", survey_id)
+            .execute()
+        )
+        survey["translations"] = {}
+        if trans_res.data:
+            for row in trans_res.data:
+                survey["translations"][row["language_code"]] = {
+                    "title": row.get("title", ""),
+                    "description": row.get("description", ""),
+                    "questions": row.get("questions", []),
+                }
+
         return survey
     except HTTPException:
         raise
@@ -263,33 +280,58 @@ async def duplicate_survey(survey_id: str):
             for old_q, new_q in zip(original_sorted, new_questions, strict=False):
                 old_to_new[old_q["id"]] = new_q["id"]
 
-            # Duplicate and Remap Translations
+            # Duplicate and Remap Translations (new table)
             existing_translations_res = (
+                supabase.table("translations")
+                .select("*")
+                .eq("survey_id", survey_id)
+                .execute()
+            )
+            existing_translations = existing_translations_res.data
+
+            if existing_translations:
+                for trans in existing_translations:
+                    questions = trans.get("questions", [])
+                    if isinstance(questions, list):
+                        for tq in questions:
+                            old_id = tq.get("id")
+                            if old_id in old_to_new:
+                                tq["id"] = old_to_new[old_id]
+
+                    supabase.table("translations").insert({
+                        "survey_id": new_survey["id"],
+                        "language_code": trans["language_code"],
+                        "title": trans.get("title", ""),
+                        "description": trans.get("description", ""),
+                        "questions": questions,
+                    }).execute()
+
+            # Also duplicate legacy ai_analyses for backward compatibility
+            existing_legacy_res = (
                 supabase.table("ai_analyses")
                 .select("*")
                 .eq("survey_id", survey_id)
                 .in_("analysis_type", ["translation_fr", "translation_zh"])
                 .execute()
             )
-            existing_translations = existing_translations_res.data
+            existing_legacy = existing_legacy_res.data
 
-            if existing_translations:
-                translations_to_insert = []
-                for trans in existing_translations:
+            if existing_legacy:
+                legacy_to_insert = []
+                for trans in existing_legacy:
                     trans_data = json_module.loads(json_module.dumps(trans["data"]))
                     lang_suffix = (
                         "fr" if "translation_fr" in trans["analysis_type"] else "zh"
                     )
                     q_key = f"questions_{lang_suffix}"
 
-                    # Remap IDs inside the translation JSON
                     if q_key in trans_data and isinstance(trans_data[q_key], list):
                         for tq in trans_data[q_key]:
                             old_id = tq.get("id")
                             if old_id in old_to_new:
                                 tq["id"] = old_to_new[old_id]
 
-                    translations_to_insert.append(
+                    legacy_to_insert.append(
                         {
                             "survey_id": new_survey["id"],
                             "analysis_type": trans["analysis_type"],
@@ -297,9 +339,9 @@ async def duplicate_survey(survey_id: str):
                             "updated_at": datetime.utcnow().isoformat(),
                         }
                     )
-                if translations_to_insert:
+                if legacy_to_insert:
                     supabase.table("ai_analyses").insert(
-                        translations_to_insert
+                        legacy_to_insert
                     ).execute()
 
             updates_needed = []
