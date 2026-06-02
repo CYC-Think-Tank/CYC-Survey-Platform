@@ -408,7 +408,6 @@ export default function SurveyPage() {
       const currentQuestion = survey.questions[currentStep - 1];
       if (
         currentQuestion &&
-        currentQuestion.type !== 'section_header' &&
         !currentQuestion.id.startsWith('attn-')
       ) {
         const val = answers[currentQuestion.id];
@@ -432,6 +431,8 @@ export default function SurveyPage() {
             body.answer_numeric = val;
           } else if (currentQuestion.type === 'checkboxes' || currentQuestion.type === 'ranking') {
             body.answer_options = val;
+          } else if (currentQuestion.type === 'section_header') {
+            body.answer_text = 'viewed';
           }
 
           // Debounce text area auto-save to avoid spamming the DB on every single keystroke
@@ -885,6 +886,9 @@ export default function SurveyPage() {
     }
 
     if (!isEmailStep && currentQuestion) {
+      if (currentQuestion.type === 'section_header') {
+        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: 'viewed' }));
+      }
       // Evaluate attention check if applicable
       if (currentQuestion.id.startsWith('attn-')) {
         const val = answers[currentQuestion.id];
@@ -1101,7 +1105,7 @@ export default function SurveyPage() {
       for (const [qId, val] of Object.entries(answers)) {
         if (!visibleQuestionIds.has(qId)) continue;
         const q = survey.questions.find((x: Question) => x.id === qId);
-        if (!q || q.type === 'section_header' || q.id.startsWith('attn-')) continue;
+        if (!q || q.id.startsWith('attn-')) continue;
 
         const answerObj: Record<string, unknown> = {
           question_id: q.id,
@@ -1113,6 +1117,8 @@ export default function SurveyPage() {
           answerObj.answer_numeric = val;
         } else if (q.type === 'checkboxes' || q.type === 'ranking') {
           answerObj.answer_options = normalizeAnswerToEnglish(qId, val);
+        } else if (q.type === 'section_header') {
+          answerObj.answer_text = 'viewed';
         }
         submissionAnswers.push(answerObj);
       }
