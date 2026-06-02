@@ -424,10 +424,22 @@ export default function SurveyPage() {
       const q = survey.questions[idx];
       let shouldSkip = false;
 
+      let wasAnsweredPreviously = false;
+      if (q && q.is_conditional) {
+        wasAnsweredPreviously = survey.questions.some((prevQ, i) => {
+          if (i >= idx) return false;
+          if (prevQ.question_text !== q.question_text) return false;
+          const ans = answers[prevQ.id];
+          if (ans === undefined || ans === null || ans === '') return false;
+          if (Array.isArray(ans) && ans.length === 0) return false;
+          return true;
+        });
+      }
+
       if (
         q &&
         q.is_conditional &&
-        (pData[q.question_text] as unknown as string | boolean | number)
+        (wasAnsweredPreviously || (pData && pData[q.question_text]))
       ) {
         shouldSkip = true;
       }
