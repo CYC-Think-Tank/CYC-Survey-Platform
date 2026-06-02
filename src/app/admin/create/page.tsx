@@ -363,20 +363,29 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'fr') {
-          const base = getOptionsArray(q.options_fr);
-          const arr = base.slice();
-          arr.splice(index, 1);
-          return { ...q, options_fr: arr };
-        } else if (language === 'zh') {
-          const base = getOptionsArray(q.options_zh);
-          const arr = base.slice();
-          arr.splice(index, 1);
-          return { ...q, options_zh: arr };
+        const newQ = { ...q };
+
+        if (newQ.options_fr) {
+          const frArr = getOptionsArray(newQ.options_fr).slice();
+          if (frArr.length > index) {
+            frArr.splice(index, 1);
+            newQ.options_fr = frArr;
+          }
         }
-        const newOptions = [...q.options];
+
+        if (newQ.options_zh) {
+          const zhArr = getOptionsArray(newQ.options_zh).slice();
+          if (zhArr.length > index) {
+            zhArr.splice(index, 1);
+            newQ.options_zh = zhArr;
+          }
+        }
+
+        const newOptions = [...newQ.options];
         newOptions.splice(index, 1);
-        return { ...q, options: newOptions };
+        newQ.options = newOptions;
+
+        return newQ;
       })
     );
   };

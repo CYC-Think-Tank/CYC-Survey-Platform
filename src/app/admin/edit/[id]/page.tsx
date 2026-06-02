@@ -692,27 +692,32 @@ export default function EditSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'fr') {
-          const base = getOptionsArray(q.options_fr);
-          const arr = base.slice();
-          arr.splice(index, 1);
-          return { ...q, options_fr: arr };
-        } else if (language === 'zh') {
-          const base = getOptionsArray(q.options_zh);
-          const arr = base.slice();
-          arr.splice(index, 1);
-          return { ...q, options_zh: arr };
-        } else {
-          const isArr = Array.isArray(q.options);
-          const arr = isArr
-            ? [...(q.options as string[])]
-            : [...(((q.options as Record<string, unknown>).choices as string[]) || [])];
-          arr.splice(index, 1);
-          return {
-            ...q,
-            options: isArr ? arr : { ...(q.options as Record<string, unknown>), choices: arr },
-          };
+        const newQ = { ...q };
+
+        if (newQ.options_fr) {
+          const frArr = getOptionsArray(newQ.options_fr).slice();
+          if (frArr.length > index) {
+            frArr.splice(index, 1);
+            newQ.options_fr = frArr;
+          }
         }
+
+        if (newQ.options_zh) {
+          const zhArr = getOptionsArray(newQ.options_zh).slice();
+          if (zhArr.length > index) {
+            zhArr.splice(index, 1);
+            newQ.options_zh = zhArr;
+          }
+        }
+
+        const isArr = Array.isArray(newQ.options);
+        const arr = isArr
+          ? [...(newQ.options as string[])]
+          : [...(((newQ.options as Record<string, unknown>).choices as string[]) || [])];
+        arr.splice(index, 1);
+        newQ.options = isArr ? arr : { ...(newQ.options as Record<string, unknown>), choices: arr };
+
+        return newQ;
       })
     );
   };
