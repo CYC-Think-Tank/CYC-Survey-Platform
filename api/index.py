@@ -104,13 +104,32 @@ class ResponseSubmission(BaseModel):
 
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Upload a file to Supabase Storage and return the public URL."""
+    """
+    Return the public URL of a file after uploading it ot Supabase Storage.
+    Used primarily for survey question thumbnails and other assets.
+
+    Post-conditions:
+    - Returns a JSON object with attributes public URL and original filename.
+    - Side effects: Uploads a file to Supabase Storage under the "survey-assets" bucket 
+    with a unique UUID filename. 
+
+    Error Handling:
+    - If the file is not provided or is invalid, returns a 400 error.
+    - If the upload to Supabase fails, returns a 500 error with details.
+
+    Pre-conditions: 
+    - `file`: the file (type UploadFile) to be uploaded. Must have a filename and
+    content type
+    """
     try:
+        # Get path of the file
         content = await file.read()
         ext = file.filename.split(".")[-1] if file.filename else "bin"
         filename = f"{uuid.uuid4()}.{ext}"
         path = f"uploads/{filename}"
 
+
+        # Upload the file to Supabase Storage with path and content
         supabase.storage.from_("survey-assets").upload(
             path,
             content,
@@ -119,6 +138,7 @@ async def upload_file(file: UploadFile = File(...)):
             },
         )
 
+        # Get the public URL of the uploaded file and return it in the response
         public_url = supabase.storage.from_("survey-assets").get_public_url(path)
         return {"url": public_url, "filename": file.filename}
     except Exception as e:
@@ -130,8 +150,22 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/api/surveys", response_model=list[SurveyList])
 async def get_surveys(include_inactive: bool = False):
-    """Get surveys and their response counts"""
+    """
+    Post-conditions:
+    - Return list of surveys and their response counts. Used primarily for survey 
+    listing page in the frontend.
+    - Side effects: Sets 'response_count' attribute for each survey based on count of 
+    related response_sessions.
+
+    Error Handling: 
+    - If the database query fails, returns a 500 error with details. 
+
+    Pre-conditions:
+    - `include_inactive`: boolean query parameter. If true, includes inactive surveys 
+    in the response. Defaults to false (only active surveys are returned).
+    """
     try:
+        # Join surveys with response_sessions to get count of responses per survey
         query = supabase.table("surveys").select("*, response_sessions(count)")
         if not include_inactive:
             query = query.eq("is_active", True)
@@ -169,7 +203,21 @@ async def get_surveys(include_inactive: bool = False):
 
 @app.get("/api/surveys/{survey_id}", response_model=SurveyDetail)
 async def get_survey(survey_id: str):
-    """Get a specific survey with its questions"""
+    """
+    Get a specific survey with its questions. Used primarily for 
+    survey editing and response viewing pages in the frontend.
+    
+    Post conditions:
+    - Returns a JSON object representing the survey with its details and an array of 
+    its questions.
+    
+    Error handling:
+    - If the survey is not found, returns a 404 error.
+    - If the database query fails, returns a 500 error with details.
+
+    Pre-conditions:
+    - `survey_id`: the ID of the survey to fetch. Requires a valid UUID string.
+    """
     try:
         # Fetch survey
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
@@ -218,11 +266,29 @@ class SurveyCreate(BaseModel):
 
 @app.post("/api/surveys", response_model=SurveyDetail)
 async def create_survey(survey: SurveyCreate):
-    """Create a new survey and its questions"""
+    """
+    Create a new survey and its questions and handles logic gate implementation.
+    Primarily used for survey creation in the frontend.
+    
+    Post-conditions:
+    - Returns a JSON object representing the created survey with its details and an
+    array of its questions.
+    - Side effects: Creates a new survey in Supabase's `surveys` table and 
+    its associated questions in the `questions` database.
+    Maps temporary frontend question IDs to real UUIDs for logic gate references and 
+    updates them accordingly in the database.
+    
+    Error Handling:
+    - If the survey creation fails, returns a 500 error with details.
+    - If the question creation fails, returns a 500 error with details. 
+
+    Pre-conditions:
+    - `survey`: a SurveyCreate object containing the survey details and questions.
+    """
     try:
         has_been_published = survey.is_active
 
-        # 1. Create Survey
+        # Create Survey in Supabase's `surveys` table and get response data
         survey_res = (
             supabase.table("surveys")
             .insert(
@@ -241,9 +307,11 @@ async def create_survey(survey: SurveyCreate):
 
         created_survey = survey_res.data[0]
 
-        # 2. Create Questions
+        # Create associated questions and insert in `questions` table with the returned
+        # survey ID
         if survey.questions:
             questions_to_insert = []
+            # loop through questions attribute in the survey object and append data to list 
             for q in survey.questions:
                 questions_to_insert.append(
                     {
@@ -262,6 +330,7 @@ async def create_survey(survey: SurveyCreate):
             )
             created_questions = questions_res.data
 
+            # LOGIC GATES IMPLEMENTATION:
             # Build mapping from frontend temp IDs to real UUIDs
             req_sorted = sorted(survey.questions, key=lambda q: q.order_index)
             created_sorted = sorted(created_questions, key=lambda q: q["order_index"])
@@ -272,8 +341,11 @@ async def create_survey(survey: SurveyCreate):
 
             # Remap logic_gates question_ids from temp IDs to real UUIDs
             if temp_to_real:
+                # Loop through created_questions (which have real UUIDs) and remap any logic_gates that reference temp IDs
                 for new_q in created_questions:
+                    # These represent the answer choices for a particular question 
                     opts = new_q.get("options")
+                    # Handle answer choices that have logic gates
                     if isinstance(opts, dict) and opts.get("logic_gates"):
                         remapped = False
                         for gate in opts["logic_gates"]:
@@ -303,16 +375,41 @@ async def create_survey(survey: SurveyCreate):
 
 @app.post("/api/surveys/{survey_id}/duplicate", response_model=SurveyDetail)
 async def duplicate_survey(survey_id: str):
-    """Duplicate an existing survey and its questions"""
+    """
+    Duplicate an existing survey and its questions.
+    Primarily used for survey duplication int eh frontend to allow users to create a 
+    new survey based on an existing one.
+
+    Post-conditions:
+    - Returns a JSON object representing the duplicated survey with its details and an
+    array of its questions.
+    - Side effects: Creates a new duplicate survey and its associated questions in the 
+    `surveys` table in Supabase. 
+
+    Handles logic gates for original questions by remapping them to the new duplicated
+    question IDs. Handles logic gate duplication for translations as well by remapping the question IDs inside the
+    translation JSON data and inserting the duplicated translations with the new survey ID
+    in the `ai_analyses` table in Supabase. 
+
+    Error Handling:
+    - If the survey is not found, returns a 404 error.
+    - If the duplication fails, returns a 500 error with details. 
+
+    Pre-conditions:
+    - `file`: the file (type UploadFile) to be uploaded. Must have a filename and
+    content type.
+    """
     try:
-        # 1. Fetch original survey
+        # ORIGINAL SURVEY AND QUESTIONS
+        # Fetch the original survey to be copied from the `surveys` table and store
+        # query response data
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
 
         original_survey = survey_res.data[0]
 
-        # 2. Fetch original questions
+        # Fetch the original questions to be copied from the `questions` table and store query resposne data
         questions_res = (
             supabase.table("questions")
             .select("*")
@@ -322,7 +419,9 @@ async def duplicate_survey(survey_id: str):
         )
         original_questions = questions_res.data
 
-        # 3. Create new survey based on original
+        # DUPLICATE SURVEY AnD QUESTIONS
+        # Create new survey based on original, insert it in `surveys` table in Supabase, 
+        # and store query response data for the newly created survey
         new_survey_res = (
             supabase.table("surveys")
             .insert(
@@ -343,11 +442,15 @@ async def duplicate_survey(survey_id: str):
 
         new_survey = new_survey_res.data[0]
 
-        # 4. Duplicate questions
+        # If original survey has questions, duplicate them with the new survey ID and 
+        # insert in `questions` table in Supabase.
         if original_questions:
             original_sorted = sorted(original_questions, key=lambda q: q["order_index"])
             questions_to_insert = []
+            # Handle logic gate duplication
             for q in original_sorted:
+                # If the question has options, deep copy them to avoid mutating OG question options
+                # when we remap option gates later
                 new_opts = (
                     json_module.loads(json_module.dumps(q["options"]))
                     if q.get("options")
@@ -378,6 +481,7 @@ async def duplicate_survey(survey_id: str):
                 old_to_new[old_q["id"]] = new_q["id"]
 
             # Duplicate and Remap Translations
+            # Get existing translations for the original survey
             existing_translations_res = (
                 supabase.table("ai_analyses")
                 .select("*")
@@ -388,6 +492,9 @@ async def duplicate_survey(survey_id: str):
             existing_translations = existing_translations_res.data
 
             if existing_translations:
+                # If existing translations exist for the original survey, 
+                # duplicate them and remap question IDs inside the translation JSON
+                # using the old-to-new mapping.
                 translations_to_insert = []
                 for trans in existing_translations:
                     trans_data = json_module.loads(json_module.dumps(trans["data"]))
@@ -403,6 +510,7 @@ async def duplicate_survey(survey_id: str):
                             if old_id in old_to_new:
                                 tq["id"] = old_to_new[old_id]
 
+                    # Append the translation to the translations_to_insert list with the new survey ID and remapped question IDs
                     translations_to_insert.append(
                         {
                             "survey_id": new_survey["id"],
@@ -412,14 +520,19 @@ async def duplicate_survey(survey_id: str):
                         }
                     )
                 if translations_to_insert:
+                    # If there are duplicated translations to insert then add to Supabase table `ai_analyses`
+                    # which currently stores the translation data for surveys
                     supabase.table("ai_analyses").insert(
                         translations_to_insert
                     ).execute()
-
+            
+            # Get a list of questions that need their logic gate supdated 
             updates_needed = []
             for new_q in new_questions:
+                # gets questions for each question
                 opts = new_q.get("options")
                 if isinstance(opts, dict) and opts.get("logic_gates"):
+                    # If the question has logic gates, remap the question IDs inside the logic gates using the old-to-new mapping
                     remapped = False
                     for gate in opts["logic_gates"]:
                         old_id = gate.get("question_id")
@@ -434,6 +547,8 @@ async def duplicate_survey(survey_id: str):
                             }
                         )
 
+            # If there are questions that need their logic gates updated, then update them in the database with the
+            # remapped question IDs
             if updates_needed:
                 for update in updates_needed:
                     supabase.table("questions").update(
@@ -457,8 +572,26 @@ async def duplicate_survey(survey_id: str):
 
 @app.get("/api/surveys/{survey_id}/translation")
 async def get_survey_translation(survey_id: str):
-    """Fetch the translated questions if they exist."""
+    """
+    Fetch the translated questions if they exist. Primarily used the retrieve existing 
+    translations for a survey when editing a survey in the frontend, so that the translated
+    questions can be displayed and edited alongside the original English questions.
+    
+    Post-conditions:
+    - Returns a JSON object containing the translated questions title and description for both
+    French and Chinese translations if they exist If no translations exist, returns 
+    null values for those fields. 
+    - Side effects: None (read-only endpoint)
+    
+    Error Handling:
+    - If the database query fails, returns a 500 error with details.
+
+    Pre-conditions:
+    - `survey_id`: the ID of the survey for which to fetch translations. Requires a valid UUID string.
+    """
     try:
+        # Fetch translations for both French and Chinese from the `ai_analyses` table in Supabase
+        # where analysis_type is either "translation_fr" or "translation_zh" 
         res_fr = (
             supabase.table("ai_analyses")
             .select("data")
@@ -483,6 +616,7 @@ async def get_survey_translation(survey_id: str):
             "description_zh": None,
         }
 
+        # If a French translation exists, update the result object with translated questions.
         if res_fr.data:
             data_fr = res_fr.data[0]["data"]
             if isinstance(data_fr, list):
@@ -492,6 +626,7 @@ async def get_survey_translation(survey_id: str):
                 result["title_fr"] = data_fr.get("title_fr")
                 result["description_fr"] = data_fr.get("description_fr")
 
+        # If a Chinese translation exists, update the result object with translated questions.
         if res_zh.data:
             data_zh = res_zh.data[0]["data"]
             if isinstance(data_zh, list):
@@ -508,8 +643,29 @@ async def get_survey_translation(survey_id: str):
 
 @app.put("/api/surveys/{survey_id}/translation")
 async def update_survey_translation(survey_id: str, request: Request):
-    """Manually update the translated questions JSON."""
+    """
+    Manually update the translated questions JSON.
+    Primarily used for saving manual edits to the translated questions made byt he uer
+    in the frontend translation editor.
+    Request body with contain updated translations and this endpoint will insert them in 
+    `ai_analyses` table in Supabase. 
+
+    Post-conditions:
+    - Returns a success message if the translations are updated successfully.
+    - Side effects: Updates the translated questions, title, and description for the specified survey
+    in the `ai_analyses` table with the provided translations.
+
+    Error Handling:
+    - If the database update fails, returns a 500 error with details.
+    - If the request body is invalid or missing required fields, returns a 400 error
+    with details. 
+
+    Pre-conditions:
+    - `survey_id`: the ID of the survey to update translations for. Requires a valid UUID string.
+    """
     try:
+        # contains updated translations from the frontend with
+        # shape {questions_fr, title_fr, description_fr, questions_zh, title_zh, description_zh}
         body = await request.json()
 
         # FR Translation
@@ -527,10 +683,12 @@ async def update_survey_translation(survey_id: str, request: Request):
                 .eq("analysis_type", "translation_fr")
                 .execute()
             )
+            # if a French translation already exists for this survey, update it with the new translation data and updated_at timestamp
             if existing_fr.data:
                 supabase.table("ai_analyses").update(
                     {"data": payload_fr, "updated_at": datetime.utcnow().isoformat()}
                 ).eq("id", existing_fr.data[0]["id"]).execute()
+            # otherwise insert a new entry in the `ai_analyses` table with the new translation data and current timestamp for updated_at
             else:
                 supabase.table("ai_analyses").insert(
                     {
@@ -556,10 +714,12 @@ async def update_survey_translation(survey_id: str, request: Request):
                 .eq("analysis_type", "translation_zh")
                 .execute()
             )
+            # if a Chinese translation already exists for this survey, update it with the new translation data and updated_at timestamp
             if existing_zh.data:
                 supabase.table("ai_analyses").update(
                     {"data": payload_zh, "updated_at": datetime.utcnow().isoformat()}
                 ).eq("id", existing_zh.data[0]["id"]).execute()
+            # Otherwise insert a new entry in the `ai_analyses` table with the new translation data and current timestamp for updated_at
             else:
                 supabase.table("ai_analyses").insert(
                     {
@@ -606,7 +766,33 @@ async def test_gemini():
 async def upload_translation_pdf(
     survey_id: str, language: str = "fr", file: UploadFile = File(...)
 ):
-    """Upload a PDF containing translated survey questions and auto-populate translations."""
+    """
+    Upload a PDF containing translated survey questions and auto-populate translations.
+    Primarily used for uploading translated questions via a PDF in the frontend translation editor.
+    
+    Post-conditions:
+    - Returns whether the upload was successful and JSON object containing the extracted translations fromt he PDF
+    after processing by the Gemini API. The LLM api is responsible for converting the pdf to the proper JSON format
+    to avoid issues with accents.
+    The structure of the returned JSON matches the expected format for translated questions, title, and
+    description for the specified language.
+    
+    - Side effects: Updates the translated questions, title, and description for the specified survey in the `ai_analyses`
+    table in Supabase with the extracted translations from the PDF. 
+    
+    Error Handling:
+    - If the uploaded file is not a PDF, returns a 400 error.
+    - If the langauge parameter is invalid, returns a 400 error.
+    - If the survey is not found, returns a 404 error. 
+    - If the PDF cannot be processed or text cannot be extracted, returns a 400 error with details.
+        - If the Gemini API call fails, returns a 502 error with details.
+        - If the Gemini API response cannot be parsed or does not contain the expected data, returns a 500 error with details.
+
+    Pre-conditions:
+    - `survey_id`: the ID of the survey to update translations for. Requires a valid UUID string.
+    - `language`: the language of the translation being uploaded. Must be either "fr" for French or "zh" for Chinese. Defaults to "fr".
+    - `file`: the PDF file (UploadFile type) containing the translated questions. Must be a valid PDF file with a filename and content type
+    """
 
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
@@ -615,6 +801,7 @@ async def upload_translation_pdf(
         raise HTTPException(status_code=400, detail="Language must be 'fr' or 'zh'")
 
     try:
+        # Read the uploaded PDF file content and check its size (limit to 10MB)
         print(
             f"[upload_translation_pdf] Starting upload for survey={survey_id}, language={language}, filename={file.filename}"
         )
@@ -623,6 +810,7 @@ async def upload_translation_pdf(
         if len(content) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="File too large (max 10MB)")
 
+        # Fetch the survey and its questions to use as reference for extracting translations from the PDF
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         print(
             f"[upload_translation_pdf] Survey lookup done, found={bool(survey_res.data)}"
@@ -643,6 +831,9 @@ async def upload_translation_pdf(
         if not questions:
             raise HTTPException(status_code=400, detail="Survey has no questions")
 
+        # Extracted text from content using pdfplumber and concatenate text from all pages. 
+        # This text will be sent to the Gemini API along with the reference English questions to
+        # extract the translated questions.
         extracted_text = ""
         print("[upload_translation_pdf] Opening PDF with pdfplumber...")
         with pdfplumber.open(io.BytesIO(content)) as pdf:
@@ -658,6 +849,10 @@ async def upload_translation_pdf(
                 status_code=400, detail="Could not extract text from PDF"
             )
 
+        # Construct the prompt for the Gemini API. The prompt includes:
+        # - A reference section with the original English questions, their types, and options if applicable. 
+        # - The extracted text from the PDF which contains the translated questions.
+        # - Instructions for the LLM to map the translated questions in the PDF to the reference
         reference_questions = []
         for i, q in enumerate(questions):
             ref = {
@@ -826,6 +1021,10 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
             description_key: parsed.get("description", "") or "",
         }
 
+        # Upsert the translation data in the `ai_analyses` table in Supabase. If an 
+        # entry already exists for this survey and language, update it with the new translation data and 
+        # updated_at timestamp. 
+        # Otherwise, insert a new entry with the survey ID, analysis type, translation data, and current timestamp for updated_at.
         existing = (
             supabase.table("ai_analyses")
             .select("id")
@@ -865,9 +1064,28 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
 
 @app.put("/api/surveys/{survey_id}", response_model=SurveyDetail)
 async def update_survey(survey_id: str, survey: SurveyCreate):
-    """Update an existing survey and its questions. Fails if the survey has ever been published."""
+    """
+    Update an existing survey and its questions. Fails if the survey has ever been published (locked view).
+    Primarily used for survey editing in the frontend.
+    
+    Post-conditions:
+    - Returns a JSON object representing the updated survey with its details and an
+    array of its quetsions. 
+    - Side effects: Updates the survey and its associated questions in the `surveys` and `questions` tables in Supabase. 
+    If the survey has been published before, it will not allow any edits and will return an error.
+
+    Error Handling:
+    - If the survey is not found, returns a 404 error.
+    - If the survey has been published before, returns a 400 error indicating that the published surveys cannot be edited.
+    - If the update fails for any other reason, returns a 500 error withd details. 
+
+    Pre-conditions:
+    - `survey_id`: the ID of the survey to update. Requires a valid UUID string.
+    - `survey`: a JSON object containing the updated survey details and an array of its questions. 
+    Must conform to the SurveyCreate schema.
+    """
     try:
-        # 1. Check if existing survey has been published
+        # Check if existing survey has been published
         existing_res = (
             supabase.table("surveys")
             .select("has_been_published")
@@ -888,7 +1106,8 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
             survey.is_active or existing_res.data[0]["has_been_published"]
         )
 
-        # 2. Update Survey
+        # Update Survey record in `surveys` table in Supabase with new details from
+        # `survey` and store query response data for the updated survey.
         survey_res = (
             supabase.table("surveys")
             .update(
@@ -909,10 +1128,10 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
 
         updated_survey = survey_res.data[0]
 
-        # 3. Delete existing questions
+        # Delete existing questions
         supabase.table("questions").delete().eq("survey_id", survey_id).execute()
 
-        # 4. Insert new questions
+        # Insert new questions
         if survey.questions:
             questions_to_insert = []
             temp_to_real = {}
@@ -1014,7 +1233,21 @@ async def check_survey_status(survey_id: str, body: CheckStatusRequest):
 
 @app.get("/api/user/profile-data")
 async def get_user_profile_data(email: str):
-    """Fetch past answers for an email to populate conditional fields."""
+    """
+    Fetch past answers for an email to populate conditional fields.
+    
+    Post-conditions:
+    - Returns a JSON object where keys are question texts and values are the user's past answers
+    (including answer_text, answer_numeric, and answer_options) for all completed sessions associated with the provided email.
+    - Side effects: None (read-only endpoint)
+
+    Error Handling:
+    - If the database query fails, returns a 500 error with details.
+    
+    Pre-conditions:
+    - `email`: the email address of the user whose profile data is to be fetched. Must
+    be a valid email string.
+    """
     try:
         sessions = (
             supabase.table("response_sessions")
@@ -1055,7 +1288,27 @@ async def get_user_profile_data(email: str):
 
 @app.post("/api/surveys/{survey_id}/sessions")
 async def create_session(survey_id: str, body: SessionCreate):
-    """Create a new partial response session when user enters their email."""
+    """
+    Create a new partial response session when user enters their email.
+    Primarily used when a user starts taking a survey and we want to create a session for them to
+    save their progress and answers as they go, allowing them to resume if they leave and come back later.
+    
+    Post-conditions:
+    - Returns a JSON object containing the session ID, current step (initialized to 0),
+    an array of saved answers (empty for a new session), and a boolean indicating whether this is 
+    resumed session. 
+    - Side effects: Creates a new entry in the `response_sessions` table in Supabase with the provided email, 
+    survey ID, and referral source (if provided). If there is already an incomplete session for the same email
+    and survey, it returns that session instead of creating a new one, allowing the user to resume their progress.
+
+    Error Handling:
+    - If the database query fails, returns a 500 error with details. 
+
+    Pre-conditions:
+    - `survey_id`: the ID of the survey to create a session for. Requires a valid UUID string.
+    - `body`: a JSON object containing the user's email and optional referral source (optional). 
+    Must conform to the SessionCreate schema.
+    """
     try:
         # Check if there's already an incomplete session for this email + survey
         existing = (
