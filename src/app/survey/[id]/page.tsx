@@ -559,6 +559,23 @@ export default function SurveyPage() {
     return new Set(visibleQuestionIndices.map((i) => survey.questions[i]?.id).filter(Boolean));
   }, [survey, visibleQuestionIndices]);
 
+  useEffect(() => {
+    if (hasStarted && survey && !isEmailStep) {
+      if (!visibleQuestionIndices.includes(currentStep)) {
+        if (visibleQuestionIndices.length === 0) {
+          setCurrentStep(survey.questions.length);
+        } else {
+          const nextValid = visibleQuestionIndices.find((idx) => idx >= currentStep);
+          if (nextValid !== undefined) {
+            setCurrentStep(nextValid);
+          } else {
+            setCurrentStep(survey.questions.length);
+          }
+        }
+      }
+    }
+  }, [hasStarted, survey, visibleQuestionIndices, currentStep, isEmailStep]);
+
   const currentQuestionRaw = survey && !isEmailStep ? survey.questions[currentStep] : null;
   const currentQuestion = useMemo(() => {
     if (!currentQuestionRaw) return null;
