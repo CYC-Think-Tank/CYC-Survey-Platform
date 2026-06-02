@@ -1120,27 +1120,25 @@ export default function CreateSurvey() {
                 className={`flex items-center flex-wrap gap-3 mb-4 text-sm text-gray-600 dark:text-slate-400 ml-10 ${language !== 'en' ? 'hidden' : ''}`}
               >
                 {q.type !== 'section_header' && (
-                  <>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={q.is_required}
-                        onChange={(e) => updateQuestion(q.id, 'is_required', e.target.checked)}
-                        className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
-                      />
-                      Required
-                    </label>
-                    <label className="flex items-center cursor-pointer ml-4">
-                      <input
-                        type="checkbox"
-                        checked={q.is_conditional || false}
-                        onChange={(e) => updateQuestion(q.id, 'is_conditional', e.target.checked)}
-                        className="mr-2 h-4 w-4 text-purple-500"
-                      />
-                      Skip if answered previously
-                    </label>
-                  </>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={q.is_required}
+                      onChange={(e) => updateQuestion(q.id, 'is_required', e.target.checked)}
+                      className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
+                    />
+                    Required
+                  </label>
                 )}
+                <label className={`flex items-center cursor-pointer ${q.type !== 'section_header' ? 'ml-4' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={q.is_conditional || false}
+                    onChange={(e) => updateQuestion(q.id, 'is_conditional', e.target.checked)}
+                    className="mr-2 h-4 w-4 text-purple-500"
+                  />
+                  Skip if answered previously
+                </label>
                 {q.type === 'checkboxes' && (
                   <label className="flex items-center">
                     <span className="mr-2">Max Selections:</span>

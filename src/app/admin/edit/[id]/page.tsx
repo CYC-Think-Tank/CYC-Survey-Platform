@@ -1514,15 +1514,17 @@ export default function EditSurvey() {
                   className={`flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4 text-sm text-gray-600 dark:text-slate-400 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
                 >
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                    <label className="flex items-center cursor-pointer text-sm text-gray-600 dark:text-slate-400">
-                      <input
-                        type="checkbox"
-                        checked={q.is_required}
-                        onChange={(e) => updateQuestion(q.id, 'is_required', e.target.checked)}
-                        className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
-                      />
-                      Required
-                    </label>
+                    {q.type !== 'section_header' && (
+                      <label className="flex items-center cursor-pointer text-sm text-gray-600 dark:text-slate-400">
+                        <input
+                          type="checkbox"
+                          checked={q.is_required}
+                          onChange={(e) => updateQuestion(q.id, 'is_required', e.target.checked)}
+                          className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
+                        />
+                        Required
+                      </label>
+                    )}
                     <label className="flex items-center cursor-pointer text-sm text-gray-600 dark:text-slate-400">
                       <input
                         type="checkbox"
