@@ -16,16 +16,19 @@ interface TiltCardProps {
 interface Survey {
   id: string;
   title: string;
-  title_fr?: string;
-  title_zh?: string;
   description?: string;
-  description_fr?: string;
-  description_zh?: string;
   estimated_minutes?: number | string;
   thumbnail_url?: string;
   displayTitle?: string;
   displayDescription?: string;
   isComingSoon?: boolean;
+  translations?: Record<
+    string,
+    {
+      title?: string;
+      description?: string;
+    }
+  >;
 }
 
 function TiltCard({
@@ -162,10 +165,7 @@ export default function Home() {
               );
               return {
                 ...survey,
-                title_fr: tr?.title_fr,
-                description_fr: tr?.description_fr,
-                title_zh: tr?.title_zh,
-                description_zh: tr?.description_zh,
+                translations: tr?.translations || {},
               };
             } catch {
               return survey;
@@ -223,18 +223,8 @@ export default function Home() {
     );
 
   const baseItems = surveys.slice(0, 3).map((item) => {
-    const displayTitle =
-      (language === 'zh' && item.title_zh
-        ? item.title_zh
-        : language === 'fr' && item.title_fr
-          ? item.title_fr
-          : item.title) || item.title;
-    const displayDescription =
-      (language === 'zh' && item.description_zh
-        ? item.description_zh
-        : language === 'fr' && item.description_fr
-          ? item.description_fr
-          : item.description) || item.description;
+    const displayTitle = item.translations?.[language]?.title || item.title;
+    const displayDescription = item.translations?.[language]?.description || item.description;
     return { ...item, displayTitle, displayDescription };
   });
   const items = [...baseItems];
