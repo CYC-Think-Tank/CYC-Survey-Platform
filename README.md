@@ -89,3 +89,12 @@ The admin panel is not linked from the main UI — access it directly at:
 - **Database**: PostgreSQL (Supabase)
 - **AI**: Google Gemini
 - **Hosting**: Vercel
+
+## Backend Module Layout
+
+The deployable FastAPI entrypoint remains `api.index:app` for Vercel, Docker, and local `uvicorn api.index:app` workflows. Backend internals are split by responsibility:
+
+- `api/models.py` — shared Pydantic request and response models
+- `api/dependencies.py` — environment loading and shared Supabase client
+- `api/routes/` — domain routers for surveys, translations/uploads, sessions/responses, results/admin, share links, and AI insights
+- `api/services/` — reusable backend service helpers, including AI analysis orchestration
