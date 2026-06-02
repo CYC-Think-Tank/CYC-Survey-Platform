@@ -87,7 +87,7 @@ async def upload_file(file: UploadFile = File(...)):
 async def get_survey_translation(survey_id: str):
     """Fetch translations from new table; fallback to ai_analyses for backward compat."""
     try:
-        # Try new translations table first (gracefully skip if table doesn't exist yet)
+        # Try new translations table first
         try:
             res = (
                 supabase.table("translations")
@@ -95,28 +95,29 @@ async def get_survey_translation(survey_id: str):
                 .eq("survey_id", survey_id)
                 .execute()
             )
-        except Exception:
-            res = None
 
-        if res and res.data:
-            # Return in the new generic format
-            translations = {}
-            for row in res.data:
-                translations[row["language_code"]] = {
-                    "title": row.get("title", ""),
-                    "description": row.get("description", ""),
-                    "questions": row.get("questions", []),
-                }
+            if res.data:
+                # Return in the new generic format
+                translations = {}
+                for row in res.data:
+                    translations[row["language_code"]] = {
+                        "title": row.get("title", ""),
+                        "description": row.get("description", ""),
+                        "questions": row.get("questions", []),
+                    }
 
-            # Also return legacy fields for backward compatibility during transition
-            legacy = {}
-            for row in res.data:
-                lang = row["language_code"]
-                legacy[f"questions_{lang}"] = row.get("questions", [])
-                legacy[f"title_{lang}"] = row.get("title", "")
-                legacy[f"description_{lang}"] = row.get("description", "")
+                # Also return legacy fields for backward compatibility during transition
+                legacy = {}
+                for row in res.data:
+                    lang = row["language_code"]
+                    legacy[f"questions_{lang}"] = row.get("questions", [])
+                    legacy[f"title_{lang}"] = row.get("title", "")
+                    legacy[f"description_{lang}"] = row.get("description", "")
 
-            return {"translations": translations, **legacy}
+                return {"translations": translations, **legacy}
+        except Exception as inner_e:
+            # translations table doesn't exist yet — fall through to legacy
+            pass
 
         # Fallback to legacy ai_analyses
         legacy = {
@@ -174,30 +175,27 @@ async def update_survey_translation(survey_id: str, request: Request):
         title = body.get("title") or body.get(f"title_{language_code}", "")
         description = body.get("description") or body.get(f"description_{language_code}", "")
 
-        # 1. Write to new translations table (gracefully skip if table doesn't exist yet)
-        try:
-            existing = (
-                supabase.table("translations")
-                .select("id")
-                .eq("survey_id", survey_id)
-                .eq("language_code", language_code)
-                .execute()
-            )
-            payload = {
-                "survey_id": survey_id,
-                "language_code": language_code,
-                "title": title,
-                "description": description,
-                "questions": questions,
-            }
-            if existing.data:
-                supabase.table("translations").update(
-                    {**payload, "updated_at": datetime.utcnow().isoformat()}
-                ).eq("id", existing.data[0]["id"]).execute()
-            else:
-                supabase.table("translations").insert(payload).execute()
-        except Exception:
-            pass  # Table doesn't exist yet, skip
+        # 1. Write to new translations table
+        existing = (
+            supabase.table("translations")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("language_code", language_code)
+            .execute()
+        )
+        payload = {
+            "survey_id": survey_id,
+            "language_code": language_code,
+            "title": title,
+            "description": description,
+            "questions": questions,
+        }
+        if existing.data:
+            supabase.table("translations").update(
+                {**payload, "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", existing.data[0]["id"]).execute()
+        else:
+            supabase.table("translations").insert(payload).execute()
 
         # 2. Also write to ai_analyses for backward compatibility
         _save_to_legacy_ai_analyses(survey_id, language_code, title, description, questions)
@@ -464,30 +462,27 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
         title = parsed.get("title", "") or ""
         description = parsed.get("description", "") or ""
 
-        # 1. Save to new translations table (gracefully skip if table doesn't exist yet)
-        try:
-            existing = (
-                supabase.table("translations")
-                .select("id")
-                .eq("survey_id", survey_id)
-                .eq("language_code", language)
-                .execute()
-            )
-            payload = {
-                "survey_id": survey_id,
-                "language_code": language,
-                "title": title,
-                "description": description,
-                "questions": questions_translated,
-            }
-            if existing.data:
-                supabase.table("translations").update(
-                    {**payload, "updated_at": datetime.utcnow().isoformat()}
-                ).eq("id", existing.data[0]["id"]).execute()
-            else:
-                supabase.table("translations").insert(payload).execute()
-        except Exception:
-            pass  # Table doesn't exist yet, skip
+        # 1. Save to new translations table
+        existing = (
+            supabase.table("translations")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("language_code", language)
+            .execute()
+        )
+        payload = {
+            "survey_id": survey_id,
+            "language_code": language,
+            "title": title,
+            "description": description,
+            "questions": questions_translated,
+        }
+        if existing.data:
+            supabase.table("translations").update(
+                {**payload, "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", existing.data[0]["id"]).execute()
+        else:
+            supabase.table("translations").insert(payload).execute()
 
         # 2. Also save to ai_analyses for backward compatibility
         _save_to_legacy_ai_analyses(survey_id, language, title, description, questions_translated)

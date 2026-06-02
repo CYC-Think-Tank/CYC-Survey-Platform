@@ -100,6 +100,7 @@ async def get_survey(survey_id: str):
                         "questions": row.get("questions", []),
                     }
         except Exception:
+            # translations table doesn't exist yet — skip silently
             survey["translations"] = {}
 
         return survey
