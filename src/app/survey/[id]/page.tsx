@@ -216,6 +216,39 @@ export default function SurveyPage() {
   }, [params.id]);
 
   useEffect(() => {
+    if (email) {
+      fetch(`/api/user/profile-data?email=${encodeURIComponent(email)}`)
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((data) => setProfileData(data || {}))
+        .catch((err) => console.error('Failed to fetch profile data', err));
+    }
+  }, [email]);
+
+  useEffect(() => {
+    if (survey && profileData && Object.keys(profileData).length > 0) {
+      setAnswers((prev) => {
+        const newAnswers = { ...prev };
+        let changed = false;
+        survey.questions.forEach((q) => {
+          if (newAnswers[q.id] === undefined && profileData[q.question_text]) {
+            const pAns = profileData[q.question_text] as Record<string, unknown>;
+            let val = undefined;
+            if (pAns.answer_options !== null && pAns.answer_options !== undefined) val = pAns.answer_options;
+            else if (pAns.answer_text !== null && pAns.answer_text !== undefined) val = pAns.answer_text;
+            else if (pAns.answer_numeric !== null && pAns.answer_numeric !== undefined) val = pAns.answer_numeric;
+
+            if (val !== undefined && val !== null) {
+              newAnswers[q.id] = val;
+              changed = true;
+            }
+          }
+        });
+        return changed ? newAnswers : prev;
+      });
+    }
+  }, [survey, profileData]);
+
+  useEffect(() => {
     if (!params.id) return;
 
     Promise.all([
