@@ -46,25 +46,107 @@ async def upload_file(file: UploadFile = File(...)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+# GENERAL HELPERS
+
+async def _fetch_translated_qs(lang: str, survey_id: str):
+    """Fetch the translated questions if they exist.
+    
+    Pre-conditions:
+    - `lang`: A len 2 string of letter characters and lower case that corresponds to a valid language code
+    - `survey_id`: A valid survey ID string
+    """
+    # print("IMPORTANT - IN FETCH TRANSLATED QS")
+    try:
+        # print("IN TRY FETCH TRANSLATIONS")
+        res_lang = (
+            supabase.table("ai_analyses")
+            .select("data")
+            .eq("survey_id", survey_id)
+            .eq("analysis_type", f"translation_{lang}")
+            .execute()
+        )
+        # print("res_lang: ", res_lang)
+    except Exception:
+        res_lang = None
+    return res_lang
+
+async def _temp_survey_translation_stuff(res_lang, result: dict, lang: str):
+    """
+    Fill in `result` data if translations exist in the database for `lang`
+
+    Pre-conditions:
+    - `res_lang`: The response for the particular language
+    - `result`: The reference to the dictionary to be mutated
+    - `lang`: The language needed. Required to be a len 2 string of letter characters and lower case that corresponds to a valid language code
+    """
+    # print("IMPORTANT: in temp survey translation")
+    # print("res_lang: ", res_lang)
+    # print("res_lang.data: ", res_lang.data)
+    # print("result before: ", result)
+    if not res_lang:
+        return
+
+    if res_lang.data:
+        data = res_lang.data[0]["data"]
+        # print("data: ", data)
+        if isinstance(data, list):
+            result[f"questions_{lang}"] = data
+        elif isinstance(data, dict):
+            result[f"questions_{lang}"] = data.get(f"questions_{lang}")
+            result[f"title_{lang}"] = data.get(f"title_{lang}")
+            result[f"description_{lang}"] = data.get(f"description_{lang}")
+    
+    # print("temp survey translation", result)
+
+async def _update_translation_lang(body: dict, survey_id: str, lang: str):
+    """
+    updates a translation given a `body`
+
+    Pre-conditions:
+    - `body`: The body that contains the translated questions JSON
+    - `survey_id`: A valid survey ID string
+    - `lang`: The language needed. Required to be a len 2 string of letter characters and lower case that corresponds to a valid language code
+    """
+    # print("IMPORTANT - IN UPDATE TRANSLATION LANG")
+    questions = body.get(f"questions_{lang}")
+    # print("questions: ", questions)
+    if questions is not None:
+        payload = {
+            f"questions_{lang}": questions,
+            f"title_{lang}": body.get(f"title_{lang}"),
+            f"description_{lang}": body.get(f"description_{lang}"),
+        }
+        existing = (
+            supabase.table("ai_analyses")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("analysis_type", f"translation_{lang}")
+            .execute()
+        )
+        # print("existing: ", existing)
+        # print("existing.data: ", existing.data)
+        if existing.data:
+            supabase.table("ai_analyses").update(
+                {"data": payload, "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", existing.data[0]["id"]).execute()
+        else:
+            supabase.table("ai_analyses").insert(
+                {
+                    "survey_id": survey_id,
+                    "analysis_type": f"translation_{lang}",
+                    "data": payload,
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            ).execute()
 
 @router.get("/api/surveys/{survey_id}/translation")
 async def get_survey_translation(survey_id: str):
     """Fetch the translated questions if they exist."""
     try:
-        res_fr = (
-            supabase.table("ai_analyses")
-            .select("data")
-            .eq("survey_id", survey_id)
-            .eq("analysis_type", "translation_fr")
-            .execute()
-        )
-        res_zh = (
-            supabase.table("ai_analyses")
-            .select("data")
-            .eq("survey_id", survey_id)
-            .eq("analysis_type", "translation_zh")
-            .execute()
-        )
+        # print("survey_id", survey_id)
+        # print("DEBUGGING - IN TRY")
+        res_fr = await _fetch_translated_qs("fr", survey_id)
+        res_zh = await _fetch_translated_qs("zh", survey_id)
 
         result = {
             "questions_fr": None,
@@ -75,23 +157,11 @@ async def get_survey_translation(survey_id: str):
             "description_zh": None,
         }
 
-        if res_fr.data:
-            data_fr = res_fr.data[0]["data"]
-            if isinstance(data_fr, list):
-                result["questions_fr"] = data_fr
-            elif isinstance(data_fr, dict):
-                result["questions_fr"] = data_fr.get("questions_fr")
-                result["title_fr"] = data_fr.get("title_fr")
-                result["description_fr"] = data_fr.get("description_fr")
-
-        if res_zh.data:
-            data_zh = res_zh.data[0]["data"]
-            if isinstance(data_zh, list):
-                result["questions_zh"] = data_zh
-            elif isinstance(data_zh, dict):
-                result["questions_zh"] = data_zh.get("questions_zh")
-                result["title_zh"] = data_zh.get("title_zh")
-                result["description_zh"] = data_zh.get("description_zh")
+        await _temp_survey_translation_stuff(res_fr, result, "fr")
+        # print("after fr")
+        await _temp_survey_translation_stuff(res_zh, result, "zh")
+        # print("after zh")
+        # print(result)
 
         return result
     except Exception as e:
@@ -102,65 +172,14 @@ async def get_survey_translation(survey_id: str):
 async def update_survey_translation(survey_id: str, request: Request):
     """Manually update the translated questions JSON."""
     try:
+        # print("DEBUGGING - IN update survey translation")
         body = await request.json()
+        # print("body: ", body)
 
-        # FR Translation
-        questions_fr = body.get("questions_fr")
-        if questions_fr is not None:
-            payload_fr = {
-                "questions_fr": questions_fr,
-                "title_fr": body.get("title_fr"),
-                "description_fr": body.get("description_fr"),
-            }
-            existing_fr = (
-                supabase.table("ai_analyses")
-                .select("id")
-                .eq("survey_id", survey_id)
-                .eq("analysis_type", "translation_fr")
-                .execute()
-            )
-            if existing_fr.data:
-                supabase.table("ai_analyses").update(
-                    {"data": payload_fr, "updated_at": datetime.utcnow().isoformat()}
-                ).eq("id", existing_fr.data[0]["id"]).execute()
-            else:
-                supabase.table("ai_analyses").insert(
-                    {
-                        "survey_id": survey_id,
-                        "analysis_type": "translation_fr",
-                        "data": payload_fr,
-                        "updated_at": datetime.utcnow().isoformat(),
-                    }
-                ).execute()
-
-        # ZH Translation
-        questions_zh = body.get("questions_zh")
-        if questions_zh is not None:
-            payload_zh = {
-                "questions_zh": questions_zh,
-                "title_zh": body.get("title_zh"),
-                "description_zh": body.get("description_zh"),
-            }
-            existing_zh = (
-                supabase.table("ai_analyses")
-                .select("id")
-                .eq("survey_id", survey_id)
-                .eq("analysis_type", "translation_zh")
-                .execute()
-            )
-            if existing_zh.data:
-                supabase.table("ai_analyses").update(
-                    {"data": payload_zh, "updated_at": datetime.utcnow().isoformat()}
-                ).eq("id", existing_zh.data[0]["id"]).execute()
-            else:
-                supabase.table("ai_analyses").insert(
-                    {
-                        "survey_id": survey_id,
-                        "analysis_type": "translation_zh",
-                        "data": payload_zh,
-                        "updated_at": datetime.utcnow().isoformat(),
-                    }
-                ).execute()
+        await _update_translation_lang(body, survey_id, "fr")
+        # print("after fr - update survey translation endpoint")
+        await _update_translation_lang(body, survey_id, "zh")
+        # print("after zh - update survey translation endpoint")
 
         return {"success": True}
     except Exception as e:

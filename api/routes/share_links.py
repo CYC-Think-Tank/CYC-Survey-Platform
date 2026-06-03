@@ -69,6 +69,3 @@ async def delete_share_link(link_id: str):
         return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# --- AI ANALYSIS SUITE ---
