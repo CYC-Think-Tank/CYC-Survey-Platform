@@ -57,9 +57,7 @@ async def _fetch_translated_qs(lang: str, survey_id: str):
     - `lang`: A len 2 string of letter characters and lower case that corresponds to a valid language code
     - `survey_id`: A valid survey ID string
     """
-    # print("IMPORTANT - IN FETCH TRANSLATED QS")
     try:
-        # print("IN TRY FETCH TRANSLATIONS")
         res_lang = (
             supabase.table("ai_analyses")
             .select("data")
@@ -67,7 +65,6 @@ async def _fetch_translated_qs(lang: str, survey_id: str):
             .eq("analysis_type", f"translation_{lang}")
             .execute()
         )
-        # print("res_lang: ", res_lang)
     except Exception:
         res_lang = None
     return res_lang
@@ -82,10 +79,6 @@ async def _temp_survey_translation_stuff(res_lang, result: dict, lang: str):
     - `result`: The reference to the dictionary to be mutated
     - `lang`: The language needed. Required to be a len 2 string of letter characters and lower case that corresponds to a valid language code
     """
-    # print("IMPORTANT: in temp survey translation")
-    # print("res_lang: ", res_lang)
-    # print("res_lang.data: ", res_lang.data)
-    # print("result before: ", result)
     if not res_lang:
         return
 
@@ -99,8 +92,6 @@ async def _temp_survey_translation_stuff(res_lang, result: dict, lang: str):
             result[f"title_{lang}"] = data.get(f"title_{lang}")
             result[f"description_{lang}"] = data.get(f"description_{lang}")
 
-    # print("temp survey translation", result)
-
 
 async def _update_translation_lang(body: dict, survey_id: str, lang: str):
     """
@@ -111,9 +102,7 @@ async def _update_translation_lang(body: dict, survey_id: str, lang: str):
     - `survey_id`: A valid survey ID string
     - `lang`: The language needed. Required to be a len 2 string of letter characters and lower case that corresponds to a valid language code
     """
-    # print("IMPORTANT - IN UPDATE TRANSLATION LANG")
     questions = body.get(f"questions_{lang}")
-    # print("questions: ", questions)
     if questions is not None:
         payload = {
             f"questions_{lang}": questions,
@@ -127,8 +116,6 @@ async def _update_translation_lang(body: dict, survey_id: str, lang: str):
             .eq("analysis_type", f"translation_{lang}")
             .execute()
         )
-        # print("existing: ", existing)
-        # print("existing.data: ", existing.data)
         if existing.data:
             supabase.table("ai_analyses").update(
                 {"data": payload, "updated_at": datetime.utcnow().isoformat()}
@@ -148,8 +135,6 @@ async def _update_translation_lang(body: dict, survey_id: str, lang: str):
 async def get_survey_translation(survey_id: str):
     """Fetch the translated questions if they exist."""
     try:
-        # print("survey_id", survey_id)
-        # print("DEBUGGING - IN TRY")
         res_fr = await _fetch_translated_qs("fr", survey_id)
         res_zh = await _fetch_translated_qs("zh", survey_id)
 
@@ -163,10 +148,7 @@ async def get_survey_translation(survey_id: str):
         }
 
         await _temp_survey_translation_stuff(res_fr, result, "fr")
-        # print("after fr")
         await _temp_survey_translation_stuff(res_zh, result, "zh")
-        # print("after zh")
-        # print(result)
 
         return result
     except Exception as e:
@@ -177,14 +159,10 @@ async def get_survey_translation(survey_id: str):
 async def update_survey_translation(survey_id: str, request: Request):
     """Manually update the translated questions JSON."""
     try:
-        # print("DEBUGGING - IN update survey translation")
         body = await request.json()
-        # print("body: ", body)
 
         await _update_translation_lang(body, survey_id, "fr")
-        # print("after fr - update survey translation endpoint")
         await _update_translation_lang(body, survey_id, "zh")
-        # print("after zh - update survey translation endpoint")
 
         return {"success": True}
     except Exception as e:
