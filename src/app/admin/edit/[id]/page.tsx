@@ -13,7 +13,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { SUPPORTED_LANGUAGES, getLanguageConfig } from '@/config/languages';
+import {
+  SUPPORTED_LANGUAGES,
+  getLanguageConfig,
+  TRANSLATE_TARGET_LANGUAGES,
+} from '@/config/languages';
 
 type QuestionType =
   | 'multiple_choice'
@@ -139,6 +143,9 @@ export default function EditSurvey() {
   const [translationUploading, setTranslationUploading] = useState(false);
   const [translationUploadError, setTranslationUploadError] = useState('');
   const [translationUploadSuccess, setTranslationUploadSuccess] = useState('');
+  const [translateAllLoading, setTranslateAllLoading] = useState(false);
+  const [translateAllError, setTranslateAllError] = useState('');
+  const [translateAllSuccess, setTranslateAllSuccess] = useState('');
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -981,6 +988,101 @@ export default function EditSurvey() {
     );
   }
 
+  const handleTranslateAll = async () => {
+    const apiKey =
+      sessionStorage.getItem('opencode_go_api_key') ||
+      window.prompt('Enter your OpenCode Go API key (sk-l...):');
+    if (!apiKey) return;
+    sessionStorage.setItem('opencode_go_api_key', apiKey);
+
+    setTranslateAllLoading(true);
+    setTranslateAllError('');
+    setTranslateAllSuccess('');
+
+    const englishQuestions = questions.map((q, idx) => ({
+      index: idx,
+      type: q.type,
+      question_text: q.question_text,
+      options: getOptionsArray(q.options),
+      question_description: q.question_description || '',
+      section_description: q.section_description || '',
+      definitions: q.definitions || [],
+    }));
+
+    try {
+      const res = await fetch(`/api/surveys/${params.id}/translate-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          english_title: title,
+          english_description: description,
+          english_questions: englishQuestions,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Translation failed');
+      }
+
+      const data = await res.json();
+
+      for (const [langCode, langData] of Object.entries(data.translations)) {
+        const lang = langCode as string;
+        const tData = langData as {
+          title?: string;
+          description?: string;
+          questions?: Array<{
+            index: number;
+            question_text?: string;
+            options?: string[];
+            question_description?: string;
+            section_description?: string;
+            definitions?: { term: string; definition: string }[];
+          }>;
+        };
+
+        if (tData.title) setTransMeta(lang, 'title', tData.title);
+        if (tData.description) setTransMeta(lang, 'description', tData.description);
+
+        if (tData.questions) {
+          setQuestions((prev) =>
+            prev.map((q, idx) => {
+              const trans = tData.questions?.[idx];
+              if (!trans) return q;
+              const updates: Record<string, unknown> = {};
+              if (trans.question_text) updates.question_text = trans.question_text;
+              if (trans.options && trans.options.length > 0) updates.options = trans.options;
+              if (trans.section_description)
+                updates.section_description = trans.section_description;
+              if (trans.question_description)
+                updates.question_description = trans.question_description;
+              if (trans.definitions && trans.definitions.length > 0)
+                updates.definitions = trans.definitions;
+              if (Object.keys(updates).length === 0) return q;
+              return {
+                ...q,
+                translations: {
+                  ...q.translations,
+                  [lang]: { ...q.translations?.[lang], ...updates },
+                },
+              };
+            })
+          );
+        }
+      }
+
+      setTranslateAllSuccess(
+        `Translated to ${Object.keys(data.translations).length} languages — review and save`
+      );
+    } catch (err: unknown) {
+      setTranslateAllError(err instanceof Error ? err.message : 'Translation failed');
+    } finally {
+      setTranslateAllLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 sm:gap-0">
@@ -1186,6 +1288,31 @@ export default function EditSurvey() {
                   )}
                   {translationUploadError && (
                     <span className="text-red-600 dark:text-red-400">{translationUploadError}</span>
+                  )}
+                  {TRANSLATE_TARGET_LANGUAGES.some((l) => l.code === language) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleTranslateAll}
+                        disabled={translateAllLoading}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                          translateAllLoading
+                            ? 'bg-blue-200 dark:bg-blue-800 text-blue-400 cursor-not-allowed'
+                            : 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-600 border border-blue-200 dark:border-blue-700'
+                        }`}
+                      >
+                        <Upload className="w-4 h-4 mr-1.5" />
+                        {translateAllLoading ? 'Translating...' : 'Translate All'}
+                      </button>
+                      {translateAllSuccess && (
+                        <span className="text-green-600 dark:text-green-400">
+                          {translateAllSuccess}
+                        </span>
+                      )}
+                      {translateAllError && (
+                        <span className="text-red-600 dark:text-red-400">{translateAllError}</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
