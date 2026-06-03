@@ -710,7 +710,7 @@ export default function CreateSurvey() {
     }));
 
     try {
-      const res = await fetch('/api/surveys/placeholder/translate-all', {
+      const res = await fetch('/api/surveys/translate-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

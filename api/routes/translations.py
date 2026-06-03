@@ -504,8 +504,8 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/surveys/{survey_id}/translate-all")
-async def translate_all_languages(survey_id: str, request: Request):
+@router.post("/api/surveys/translate-all")
+async def translate_all_languages(request: Request):
     """Translate survey content from English to all target languages concurrently."""
     try:
         body = await request.json()

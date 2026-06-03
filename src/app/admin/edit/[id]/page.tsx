@@ -1010,7 +1010,7 @@ export default function EditSurvey() {
     }));
 
     try {
-      const res = await fetch(`/api/surveys/${params.id}/translate-all`, {
+      const res = await fetch('/api/surveys/translate-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
