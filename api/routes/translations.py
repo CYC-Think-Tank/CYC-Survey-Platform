@@ -46,11 +46,13 @@ async def upload_file(file: UploadFile = File(...)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # GENERAL HELPERS
+
 
 async def _fetch_translated_qs(lang: str, survey_id: str):
     """Fetch the translated questions if they exist.
-    
+
     Pre-conditions:
     - `lang`: A len 2 string of letter characters and lower case that corresponds to a valid language code
     - `survey_id`: A valid survey ID string
@@ -69,6 +71,7 @@ async def _fetch_translated_qs(lang: str, survey_id: str):
     except Exception:
         res_lang = None
     return res_lang
+
 
 async def _temp_survey_translation_stuff(res_lang, result: dict, lang: str):
     """
@@ -95,8 +98,9 @@ async def _temp_survey_translation_stuff(res_lang, result: dict, lang: str):
             result[f"questions_{lang}"] = data.get(f"questions_{lang}")
             result[f"title_{lang}"] = data.get(f"title_{lang}")
             result[f"description_{lang}"] = data.get(f"description_{lang}")
-    
+
     # print("temp survey translation", result)
+
 
 async def _update_translation_lang(body: dict, survey_id: str, lang: str):
     """
@@ -138,6 +142,7 @@ async def _update_translation_lang(body: dict, survey_id: str, lang: str):
                     "updated_at": datetime.utcnow().isoformat(),
                 }
             ).execute()
+
 
 @router.get("/api/surveys/{survey_id}/translation")
 async def get_survey_translation(survey_id: str):
