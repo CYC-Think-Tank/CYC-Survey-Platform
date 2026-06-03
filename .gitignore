@@ -54,3 +54,4 @@ docs/superpowers/
 # graphify
 graphify-out/
 .opencode/plugins/graphify.js
+supabase/
