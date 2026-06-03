@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Globe,
 } from 'lucide-react';
+import { getLanguageConfig } from '@/config/languages';
 import AiInsightsTab from '@/components/AiInsightsTab';
 
 interface Answer {
@@ -715,14 +716,7 @@ export default function ResultsPage() {
                     {Object.entries(data.language_breakdown as Record<string, number>)
                       .sort(([, a], [, b]) => b - a)
                       .map(([lang, count]) => {
-                        const label =
-                          lang === 'en'
-                            ? 'English'
-                            : lang === 'fr'
-                              ? 'Français'
-                              : lang === 'zh'
-                                ? '中文'
-                                : lang;
+                        const label = getLanguageConfig(lang)?.name || lang;
                         const pct =
                           total_responses > 0 ? Math.round((count / total_responses) * 100) : 0;
                         return (
@@ -817,24 +811,10 @@ export default function ResultsPage() {
                   </span>
                   {currentResp.language && (
                     <div
-                      className={`mt-2 inline-flex items-center px-2 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${
-                        currentResp.language === 'en'
-                          ? 'bg-blue-100 text-blue-700'
-                          : currentResp.language === 'fr'
-                            ? 'bg-purple-100 text-purple-700'
-                            : currentResp.language === 'zh'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-gray-100 text-gray-700'
-                      }`}
+                      className={`mt-2 inline-flex items-center px-2 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider bg-gray-100 text-gray-700`}
                     >
                       <Globe className="w-3 h-3 mr-1" />
-                      {currentResp.language === 'en'
-                        ? 'English'
-                        : currentResp.language === 'fr'
-                          ? 'Français'
-                          : currentResp.language === 'zh'
-                            ? '中文'
-                            : currentResp.language}
+                      {getLanguageConfig(currentResp.language)?.name || currentResp.language}
                     </div>
                   )}
                   {currentResp.attention_check_failures &&

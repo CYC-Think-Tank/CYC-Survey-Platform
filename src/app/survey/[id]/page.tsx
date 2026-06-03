@@ -901,7 +901,12 @@ export default function SurveyPage() {
           }
 
           if (v.max_length && typeof val === 'string' && val.length > v.max_length) {
-            alert(`Answer must be ${v.max_length} characters or fewer.`);
+            alert(
+              t('Answer must be {{max}} characters or fewer.').replace(
+                '{{max}}',
+                String(v.max_length)
+              )
+            );
             return;
           }
 
@@ -1199,7 +1204,7 @@ export default function SurveyPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all text-base sm:text-lg text-center"
-                  placeholder="you@example.com"
+                  placeholder={t('you@example.com')}
                 />
                 <div className="text-center mt-5 px-2 max-w-xl mx-auto space-y-2">
                   <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 leading-snug">
@@ -1715,7 +1720,7 @@ export default function SurveyPage() {
                           />
                           {opts.validation.type === 'postal_code_prefix' && (
                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
-                              Enter the first 3 characters of your postal code (e.g. M5V).
+                              {t('Enter the first 3 characters of your postal code (e.g. M5V).')}
                             </p>
                           )}
                         </>
