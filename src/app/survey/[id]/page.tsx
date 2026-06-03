@@ -1002,7 +1002,10 @@ export default function SurveyPage() {
         }));
       }
       setQuestionEnterTime(Date.now());
-      setCurrentStep(Math.max(0, getNextVisibleStep(currentStep - 1, false)));
+      const prevStep = getNextVisibleStep(currentStep - 1, false);
+      if (prevStep >= 0) {
+        setCurrentStep(prevStep);
+      }
     }
   };
 
@@ -1195,7 +1198,14 @@ export default function SurveyPage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setHasStarted(true)}
+            onClick={() => {
+              setHasStarted(true);
+              if (visibleQuestionIndices.length > 0) {
+                setCurrentStep(visibleQuestionIndices[0]);
+              } else {
+                setCurrentStep(survey.questions.length);
+              }
+            }}
             className="btn-primary text-xl px-10 py-4 rounded-full shadow-md shadow-teal-500/5 dark:shadow-teal-400/5 hover:shadow-lg transition-all flex items-center justify-center mx-auto"
           >
             {t('Start Survey')} <ArrowRight className="w-6 h-6 ml-3" />
@@ -1803,8 +1813,8 @@ export default function SurveyPage() {
               <div className="flex-shrink-0 flex justify-between items-center mt-auto pt-6 border-t border-gray-100 dark:border-white/5 bg-transparent">
                 <button
                   onClick={handleBack}
-                  disabled={currentStep === 0}
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${currentStep === 0 ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-900'}`}
+                  disabled={currentStep === 0 || visibleQuestionIndices.length === 0 || visibleQuestionIndices[0] === currentStep}
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${(currentStep === 0 || visibleQuestionIndices.length === 0 || visibleQuestionIndices[0] === currentStep) ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-900'}`}
                 >
                   {t('Back')}
                 </button>
