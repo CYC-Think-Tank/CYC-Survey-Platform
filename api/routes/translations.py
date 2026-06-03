@@ -1,3 +1,4 @@
+import asyncio
 import io
 import json as json_module
 import os
@@ -498,6 +499,127 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
         raise HTTPException(
             status_code=502, detail=f"Failed to parse AI response: {str(e)}"
         )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/surveys/{survey_id}/translate-all")
+async def translate_all_languages(survey_id: str, request: Request):
+    """Translate survey content from English to all target languages concurrently."""
+    try:
+        body = await request.json()
+        api_key = body.get("api_key")
+        english_title = body.get("english_title", "")
+        english_description = body.get("english_description", "")
+        english_questions = body.get("english_questions", [])
+
+        if not api_key:
+            raise HTTPException(status_code=400, detail="API key is required")
+        if not english_questions:
+            raise HTTPException(status_code=400, detail="No questions to translate")
+
+        TARGET_LANGUAGES = [
+            ("es", "Spanish"),
+            ("pa", "Punjabi"),
+            ("ar", "Arabic"),
+            ("tl", "Tagalog"),
+            ("yue", "Cantonese"),
+            ("it", "Italian"),
+            ("de", "German"),
+            ("ta", "Tamil"),
+        ]
+
+        OPencode_GO_URL = "https://opencode.ai/zen/go/v1/chat/completions"
+        MODEL = "deepseek-v4-flash"
+
+        async def translate_one(language_code: str, language_name: str):
+            prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
+
+Return ONLY a JSON object with this exact structure:
+{{
+  "title": "translated survey title",
+  "description": "translated survey description or empty string",
+  "questions": [
+    {{
+      "index": 0,
+      "question_text": "translated question text",
+      "options": ["translated option 1", "translated option 2"],
+      "question_description": "translated helper text or empty string",
+      "section_description": "translated section description or empty string",
+      "definitions": [{{"term": "translated term", "definition": "translated definition"}}]
+    }}
+  ]
+}}
+
+Rules:
+- Preserve any HTML tags like <strong>, <em>, <span> exactly as they appear
+- Translate ALL content — nothing should remain in English
+- For empty fields in the source, return an empty string
+- For empty arrays, return an empty array
+- Keep option counts identical — do not add or remove options
+- Translate definitions as key-value pairs
+
+=== SURVEY TITLE ===
+{english_title}
+
+=== SURVEY DESCRIPTION ===
+{english_description}
+
+=== QUESTIONS ===
+{json_module.dumps(english_questions, ensure_ascii=False)}
+
+Return ONLY the JSON object, no markdown wrapping, no explanations."""
+
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 65536,
+            }
+
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                resp = await client.post(OpenCode_GO_URL, json=payload, headers=headers)
+
+            if resp.status_code != 200:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"OpenCode Go API error ({language_code}): {resp.status_code} - {resp.text[:300]}",
+                )
+
+            data = resp.json()
+            raw = data["choices"][0]["message"]["content"]
+
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("\n", 1)[1]
+                if cleaned.endswith("```"):
+                    cleaned = cleaned[:-3]
+                cleaned = cleaned.strip()
+
+            parsed = json_module.loads(cleaned)
+            return language_code, parsed
+
+        tasks = [translate_one(code, name) for code, name in TARGET_LANGUAGES]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        translations = {}
+        for result in results:
+            if isinstance(result, Exception):
+                continue
+            code, data = result
+            translations[code] = data
+
+        return {"translations": translations}
+
+    except HTTPException:
+        raise
+    except json_module.JSONDecodeError as e:
+        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
