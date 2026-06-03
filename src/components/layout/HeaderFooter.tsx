@@ -46,7 +46,7 @@ export function Header() {
             >
               {SUPPORTED_LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code}>
-                  {lang.nativeName}
+                  {lang.name}
                 </option>
               ))}
             </select>

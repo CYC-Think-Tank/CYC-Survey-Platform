@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { SUPPORTED_LANGUAGES } from '@/config/languages';
+import { SUPPORTED_LANGUAGES, getLanguageConfig } from '@/config/languages';
 
 type QuestionType =
   | 'multiple_choice'
@@ -725,7 +725,7 @@ export default function CreateSurvey() {
                 placeholder={
                   language === 'en'
                     ? 'e.g. Mental Health Perspectives 2026'
-                    : `Title in ${language}`
+                    : `Title in ${getLanguageConfig(language)?.name || language}`
                 }
               />
             </div>
@@ -760,7 +760,9 @@ export default function CreateSurvey() {
                     : setTransMeta(language, 'description', val)
                 }
                 placeholder={
-                  language === 'en' ? 'What is this survey about?' : `Description in ${language}`
+                  language === 'en'
+                    ? 'What is this survey about?'
+                    : `Description in ${getLanguageConfig(language)?.name || language}`
                 }
               />
             </div>
@@ -921,7 +923,7 @@ export default function CreateSurvey() {
                           ? q.type === 'section_header'
                             ? 'Section Title'
                             : 'Type your question here...'
-                          : `Translation in ${language}`
+                          : `Translation in ${getLanguageConfig(language)?.name || language}`
                       }
                     />
                   </div>
@@ -1582,7 +1584,7 @@ export default function CreateSurvey() {
                   : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
               }`}
             >
-              {lang.nativeName}
+              {lang.name}
             </button>
           ))}
         </div>
