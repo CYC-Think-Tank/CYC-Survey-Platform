@@ -61,6 +61,57 @@ async def get_share_links(survey_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/api/global-share-links")
+async def create_global_share_link(body: ShareLinkCreate):
+    """Generate a unique global share link code."""
+    try:
+        code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
+        row = {"survey_id": None, "code": code, "label": body.label or None}
+        res = supabase.table("share_links").insert(row).execute()
+        return res.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/global-share-links")
+async def get_global_share_links():
+    """Get all global share links with their response counts."""
+    try:
+        links_res = (
+            supabase.table("share_links")
+            .select("*")
+            .is_("survey_id", "null")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        links = links_res.data
+
+        if not links:
+            return []
+
+        # Get response counts per referral_source code
+        codes = [link["code"] for link in links]
+        sessions_res = (
+            supabase.table("response_sessions")
+            .select("referral_source")
+            .in_("referral_source", codes)
+            .execute()
+        )
+
+        counts = {}
+        for s in sessions_res.data:
+            ref = s.get("referral_source")
+            if ref:
+                counts[ref] = counts.get(ref, 0) + 1
+
+        for link in links:
+            link["response_count"] = counts.get(link["code"], 0)
+
+        return links
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/api/share-links/{link_id}")
 async def delete_share_link(link_id: str):
     """Delete a share link."""

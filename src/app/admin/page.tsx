@@ -160,13 +160,18 @@ export default function AdminDashboard() {
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-  const openShareModal = async (survey: Survey) => {
-    setShareModal({ id: survey.id, title: survey.title });
+  const openShareModal = async (survey: Survey | null) => {
+    if (survey) {
+      setShareModal({ id: survey.id, title: survey.title });
+    } else {
+      setShareModal({ id: 'global', title: 'Global Landing Page' });
+    }
     setShareLinks([]);
     setShareLabel('');
     // Fetch existing share links
     try {
-      const res = await fetch(`/api/surveys/${survey.id}/share-links`);
+      const url = survey ? `/api/surveys/${survey.id}/share-links` : `/api/global-share-links`;
+      const res = await fetch(url);
       const data = await res.json();
       setShareLinks(data);
     } catch {
@@ -178,7 +183,10 @@ export default function AdminDashboard() {
     if (!shareModal) return;
     setGeneratingLink(true);
     try {
-      const res = await fetch(`/api/surveys/${shareModal.id}/share-links`, {
+      const isGlobal = shareModal.id === 'global';
+      const apiUrl = isGlobal ? `/api/global-share-links` : `/api/surveys/${shareModal.id}/share-links`;
+      
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ label: shareLabel.trim() || null }),
@@ -188,7 +196,7 @@ export default function AdminDashboard() {
       setShareLinks((prev) => [newLink, ...prev]);
       setShareLabel('');
       // Auto-copy the new link
-      const url = `${baseUrl}/survey/${shareModal.id}?ref=${newLink.code}`;
+      const url = isGlobal ? `${baseUrl}?ref=${newLink.code}` : `${baseUrl}/survey/${shareModal.id}?ref=${newLink.code}`;
       await navigator.clipboard.writeText(url);
       setCopiedLink(newLink.code);
       setTimeout(() => setCopiedLink(null), 2000);
@@ -237,6 +245,14 @@ export default function AdminDashboard() {
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
           </Link>
+
+          <button
+            onClick={() => openShareModal(null)}
+            className="text-purple-600 hover:text-purple-800 flex items-center"
+          >
+            <Share2 className="w-4 h-4 mr-1" />
+            Global Links
+          </button>
 
           <button
             onClick={() => handleRandomEmailGeneration()}
@@ -495,7 +511,8 @@ export default function AdminDashboard() {
                 </p>
               )}
               {shareLinks.map((link) => {
-                const url = `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
+                const isGlobal = shareModal.id === 'global';
+                const url = isGlobal ? `${baseUrl}?ref=${link.code}` : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
                 const isCopied = copiedLink === link.code;
                 return (
                   <div
