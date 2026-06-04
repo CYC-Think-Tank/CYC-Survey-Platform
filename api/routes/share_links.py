@@ -142,7 +142,12 @@ async def get_or_create_referral_link(email: str):
 
         # Generate new one
         code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
-        row = {"survey_id": None, "code": code, "label": "User Referral", "email": email}
+        row = {
+            "survey_id": None,
+            "code": code,
+            "label": "User Referral",
+            "email": email,
+        }
         res = supabase.table("share_links").insert(row).execute()
         return res.data[0]
     except HTTPException:
