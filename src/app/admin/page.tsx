@@ -16,6 +16,7 @@ import {
   Copy,
   Check,
   X,
+  Send,
 } from 'lucide-react';
 
 interface Survey {
@@ -153,6 +154,41 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleNotifyUsers = async (survey: Survey) => {
+    if (!survey.is_active) return;
+
+    const confirm = window.confirm(
+      `Send an email blast to all previous respondents notifying them about "${survey.title}"?`
+    );
+    if (!confirm) return;
+
+    try {
+      const authHeader = localStorage.getItem('cyc_admin_auth') || '';
+
+      const res = await fetch('/api/admin/notify-new-survey', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          surveyId: survey.id,
+          password: authHeader, // The password is used as auth token currently
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Success! ${data.message || 'Notification sent.'}`);
+      } else {
+        const data = await res.json();
+        alert(`Failed to notify users: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while trying to send notifications.');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('cyc_admin_auth');
     router.push('/admin/login');
@@ -184,8 +220,10 @@ export default function AdminDashboard() {
     setGeneratingLink(true);
     try {
       const isGlobal = shareModal.id === 'global';
-      const apiUrl = isGlobal ? `/api/global-share-links` : `/api/surveys/${shareModal.id}/share-links`;
-      
+      const apiUrl = isGlobal
+        ? `/api/global-share-links`
+        : `/api/surveys/${shareModal.id}/share-links`;
+
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -196,7 +234,9 @@ export default function AdminDashboard() {
       setShareLinks((prev) => [newLink, ...prev]);
       setShareLabel('');
       // Auto-copy the new link
-      const url = isGlobal ? `${baseUrl}?ref=${newLink.code}` : `${baseUrl}/survey/${shareModal.id}?ref=${newLink.code}`;
+      const url = isGlobal
+        ? `${baseUrl}?ref=${newLink.code}`
+        : `${baseUrl}/survey/${shareModal.id}?ref=${newLink.code}`;
       await navigator.clipboard.writeText(url);
       setCopiedLink(newLink.code);
       setTimeout(() => setCopiedLink(null), 2000);
@@ -411,6 +451,17 @@ export default function AdminDashboard() {
                       {survey.is_active ? 'Deactivate' : 'Activate'}
                     </button>
 
+                    {survey.is_active && (
+                      <button
+                        onClick={() => handleNotifyUsers(survey)}
+                        className="text-blue-500 hover:text-blue-700 flex items-center"
+                        title="Notify all users about this survey"
+                      >
+                        <Send className="w-4 h-4 mr-1" />
+                        Notify Users
+                      </button>
+                    )}
+
                     {!survey.has_been_published ? (
                       <Link
                         href={`/admin/edit/${survey.id}`}
@@ -512,7 +563,9 @@ export default function AdminDashboard() {
               )}
               {shareLinks.map((link) => {
                 const isGlobal = shareModal.id === 'global';
-                const url = isGlobal ? `${baseUrl}?ref=${link.code}` : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
+                const url = isGlobal
+                  ? `${baseUrl}?ref=${link.code}`
+                  : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
                 const isCopied = copiedLink === link.code;
                 return (
                   <div
