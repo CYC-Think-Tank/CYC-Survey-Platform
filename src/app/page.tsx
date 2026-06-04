@@ -80,6 +80,7 @@ function TiltCard({
   );
 }
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ReferralSection } from '@/components/ReferralSection';
 
 export default function Home() {
   const { t, language } = useLanguage();
@@ -553,6 +554,11 @@ export default function Home() {
           })}
         </motion.div>
       )}
+
+      {/* Referral Link Section */}
+      <div className="w-full mt-4 sm:mt-8 relative z-20 pb-8">
+        <ReferralSection />
+      </div>
     </div>
   );
 }
