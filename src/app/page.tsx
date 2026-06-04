@@ -363,8 +363,10 @@ export default function Home() {
         </div>
         <span className="text-sm font-extrabold text-[#04377E]">{t('Win $100 (5 Winners!)')}</span>
 
+        <ReferralSection />
+
         {/* Tooltip */}
-        <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-xl rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
+        <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border border-gray-100 shadow-xl rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
           <ul className="text-xs text-gray-600 font-medium space-y-2 list-disc pl-4 text-left">
             <li>{t('Each survey completed is one entry.')}</li>
             <li>{t('One person can complete up to 3 surveys.')}</li>
@@ -554,11 +556,6 @@ export default function Home() {
           })}
         </motion.div>
       )}
-
-      {/* Referral Link Section */}
-      <div className="w-full mt-4 sm:mt-8 relative z-20 pb-8">
-        <ReferralSection />
-      </div>
     </div>
   );
 }
