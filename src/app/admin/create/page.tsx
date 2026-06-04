@@ -719,8 +719,8 @@ export default function CreateSurvey() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Translation failed');
+        const text = await res.text();
+        throw new Error(text || 'Translation failed');
       }
 
       const data = await res.json();

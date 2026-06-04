@@ -595,13 +595,24 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
             raw = data["choices"][0]["message"]["content"]
 
             cleaned = raw.strip()
+            if not cleaned:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"OpenCode Go returned empty response for {language_code}",
+                )
             if cleaned.startswith("```"):
                 cleaned = cleaned.split("\n", 1)[1]
                 if cleaned.endswith("```"):
                     cleaned = cleaned[:-3]
                 cleaned = cleaned.strip()
 
-            parsed = json_module.loads(cleaned)
+            try:
+                parsed = json_module.loads(cleaned)
+            except json_module.JSONDecodeError:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"OpenCode Go returned invalid JSON for {language_code}: {cleaned[:200]}",
+                )
             return language_code, parsed
 
         tasks = [translate_one(code, name) for code, name in TARGET_LANGUAGES]
