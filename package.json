@@ -50,7 +50,6 @@
     "jsdom": "^26.0.0",
     "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
-    "supabase": "2.104.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"
@@ -60,5 +59,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "overrides": {
+    "postcss": "^8.5.10"
+  }
 }
