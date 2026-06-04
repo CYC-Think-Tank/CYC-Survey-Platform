@@ -32,9 +32,7 @@ async def _get_random_email_position(num_emails: int = 5) -> list:
             total_emails = len(count_res.data) if count_res.data else 0
 
         if total_emails == 0:
-            raise ValueError(
-                "No emails found in raffle_entries for raffle selection."
-            )
+            raise ValueError("No emails found in raffle_entries for raffle selection.")
 
         num_to_select = min(num_emails, total_emails)
         return random.sample(range(total_emails), num_to_select)
