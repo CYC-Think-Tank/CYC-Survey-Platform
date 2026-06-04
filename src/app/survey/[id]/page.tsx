@@ -62,6 +62,7 @@ interface Survey {
   questions: Question[];
   questions_fr?: Question[];
   questions_zh?: Question[];
+  referral_source?: string;
 }
 
 const RichTextRenderer = ({
