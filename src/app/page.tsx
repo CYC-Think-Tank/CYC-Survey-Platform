@@ -363,7 +363,7 @@ export default function Home() {
         </div>
         <span className="text-sm font-extrabold text-[#04377E]">{t('Win $100 (5 Winners!)')}</span>
 
-        <ReferralSection />
+        <ReferralSection variant="inline" />
 
         {/* Tooltip */}
         <div className="absolute bottom-full right-0 mb-2 w-64 bg-white border border-gray-100 shadow-xl rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
@@ -556,6 +556,11 @@ export default function Home() {
           })}
         </motion.div>
       )}
+
+      {/* Referral Link Section (Floating) */}
+      <div className="w-full relative z-20">
+        <ReferralSection variant="floating" />
+      </div>
     </div>
   );
 }
