@@ -62,6 +62,7 @@ interface Survey {
   questions: Question[];
   questions_fr?: Question[];
   questions_zh?: Question[];
+  referral_source?: string;
 }
 
 const RichTextRenderer = ({
@@ -1129,6 +1130,12 @@ export default function SurveyPage() {
         submissionAnswers.push(answerObj);
       }
 
+      // Ensure we fetch the most up-to-date referral source right before submit
+      let finalReferralSource = searchParams.get('ref');
+      if (!finalReferralSource && typeof window !== 'undefined') {
+        finalReferralSource = localStorage.getItem('global_ref');
+      }
+
       // Submit all at once via the legacy responses endpoint
       const res = await fetch(`/api/surveys/${survey.id}/responses`, {
         method: 'POST',
@@ -1137,7 +1144,7 @@ export default function SurveyPage() {
           email,
           answers: submissionAnswers,
           language,
-          referral_source: referralSource,
+          referral_source: finalReferralSource || survey?.referral_source || null,
         }),
       });
 
