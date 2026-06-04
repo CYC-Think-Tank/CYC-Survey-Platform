@@ -1,5 +1,5 @@
 'use client';
-import { CheckCircle2, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, ArrowRight, Copy, Gift } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -19,6 +19,20 @@ export default function ThankYouPage() {
   const { language, t } = useLanguage();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const email = localStorage.getItem('cyc_global_email');
+    if (email) {
+      fetch(`/api/user/referral-link?email=${encodeURIComponent(email)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.code) setReferralCode(data.code);
+        })
+        .catch((err) => console.error('Failed to get referral link', err));
+    }
+  }, []);
 
   useEffect(() => {
     fetch('/api/surveys?include_inactive=false')
@@ -52,6 +66,14 @@ export default function ThankYouPage() {
       });
   }, []);
 
+  const handleCopy = () => {
+    if (!referralCode) return;
+    const url = `${window.location.origin}?ref=${referralCode}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-slate-900/50 py-12 px-4">
       {/* Thank You Card */}
@@ -78,6 +100,52 @@ export default function ThankYouPage() {
           )}
         </p>
       </motion.div>
+
+      {/* Referral Link Section */}
+      {referralCode && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="w-full max-w-4xl mx-auto bg-gradient-to-r from-teal-500 to-[#0CA7A1] p-8 md:p-10 rounded-2xl shadow-xl text-center mb-12 text-white relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Gift className="w-48 h-48" />
+          </div>
+          <div className="relative z-10">
+            <h2 className="text-2xl md:text-4xl font-extrabold mb-4 flex justify-center items-center">
+              <Gift className="w-8 h-8 mr-3" />
+              {t('Get More Raffle Entries!')}
+            </h2>
+            <p className="text-lg md:text-xl text-teal-50 mb-6 max-w-2xl mx-auto leading-relaxed">
+              {t(
+                'Share your personal link below. For every survey completed using your link, you earn an extra entry into the raffle!'
+              )}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <code className="bg-white/10 px-4 py-3 rounded-xl text-base sm:text-lg font-mono tracking-wide backdrop-blur-md border border-white/20 select-all">
+                {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
+              </code>
+              <button
+                onClick={handleCopy}
+                className="flex items-center px-6 py-3 bg-white text-[#0CA7A1] font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all w-full sm:w-auto justify-center"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 mr-2" />
+                    {t('Copied!')}
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5 mr-2" />
+                    {t('Copy Link')}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Cross-Promotion Section */}
       <div className="w-full max-w-6xl mx-auto">

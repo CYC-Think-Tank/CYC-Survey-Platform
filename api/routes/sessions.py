@@ -263,6 +263,37 @@ async def complete_session(session_id: str):
         supabase.table("response_sessions").update(
             {"is_completed": True, "completed_at": datetime.utcnow().isoformat()}
         ).eq("id", session_id).execute()
+
+        # --- NEW LOGIC FOR RAFFLE ---
+        try:
+            # Fetch the session
+            session_res = supabase.table("response_sessions").select("email, survey_id, referral_source").eq("id", session_id).execute()
+            if session_res.data:
+                session = session_res.data[0]
+                # 1. Entry for the respondent
+                supabase.table("raffle_entries").insert({
+                    "email": session["email"],
+                    "survey_id": session["survey_id"],
+                    "session_id": session_id,
+                    "is_referral": False
+                }).execute()
+
+                # 2. Check if there is a referral source
+                if session.get("referral_source"):
+                    share_link_res = supabase.table("share_links").select("email").eq("code", session["referral_source"]).execute()
+                    if share_link_res.data and share_link_res.data[0].get("email"):
+                        referrer_email = share_link_res.data[0]["email"]
+                        if referrer_email != session["email"]:  # Prevent self-referral
+                            supabase.table("raffle_entries").insert({
+                                "email": referrer_email,
+                                "survey_id": session["survey_id"],
+                                "session_id": session_id,
+                                "is_referral": True
+                            }).execute()
+        except Exception as e:
+            print(f"[complete_session] Failed to add raffle entries: {e}")
+        # ----------------------------
+
         return {"status": "completed"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -316,6 +347,32 @@ async def submit_response(survey_id: str, submission: ResponseSubmission):
                     supabase.table("answers").insert(answers_to_insert).execute()
                 else:
                     raise
+
+        # --- NEW LOGIC FOR RAFFLE ---
+        try:
+            # 1. Entry for the respondent
+            supabase.table("raffle_entries").insert({
+                "email": submission.email,
+                "survey_id": survey_id,
+                "session_id": session_id,
+                "is_referral": False
+            }).execute()
+
+            # 2. Check if there is a referral source
+            if submission.referral_source:
+                share_link_res = supabase.table("share_links").select("email").eq("code", submission.referral_source).execute()
+                if share_link_res.data and share_link_res.data[0].get("email"):
+                    referrer_email = share_link_res.data[0]["email"]
+                    if referrer_email != submission.email:  # Prevent self-referral
+                        supabase.table("raffle_entries").insert({
+                            "email": referrer_email,
+                            "survey_id": survey_id,
+                            "session_id": session_id,
+                            "is_referral": True
+                        }).execute()
+        except Exception as e:
+            print(f"[submit_response] Failed to add raffle entries: {e}")
+        # ----------------------------
 
         return {"status": "success", "session_id": session_id}
     except Exception as e:
