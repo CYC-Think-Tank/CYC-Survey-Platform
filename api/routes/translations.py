@@ -583,7 +583,7 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
             }
 
             async with httpx.AsyncClient(timeout=180.0) as client:
-                resp = await client.post(OpenCode_GO_URL, json=payload, headers=headers)
+                resp = await client.post(OPencode_GO_URL, json=payload, headers=headers)
 
             if resp.status_code != 200:
                 raise HTTPException(

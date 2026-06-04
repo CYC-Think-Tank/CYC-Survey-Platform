@@ -55,3 +55,4 @@ docs/superpowers/
 graphify-out/
 .opencode/plugins/graphify.js
 supabase/
+prod_dump.sql

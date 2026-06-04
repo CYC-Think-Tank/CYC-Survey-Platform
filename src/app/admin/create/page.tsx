@@ -689,11 +689,8 @@ export default function CreateSurvey() {
   };
 
   const handleTranslateAll = async () => {
-    const apiKey =
-      sessionStorage.getItem('opencode_go_api_key') ||
-      window.prompt('Enter your OpenCode Go API key (sk-l...):');
+    const apiKey = window.prompt('Enter your OpenCode Go API key (sk-l...):');
     if (!apiKey) return;
-    sessionStorage.setItem('opencode_go_api_key', apiKey);
 
     setTranslateAllLoading(true);
     setTranslateAllError('');
