@@ -65,6 +65,51 @@ interface Survey {
   referral_source?: string;
 }
 
+const InteractiveDefinition = ({ part, definition }: { part: string; definition: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <span
+      ref={containerRef}
+      className="relative inline-block cursor-pointer mx-1"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}
+    >
+      <span className="wavy-underline">{part}</span>
+      {isOpen && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-xl z-50 text-center font-normal tracking-normal leading-normal">
+          {definition}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-slate-100"></span>
+        </span>
+      )}
+    </span>
+  );
+};
+
 const RichTextRenderer = ({
   text,
   definitions,
@@ -95,15 +140,7 @@ const RichTextRenderer = ({
             {parts.map((part: string, i: number) => {
               const def = sortedDefs.find((d) => d.term.toLowerCase() === part.toLowerCase());
               if (def) {
-                return (
-                  <span key={i} className="relative inline-block group cursor-help mx-1">
-                    <span className="wavy-underline">{part}</span>
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-xl z-50 text-center font-normal tracking-normal leading-normal">
-                      {def.definition}
-                      <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-slate-100"></span>
-                    </span>
-                  </span>
-                );
+                return <InteractiveDefinition key={i} part={part} definition={def.definition} />;
               }
               return <span key={i}>{part}</span>;
             })}
