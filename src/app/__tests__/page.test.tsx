@@ -22,7 +22,10 @@ vi.mock('framer-motion', () => ({
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
     img: ({ alt, ...props }: any) => <img alt={alt || ''} {...props} />,
     h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
+    form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
+    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
   },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
   useMotionValue: () => ({ set: vi.fn() }),
   useTransform: () => ({ get: () => '0deg' }),
 }));
