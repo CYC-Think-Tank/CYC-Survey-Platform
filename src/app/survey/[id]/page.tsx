@@ -233,9 +233,12 @@ export default function SurveyPage() {
           if (newAnswers[q.id] === undefined && profileData[q.question_text]) {
             const pAns = profileData[q.question_text] as Record<string, unknown>;
             let val = undefined;
-            if (pAns.answer_options !== null && pAns.answer_options !== undefined) val = pAns.answer_options;
-            else if (pAns.answer_text !== null && pAns.answer_text !== undefined) val = pAns.answer_text;
-            else if (pAns.answer_numeric !== null && pAns.answer_numeric !== undefined) val = pAns.answer_numeric;
+            if (pAns.answer_options !== null && pAns.answer_options !== undefined)
+              val = pAns.answer_options;
+            else if (pAns.answer_text !== null && pAns.answer_text !== undefined)
+              val = pAns.answer_text;
+            else if (pAns.answer_numeric !== null && pAns.answer_numeric !== undefined)
+              val = pAns.answer_numeric;
 
             if (val !== undefined && val !== null) {
               newAnswers[q.id] = val;
@@ -406,10 +409,7 @@ export default function SurveyPage() {
   useEffect(() => {
     if (survey && sessionId && currentStep > 0) {
       const currentQuestion = survey.questions[currentStep - 1];
-      if (
-        currentQuestion &&
-        !currentQuestion.id.startsWith('attn-')
-      ) {
+      if (currentQuestion && !currentQuestion.id.startsWith('attn-')) {
         const val = answers[currentQuestion.id];
         if (val !== undefined) {
           const currentSessionTime = Date.now() - questionEnterTime;
@@ -451,81 +451,103 @@ export default function SurveyPage() {
     }
   }, [answers, sessionId, currentStep, survey, questionEnterTime, timeSpentAccumulator]);
 
+  const checkShouldSkip = (idx: number, pData: Record<string, unknown> | null): boolean => {
+    if (!survey) return false;
+    const q = survey.questions[idx];
+    let shouldSkip = false;
+
+    let wasAnsweredPreviously = false;
+    if (q && q.is_conditional) {
+      wasAnsweredPreviously = survey.questions.some((prevQ, i) => {
+        if (i >= idx) return false;
+        if (prevQ.question_text !== q.question_text) return false;
+        const ans = answers[prevQ.id];
+        if (ans === undefined || ans === null || ans === '') return false;
+        if (Array.isArray(ans) && ans.length === 0) return false;
+        return true;
+      });
+    }
+
+    if (q && q.is_conditional && (wasAnsweredPreviously || (pData && pData[q.question_text]))) {
+      shouldSkip = true;
+    }
+
+    const qOptions = q?.options as QuestionOptions | undefined;
+    if (!shouldSkip && q && qOptions?.logic_gates && qOptions.logic_gates.length > 0) {
+      const matchType = qOptions?.logic_gate_match_type || 'all';
+      const logicGates = qOptions?.logic_gates || [];
+
+      const gateResults = logicGates.map((gate: LogicGate) => {
+        if (!gate.question_id || !gate.value) return true;
+        const answer = answers[gate.question_id];
+
+        const dependencyQ = survey.questions.find((x: Question) => x.id === gate.question_id);
+        let targetValue = gate.value;
+        if (dependencyQ && language !== 'en') {
+          const enOptions = Array.isArray(dependencyQ.options)
+            ? dependencyQ.options
+            : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
+          const optIndex = enOptions.indexOf(gate.value);
+          if (optIndex !== -1) {
+            if (language === 'fr' && survey.questions_fr) {
+              const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
+              const frOpts = Array.isArray(frQ?.options)
+                ? frQ.options
+                : (frQ?.options as QuestionOptions | undefined)?.choices || [];
+              if (frOpts[optIndex]) targetValue = frOpts[optIndex];
+            } else if (language === 'zh' && survey.questions_zh) {
+              const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
+              const zhOpts = Array.isArray(zhQ?.options)
+                ? zhQ.options
+                : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
+              if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
+            }
+          }
+        }
+
+        if (Array.isArray(answer)) {
+          return answer.includes(targetValue);
+        } else {
+          return answer === targetValue;
+        }
+      });
+
+      const matched =
+        matchType === 'any'
+          ? gateResults.some((res: boolean) => res)
+          : gateResults.every((res: boolean) => res);
+      if (!matched) shouldSkip = true;
+    }
+
+    // Section Header specific logic:
+    // If a section header is marked "skip if answered previously",
+    // skip it IF ALL questions underneath it (until next header) are also skipped.
+    if (!shouldSkip && q && q.type === 'section_header' && q.is_conditional) {
+      let hasQuestions = false;
+      let allSkipped = true;
+      for (let j = idx + 1; j < survey.questions.length; j++) {
+        const nextQ = survey.questions[j];
+        if (nextQ.type === 'section_header') break;
+        hasQuestions = true;
+        if (!checkShouldSkip(j, pData)) {
+          allSkipped = false;
+          break;
+        }
+      }
+      // If the section has questions and ALL of them evaluate to skipped, skip the header too.
+      if (hasQuestions && allSkipped) {
+        shouldSkip = true;
+      }
+    }
+
+    return shouldSkip;
+  };
+
   const getNextVisibleStep = (startIdx: number, forward: boolean, pData = profileData) => {
     let idx = startIdx;
     if (!survey) return forward ? 0 : -1;
     while (idx >= 0 && idx < survey.questions.length) {
-      const q = survey.questions[idx];
-      let shouldSkip = false;
-
-      let wasAnsweredPreviously = false;
-      if (q && q.is_conditional) {
-        wasAnsweredPreviously = survey.questions.some((prevQ, i) => {
-          if (i >= idx) return false;
-          if (prevQ.question_text !== q.question_text) return false;
-          const ans = answers[prevQ.id];
-          if (ans === undefined || ans === null || ans === '') return false;
-          if (Array.isArray(ans) && ans.length === 0) return false;
-          return true;
-        });
-      }
-
-      if (
-        q &&
-        q.is_conditional &&
-        (wasAnsweredPreviously || (pData && pData[q.question_text]))
-      ) {
-        shouldSkip = true;
-      }
-
-      const qOptions = q?.options as QuestionOptions | undefined;
-      if (!shouldSkip && q && qOptions?.logic_gates && qOptions.logic_gates.length > 0) {
-        const matchType = qOptions?.logic_gate_match_type || 'all';
-        const logicGates = qOptions?.logic_gates || [];
-
-        const gateResults = logicGates.map((gate: LogicGate) => {
-          if (!gate.question_id || !gate.value) return true;
-          const answer = answers[gate.question_id];
-
-          const dependencyQ = survey.questions.find((x: Question) => x.id === gate.question_id);
-          let targetValue = gate.value;
-          if (dependencyQ && language !== 'en') {
-            const enOptions = Array.isArray(dependencyQ.options)
-              ? dependencyQ.options
-              : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
-            const optIndex = enOptions.indexOf(gate.value);
-            if (optIndex !== -1) {
-              if (language === 'fr' && survey.questions_fr) {
-                const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
-                const frOpts = Array.isArray(frQ?.options)
-                  ? frQ.options
-                  : (frQ?.options as QuestionOptions | undefined)?.choices || [];
-                if (frOpts[optIndex]) targetValue = frOpts[optIndex];
-              } else if (language === 'zh' && survey.questions_zh) {
-                const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
-                const zhOpts = Array.isArray(zhQ?.options)
-                  ? zhQ.options
-                  : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
-                if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
-              }
-            }
-          }
-
-          if (Array.isArray(answer)) {
-            return answer.includes(targetValue);
-          } else {
-            return answer === targetValue;
-          }
-        });
-
-        const matched =
-          matchType === 'any'
-            ? gateResults.some((res: boolean) => res)
-            : gateResults.every((res: boolean) => res);
-        if (!matched) shouldSkip = true;
-      }
-
-      if (shouldSkip) {
+      if (checkShouldSkip(idx, pData)) {
         idx = forward ? idx + 1 : idx - 1;
       } else {
         break;
@@ -1816,8 +1838,12 @@ export default function SurveyPage() {
               <div className="flex-shrink-0 flex justify-between items-center mt-auto pt-6 border-t border-gray-100 dark:border-white/5 bg-transparent">
                 <button
                   onClick={handleBack}
-                  disabled={currentStep === 0 || visibleQuestionIndices.length === 0 || visibleQuestionIndices[0] === currentStep}
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${(currentStep === 0 || visibleQuestionIndices.length === 0 || visibleQuestionIndices[0] === currentStep) ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-900'}`}
+                  disabled={
+                    currentStep === 0 ||
+                    visibleQuestionIndices.length === 0 ||
+                    visibleQuestionIndices[0] === currentStep
+                  }
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${currentStep === 0 || visibleQuestionIndices.length === 0 || visibleQuestionIndices[0] === currentStep ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-900'}`}
                 >
                   {t('Back')}
                 </button>
