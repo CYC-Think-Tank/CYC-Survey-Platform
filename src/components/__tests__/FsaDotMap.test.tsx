@@ -9,16 +9,8 @@ vi.mock('react-leaflet', () => ({
   TileLayer: ({ attribution, url }: { attribution: string; url: string }) => (
     <div data-testid="tile-layer" data-attribution={attribution} data-url={url} />
   ),
-  CircleMarker: ({
-    center,
-    children,
-    radius,
-  }: {
-    center: [number, number];
-    children: React.ReactNode;
-    radius: number;
-  }) => (
-    <div data-center={`${center[0]},${center[1]}`} data-radius={radius} data-testid="circle-marker">
+  Marker: ({ position, children }: { position: [number, number]; children: React.ReactNode }) => (
+    <div data-center={`${position[0]},${position[1]}`} data-testid="circle-marker">
       {children}
     </div>
   ),
@@ -30,6 +22,12 @@ vi.mock('react-leaflet', () => ({
     fitBounds: vi.fn(),
     setView: vi.fn(),
   }),
+}));
+
+vi.mock('react-leaflet-cluster', () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="marker-cluster-group">{children}</div>
+  ),
 }));
 
 const gtaDots: FsaMapDot[] = [
