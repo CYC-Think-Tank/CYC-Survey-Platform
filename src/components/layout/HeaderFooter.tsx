@@ -54,6 +54,14 @@ export function Header() {
                 Français
               </button>
             )}
+            {language !== 'zh' && (
+              <button
+                onClick={() => setLanguage('zh')}
+                className="text-gray-700 hover:text-[var(--color-cyc-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors"
+              >
+                中文
+              </button>
+            )}
           </nav>
         </div>
       </div>
