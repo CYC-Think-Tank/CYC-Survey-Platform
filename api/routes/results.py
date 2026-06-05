@@ -3,6 +3,7 @@ import random
 from fastapi import APIRouter, HTTPException
 
 from api.dependencies import supabase
+from api.utils.postal_geo import build_postal_geo_stats
 from api.utils.survey_utils import (
     calculate_median,
     calculate_mode,
@@ -368,7 +369,18 @@ async def get_survey_summary(survey_id: str):
                 }
             elif q_type == "short_answer":
                 texts = [a.get("answer_text") for a in ans if a.get("answer_text")]
-                stats[qid] = {"texts": texts[:100]}
+                opts = q.get("options")
+                validation = opts.get("validation") if isinstance(opts, dict) else None
+                is_postal_prefix = (
+                    isinstance(validation, dict)
+                    and validation.get("type") == "postal_code_prefix"
+                )
+                stats[qid] = {
+                    "texts": [] if is_postal_prefix else texts[:100],
+                    "sample_size": len(texts),
+                }
+                if is_postal_prefix:
+                    stats[qid]["postal_geo"] = build_postal_geo_stats(qid, ans)
             elif q_type == "ranking":
                 sums = {}
                 counts = {}
