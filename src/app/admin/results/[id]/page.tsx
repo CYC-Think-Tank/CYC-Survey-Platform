@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { Fragment, useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   ArrowLeft,
   BarChart3,
@@ -15,8 +16,19 @@ import {
   Sparkles,
   AlertTriangle,
   Globe,
+  MapPinned,
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
+import type { FsaMapDot } from '@/components/FsaDotMap';
+
+const FsaDotMap = dynamic(() => import('@/components/FsaDotMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full min-h-[280px] items-center justify-center text-sm text-gray-500">
+      Loading map...
+    </div>
+  ),
+});
 
 interface Answer {
   id?: string;
@@ -89,6 +101,19 @@ interface QuestionSummaryStats {
   quartiles?: Quartiles;
   outliers?: number[];
   texts?: string[];
+  postal_geo?: PostalGeoStats;
+}
+
+interface PostalGeoStats {
+  type: 'fsa_dot_map';
+  question_id: string;
+  total_usable: number;
+  matched_count: number;
+  unmatched_count: number;
+  suppressed_count: number;
+  suppressed_fsa_count: number;
+  min_display_count: number;
+  dots: FsaMapDot[];
 }
 
 export default function ResultsPage() {
@@ -114,7 +139,7 @@ export default function ResultsPage() {
   const toggleAdvanced = (qId: string) =>
     setShowAdvanced((prev) => ({ ...prev, [qId]: !prev[qId] }));
 
-  const fetchResults = () => {
+  const fetchResults = useCallback(() => {
     fetch(`/api/surveys/${params.id}/results`)
       .then((res) => res.json())
       .then((d) => {
@@ -122,7 +147,7 @@ export default function ResultsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  };
+  }, [params.id]);
 
   const fetchSummary = useCallback(() => {
     setSummaryLoading(true);
@@ -158,7 +183,7 @@ export default function ResultsPage() {
 
   useEffect(() => {
     fetchResults();
-  }, [params.id]);
+  }, [fetchResults]);
 
   useEffect(() => {
     if (tab === 'summary' && !summaryStats && !loading) {
@@ -249,6 +274,93 @@ export default function ResultsPage() {
       )}
     </div>
   );
+
+  const renderPostalGeoCard = (q: Question, stat: QuestionSummaryStats) => {
+    const postalGeo = stat.postal_geo;
+    if (!postalGeo) return null;
+
+    const metrics = (
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <span className="block text-xs text-gray-500">Matched</span>
+          <span className="font-bold text-[var(--color-cyc-secondary)]">
+            {postalGeo.matched_count}
+          </span>
+        </div>
+        <div>
+          <span className="block text-xs text-gray-500">Unmatched</span>
+          <span className="font-bold text-[var(--color-cyc-secondary)]">
+            {postalGeo.unmatched_count}
+          </span>
+        </div>
+        <div className="col-span-2">
+          <span className="block text-xs text-gray-500">Suppressed for privacy</span>
+          <span className="font-bold text-[var(--color-cyc-secondary)]">
+            {postalGeo.suppressed_count} responses across {postalGeo.suppressed_fsa_count} FSA
+            {postalGeo.suppressed_fsa_count === 1 ? '' : 's'}
+          </span>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
+          <MapPinned className="w-4 h-4 mr-2" />
+          Response Geography
+        </h3>
+        <p className="text-xs text-gray-400 mb-1">
+          Approximate postal prefix areas from: {q.question_text}
+        </p>
+        <p className="text-xs text-gray-400 mb-5">
+          Dots represent FSA prefix areas, not exact respondent locations. Prefixes with fewer than{' '}
+          {postalGeo.min_display_count} responses are grouped for privacy.
+        </p>
+
+        {postalGeo.dots.length === 0 ? (
+          <div className="space-y-4">
+            {metrics}
+            <div className="border border-dashed border-gray-200 rounded-xl p-8 text-center text-sm text-gray-500">
+              Not enough matched postal prefix responses to display a privacy-safe map yet. Many
+              responses may be grouped because fewer than {postalGeo.min_display_count} people share
+              the same visible FSA.
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.8fr)]">
+            <div className="h-[320px] overflow-hidden rounded-xl border border-gray-200 bg-slate-50">
+              <FsaDotMap dots={postalGeo.dots} />
+            </div>
+
+            <div>
+              <div className="mb-4">{metrics}</div>
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {postalGeo.dots.map((dot) => (
+                  <div key={dot.fsa}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-semibold text-gray-700">
+                        {dot.fsa}
+                        <span className="ml-2 font-normal text-gray-400">{dot.province}</span>
+                      </span>
+                      <span className="text-gray-500">
+                        {dot.count} ({dot.percentage}%)
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--color-cyc-primary)]"
+                        style={{ width: `${Math.max(8, dot.percentage)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   function renderSummaryForQuestion(q: Question) {
     if (!summaryStats || !summaryStats[q.id]) {
@@ -576,6 +688,12 @@ export default function ResultsPage() {
               Validation: {validationType.replace(/_/g, ' ')}
             </div>
           )}
+          {validationType === 'postal_code_prefix' && stat.postal_geo && (
+            <p className="text-sm text-gray-500 mb-3">
+              Postal prefixes are aggregated in the Response Geography card above. Raw prefix lists
+              are hidden here for privacy.
+            </p>
+          )}
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {texts.map((t: string, i: number) => (
               <div
@@ -745,6 +863,13 @@ export default function ResultsPage() {
                   </div>
                 </div>
               )}
+
+              {questions.map((q: Question) => {
+                const stat = summaryStats?.[q.id];
+                return stat?.postal_geo ? (
+                  <Fragment key={q.id}>{renderPostalGeoCard(q, stat)}</Fragment>
+                ) : null;
+              })}
 
               {questions.map((q: Question, idx: number) => (
                 <div key={q.id} className="bg-white rounded-xl shadow border border-gray-200 p-6">
