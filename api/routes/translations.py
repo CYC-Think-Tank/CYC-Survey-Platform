@@ -516,7 +516,7 @@ async def translate_all_languages(request: Request):
         english_description = body.get("english_description", "")
         english_questions = body.get("english_questions", [])
 
-        if not api_key:
+        if not api_key and provider != "gemini":
             raise HTTPException(status_code=400, detail="API key is required")
         if not target_language:
             raise HTTPException(status_code=400, detail="Target language is required")
