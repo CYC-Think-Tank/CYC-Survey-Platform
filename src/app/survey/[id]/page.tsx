@@ -335,6 +335,10 @@ export default function SurveyPage() {
           data.description_zh = translationData.description_zh;
         }
 
+        if (translationData?.translations) {
+          data.translations = translationData.translations;
+        }
+
         setSurvey(data);
 
         const enabled = data.enabled_languages;
