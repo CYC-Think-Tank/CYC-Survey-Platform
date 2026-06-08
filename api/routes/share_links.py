@@ -167,22 +167,22 @@ async def get_referral_leaderboard():
             .eq("is_referral", True)
             .execute()
         )
-        
+
         counts = {}
         for entry in res.data:
             email = entry.get("email")
             if email:
                 counts[email] = counts.get(email, 0) + 1
-        
+
         # Format and sort
         leaderboard = [
-            {"email": email, "referral_count": count}
-            for email, count in counts.items()
+            {"email": email, "referral_count": count} for email, count in counts.items()
         ]
         leaderboard.sort(key=lambda x: x["referral_count"], reverse=True)
-        
+
         return leaderboard
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- AI ANALYSIS SUITE ---
