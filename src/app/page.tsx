@@ -227,11 +227,14 @@ export default function Home() {
 
   const baseItems = surveys.slice(0, 3).map((item) => {
     const displayTitle =
-      item.translations?.[language]?.title || item.title_fr || item.title_zh || item.title;
+      item.translations?.[language]?.title ||
+      (language === 'fr' && item.title_fr) ||
+      (language === 'zh' && item.title_zh) ||
+      item.title;
     const displayDescription =
       item.translations?.[language]?.description ||
-      item.description_fr ||
-      item.description_zh ||
+      (language === 'fr' && item.description_fr) ||
+      (language === 'zh' && item.description_zh) ||
       item.description;
     return { ...item, displayTitle, displayDescription };
   });

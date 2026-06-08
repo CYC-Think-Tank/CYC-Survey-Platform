@@ -173,13 +173,13 @@ export default function ThankYouPage() {
             {surveys.map((survey, i) => {
               const displayTitle =
                 survey.translations?.[language]?.title ||
-                survey.title_fr ||
-                survey.title_zh ||
+                (language === 'fr' && survey.title_fr) ||
+                (language === 'zh' && survey.title_zh) ||
                 survey.title;
               const displayDescription =
                 survey.translations?.[language]?.description ||
-                survey.description_fr ||
-                survey.description_zh ||
+                (language === 'fr' && survey.description_fr) ||
+                (language === 'zh' && survey.description_zh) ||
                 survey.description;
               return (
                 <motion.div
