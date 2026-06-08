@@ -56,6 +56,7 @@ export default function AdminDashboard() {
   const [leaderboardModal, setLeaderboardModal] = useState(false);
   const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [hideZeroResponses, setHideZeroResponses] = useState(false);
   const router = useRouter();
 
   const fetchSurveys = () => {
@@ -285,6 +286,10 @@ export default function AdminDashboard() {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
+  const totalActiveResponses = surveys
+    .filter((s) => s.is_active)
+    .reduce((sum, s) => sum + (s.response_count || 0), 0);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -297,8 +302,11 @@ export default function AdminDashboard() {
     <div className="max-w-6xl mx-auto py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center">
             Dashboard Overview
+            <span className="ml-4 text-sm font-medium bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-3 py-1 rounded-full border border-[var(--color-cyc-primary)]/20">
+              {totalActiveResponses} total active responses
+            </span>
           </h1>
           <p className="text-gray-500 dark:text-slate-500 mt-1">
             Manage your surveys and view engagement metrics.
@@ -561,9 +569,20 @@ export default function AdminDashboard() {
               <Share2 className="w-5 h-5 mr-2" />
               Share Links
             </h2>
-            <p className="text-sm text-gray-500 dark:text-slate-500 mb-5">
-              Generate unique tracked links for <strong>{shareModal.title}</strong>
-            </p>
+            <div className="flex justify-between items-center mb-5">
+              <p className="text-sm text-gray-500 dark:text-slate-500">
+                Generate unique tracked links for <strong>{shareModal.title}</strong>
+              </p>
+              <label className="flex items-center text-sm text-gray-600 dark:text-slate-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideZeroResponses}
+                  onChange={(e) => setHideZeroResponses(e.target.checked)}
+                  className="mr-2 rounded border-gray-300 text-[var(--color-cyc-primary)] focus:ring-[var(--color-cyc-primary)]"
+                />
+                Hide 0 responses
+              </label>
+            </div>
 
             {/* Generate new link */}
             <div className="flex space-x-2 mb-5">
@@ -593,66 +612,70 @@ export default function AdminDashboard() {
                   No links generated yet. Click &quot;Generate&quot; to create one.
                 </p>
               )}
-              {shareLinks.map((link) => {
-                const isGlobal = shareModal.id === 'global';
-                const url = isGlobal
-                  ? `${baseUrl}?ref=${link.code}`
-                  : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
-                const isCopied = copiedLink === link.code;
-                return (
-                  <div
-                    key={link.id}
-                    className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3 group"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
-                          {link.label || (
-                            <span className="text-gray-400 dark:text-slate-500 italic">
-                              Unlabeled
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">
-                          {link.code}
-                        </span>
+              {shareLinks
+                .filter(
+                  (link) => !hideZeroResponses || (link.response_count && link.response_count > 0)
+                )
+                .map((link) => {
+                  const isGlobal = shareModal.id === 'global';
+                  const url = isGlobal
+                    ? `${baseUrl}?ref=${link.code}`
+                    : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
+                  const isCopied = copiedLink === link.code;
+                  return (
+                    <div
+                      key={link.id}
+                      className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3 group"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                            {link.label || (
+                              <span className="text-gray-400 dark:text-slate-500 italic">
+                                Unlabeled
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">
+                            {link.code}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500 dark:text-slate-500 font-medium">
+                            {link.response_count} response{link.response_count !== 1 ? 's' : ''}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteLink(link.id)}
+                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500 dark:text-slate-500 font-medium">
-                          {link.response_count} response{link.response_count !== 1 ? 's' : ''}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <code className="text-xs text-gray-500 dark:text-slate-500 truncate mr-2 flex-1">
+                          {url}
+                        </code>
                         <button
-                          onClick={() => handleDeleteLink(link.id)}
-                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={() => copyToClipboard(url, link.code)}
+                          className={`flex items-center text-xs font-medium px-2 py-1 rounded transition-all ${isCopied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:border-teal-300'}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {isCopied ? (
+                            <>
+                              <Check className="w-3 h-3 mr-1" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <code className="text-xs text-gray-500 dark:text-slate-500 truncate mr-2 flex-1">
-                        {url}
-                      </code>
-                      <button
-                        onClick={() => copyToClipboard(url, link.code)}
-                        className={`flex items-center text-xs font-medium px-2 py-1 rounded transition-all ${isCopied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:border-teal-300'}`}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-3 h-3 mr-1" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
         </div>
