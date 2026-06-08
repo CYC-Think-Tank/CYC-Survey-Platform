@@ -493,67 +493,64 @@ export default function CreateSurvey() {
     }));
 
     const langName = getLanguageConfig(language)?.name || language;
+    const BATCH_SIZE = 5;
+    const batches: (typeof englishQuestions)[] = [];
+    for (let i = 0; i < englishQuestions.length; i += BATCH_SIZE) {
+      batches.push(englishQuestions.slice(i, i + BATCH_SIZE));
+    }
 
     try {
-      const res = await fetch('/api/surveys/translate-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: apiKey,
-          provider,
-          target_language: language,
-          english_title: title,
-          english_description: description,
-          english_questions: englishQuestions,
-        }),
-      });
+      let titleData: { title?: string; description?: string } | null = null;
+      const allQuestions: Record<number, Record<string, unknown>> = {};
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Translation failed');
-      }
+      for (let b = 0; b < batches.length; b++) {
+        const isFirst = b === 0;
+        setTranslateAllSuccess(`Translating batch ${b + 1} of ${batches.length}...`);
 
-      const data = await res.json();
+        const res = await fetch('/api/surveys/translate-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: apiKey,
+            provider,
+            target_language: language,
+            english_title: isFirst ? title : '',
+            english_description: isFirst ? description : '',
+            english_questions: batches[b],
+          }),
+        });
 
-      const entries = Object.entries(data.translations || {});
-      if (entries.length === 0) {
-        throw new Error('Backend returned no translations');
-      }
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Batch ${b + 1} failed: ${text || 'Translation failed'}`);
+        }
 
-      const [lang, tData] = entries[0] as [
-        string,
-        {
-          title?: string;
-          description?: string;
-          questions?: Array<{
-            index: number;
-            question_text?: string;
-            options?: string[];
-            question_description?: string;
-            section_description?: string;
-            definitions?: { term: string; definition: string }[];
-          }>;
-        },
-      ];
+        const data = await res.json();
+        const entries = Object.entries(data.translations || {});
+        if (entries.length === 0) continue;
 
-      if (!tData) {
-        throw new Error('Translation data is missing for ' + lang);
-      }
+        const [, tData] = entries[0] as [
+          string,
+          {
+            title?: string;
+            description?: string;
+            questions?: Array<{
+              index: number;
+              question_text?: string;
+              options?: string[];
+              question_description?: string;
+              section_description?: string;
+              definitions?: { term: string; definition: string }[];
+            }>;
+          },
+        ];
 
-      if (tData.title) {
-        if (lang === 'fr') setTitleFr(tData.title);
-        else if (lang === 'zh') setTitleZh(tData.title);
-      }
-      if (tData.description) {
-        if (lang === 'fr') setDescriptionFr(tData.description);
-        else if (lang === 'zh') setDescriptionZh(tData.description);
-      }
+        if (isFirst && tData) {
+          titleData = { title: tData.title, description: tData.description };
+        }
 
-      if (tData.questions) {
-        setQuestions((prev) =>
-          prev.map((q, idx) => {
-            const trans = tData.questions?.[idx];
-            if (!trans) return q;
+        if (tData?.questions) {
+          for (const trans of tData.questions) {
             const updates: Record<string, unknown> = {};
             if (trans.question_text) updates.question_text = trans.question_text;
             if (trans.options && trans.options.length > 0) updates.options = trans.options;
@@ -562,7 +559,33 @@ export default function CreateSurvey() {
               updates.question_description = trans.question_description;
             if (trans.definitions && trans.definitions.length > 0)
               updates.definitions = trans.definitions;
-            if (Object.keys(updates).length === 0) return q;
+            if (Object.keys(updates).length > 0) {
+              allQuestions[trans.index] = updates;
+            }
+          }
+        }
+      }
+
+      if (!titleData && Object.keys(allQuestions).length === 0) {
+        throw new Error('No translations received from any batch');
+      }
+
+      const lang = language;
+
+      if (titleData?.title) {
+        if (lang === 'fr') setTitleFr(titleData.title);
+        else if (lang === 'zh') setTitleZh(titleData.title);
+      }
+      if (titleData?.description) {
+        if (lang === 'fr') setDescriptionFr(titleData.description);
+        else if (lang === 'zh') setDescriptionZh(titleData.description);
+      }
+
+      if (Object.keys(allQuestions).length > 0) {
+        setQuestions((prev) =>
+          prev.map((q, idx) => {
+            const updates = allQuestions[idx];
+            if (!updates) return q;
             if (lang === 'fr') {
               return {
                 ...q,
@@ -579,25 +602,6 @@ export default function CreateSurvey() {
                 ...(updates.definitions
                   ? {
                       definitions_fr: updates.definitions as { term: string; definition: string }[],
-                    }
-                  : {}),
-              };
-            } else if (lang === 'zh') {
-              return {
-                ...q,
-                ...(updates.question_text
-                  ? { question_text_zh: updates.question_text as string }
-                  : {}),
-                ...(updates.options ? { options_zh: updates.options as string[] } : {}),
-                ...(updates.section_description
-                  ? { section_description_zh: updates.section_description as string }
-                  : {}),
-                ...(updates.question_description
-                  ? { question_description_zh: updates.question_description as string }
-                  : {}),
-                ...(updates.definitions
-                  ? {
-                      definitions_zh: updates.definitions as { term: string; definition: string }[],
                     }
                   : {}),
               };
