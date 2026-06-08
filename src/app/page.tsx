@@ -557,9 +557,9 @@ export default function Home() {
         </motion.div>
       )}
 
-      {/* Referral Link Section (Floating) */}
-      <div className="w-full relative z-20">
-        <ReferralSection variant="floating" />
+      {/* Referral Link Section (Big Banner) */}
+      <div className="w-full relative z-20 px-4 md:px-8">
+        <ReferralSection variant="block" />
       </div>
     </div>
   );
