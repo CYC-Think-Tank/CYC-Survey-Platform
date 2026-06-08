@@ -90,18 +90,24 @@ export function ReferralSection({ variant = 'floating' }: { variant?: 'floating'
       </div>
 
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-base font-black text-[#04377E] tracking-tight flex items-center">
-            <Gift className="w-4 h-4 mr-1.5 text-[#0CA7A1]" />
-            {t('Share & Win')}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[17px] font-black text-[#04377E] tracking-tight flex items-center">
+            <Gift className="w-5 h-5 mr-1.5 text-[#0CA7A1]" />
+            {t('Boost Your Chances to Win $100!')}
           </h3>
         </div>
 
-        <p className="text-[11px] text-gray-500 mb-4 leading-relaxed font-medium">
-          {t(
-            'Share your personal link. For every survey completed using your link, you get an extra chance to win $100!'
-          )}
-        </p>
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 mb-4 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-teal-100 rounded-full blur-xl opacity-50 transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+          <p className="text-[13px] text-teal-900 font-extrabold mb-1 text-center drop-shadow-sm">
+            {t('1 Referral = +1 Extra Raffle Entry')}
+          </p>
+          <p className="text-[11px] text-teal-800 leading-relaxed text-center font-medium">
+            {t(
+              'Share your link below. The more friends who complete the survey, the higher your chances of winning!'
+            )}
+          </p>
+        </div>
 
         <AnimatePresence mode="wait">
           {!referralCode ? (
@@ -204,7 +210,7 @@ export function ReferralSection({ variant = 'floating' }: { variant?: 'floating'
           className="px-5 py-2.5 rounded-full bg-[#0CA7A1] text-white flex items-center justify-center shadow-md hover:shadow-lg hover:bg-[#0A8A85] transition-all duration-200 text-sm font-extrabold uppercase tracking-wide"
         >
           <Gift className="w-4 h-4 mr-2" />
-          {t('Share & Win')}
+          {t('Boost Win Chances')}
         </motion.button>
       )}
 
