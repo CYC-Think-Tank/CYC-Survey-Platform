@@ -544,10 +544,10 @@ async def translate_all_languages(request: Request):
 
         if provider == "openrouter":
             API_URL = "https://openrouter.ai/api/v1/chat/completions"
-            MODEL = "openrouter/free"
+            MODELS = ["z-ai/glm-4.5-air:free", "openrouter/free"]
         else:
             API_URL = "https://opencode.ai/zen/go/v1/chat/completions"
-            MODEL = "deepseek-v4-flash"
+            MODELS = ["deepseek-v4-flash"]
 
         prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
 
@@ -591,42 +591,53 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
             "Content-Type": "application/json",
         }
         payload = {
-            "model": MODEL,
+            "model": MODELS[0],
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.1,
             "max_tokens": 65536,
         }
 
+        parsed = None
+        last_error = None
+
         async with httpx.AsyncClient(timeout=600.0) as client:
-            resp = await client.post(API_URL, json=payload, headers=headers)
+            for model in MODELS:
+                payload["model"] = model
+                try:
+                    resp = await client.post(API_URL, json=payload, headers=headers)
 
-            if resp.status_code != 200:
+                    if resp.status_code != 200:
+                        last_error = f"{model}: HTTP {resp.status_code} - {resp.text[:200]}"
+                        continue
+
+                    data = resp.json()
+                    raw = data["choices"][0]["message"]["content"]
+
+                    cleaned = raw.strip()
+                    if not cleaned:
+                        last_error = f"{model}: empty response"
+                        continue
+                    if cleaned.startswith("```"):
+                        cleaned = cleaned.split("\n", 1)[1]
+                        if cleaned.endswith("```"):
+                            cleaned = cleaned[:-3]
+                        cleaned = cleaned.strip()
+
+                    try:
+                        parsed = json_module.loads(cleaned)
+                    except json_module.JSONDecodeError:
+                        last_error = f"{model}: invalid JSON - {cleaned[:200]}"
+                        continue
+
+                    break
+                except httpx.TimeoutException:
+                    last_error = f"{model}: timed out"
+                    continue
+
+            if parsed is None:
                 raise HTTPException(
                     status_code=502,
-                    detail=f"Translation API error ({target_language}): {resp.status_code} - {resp.text[:300]}",
-                )
-
-            data = resp.json()
-            raw = data["choices"][0]["message"]["content"]
-
-            cleaned = raw.strip()
-            if not cleaned:
-                raise HTTPException(
-                    status_code=502,
-                    detail=f"Translation API returned empty response for {target_language}",
-                )
-            if cleaned.startswith("```"):
-                cleaned = cleaned.split("\n", 1)[1]
-                if cleaned.endswith("```"):
-                    cleaned = cleaned[:-3]
-                cleaned = cleaned.strip()
-
-            try:
-                parsed = json_module.loads(cleaned)
-            except json_module.JSONDecodeError:
-                raise HTTPException(
-                    status_code=502,
-                    detail=f"Translation API returned invalid JSON for {target_language}: {cleaned[:200]}",
+                    detail=f"All models failed for {target_language}: {last_error}",
                 )
 
             result = {"translations": {target_language: parsed}}
