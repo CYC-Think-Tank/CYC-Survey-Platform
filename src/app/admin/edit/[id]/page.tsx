@@ -149,7 +149,9 @@ export default function EditSurvey() {
   const [translateAllSuccess, setTranslateAllSuccess] = useState('');
   const [showTranslateDialog, setShowTranslateDialog] = useState(false);
   const [translateApiKey, setTranslateApiKey] = useState('');
-  const [translateProvider, setTranslateProvider] = useState<'opencode' | 'openrouter'>('opencode');
+  const [translateProvider, setTranslateProvider] = useState<'opencode' | 'openrouter' | 'gemini'>(
+    'opencode'
+  );
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1010,7 +1012,10 @@ export default function EditSurvey() {
     );
   }
 
-  const handleTranslateAll = async (apiKey: string, provider: 'opencode' | 'openrouter') => {
+  const handleTranslateAll = async (
+    apiKey: string,
+    provider: 'opencode' | 'openrouter' | 'gemini'
+  ) => {
     setShowTranslateDialog(false);
     setTranslateApiKey('');
     setTranslateAllLoading(true);
@@ -1363,7 +1368,17 @@ export default function EditSurvey() {
             )}
 
             {showTranslateDialog && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                onKeyDown={(e) => {
+                  if (
+                    e.key === 'Enter' &&
+                    (translateProvider === 'gemini' || translateApiKey.trim())
+                  ) {
+                    handleTranslateAll(translateApiKey.trim(), translateProvider);
+                  }
+                }}
+              >
                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Translate to {getLanguageConfig(language)?.name || language}
@@ -1371,22 +1386,42 @@ export default function EditSurvey() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                        API Key
+                        Provider
                       </label>
-                      <input
-                        type="password"
-                        value={translateApiKey}
-                        onChange={(e) => setTranslateApiKey(e.target.value)}
-                        placeholder="sk-l... or sk-or-..."
+                      <select
+                        value={translateProvider}
+                        onChange={(e) =>
+                          setTranslateProvider(
+                            e.target.value as 'opencode' | 'openrouter' | 'gemini'
+                          )
+                        }
                         className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && translateApiKey.trim()) {
-                            handleTranslateAll(translateApiKey.trim(), translateProvider);
-                          }
-                        }}
-                      />
+                      >
+                        <option value="opencode">OpenCode Go (DeepSeek V4 Flash)</option>
+                        <option value="openrouter">OpenRouter (GLM-4.5 Air)</option>
+                        <option value="gemini">Google Gemini (server key)</option>
+                      </select>
                     </div>
+                    {translateProvider !== 'gemini' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                          API Key
+                        </label>
+                        <input
+                          type="password"
+                          value={translateApiKey}
+                          onChange={(e) => setTranslateApiKey(e.target.value)}
+                          placeholder="sk-l... or sk-or-..."
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && translateApiKey.trim()) {
+                              handleTranslateAll(translateApiKey.trim(), translateProvider);
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                         Provider
@@ -1417,7 +1452,7 @@ export default function EditSurvey() {
                     <button
                       type="button"
                       onClick={() => handleTranslateAll(translateApiKey.trim(), translateProvider)}
-                      disabled={!translateApiKey.trim()}
+                      disabled={translateProvider !== 'gemini' && !translateApiKey.trim()}
                       className="px-4 py-2 text-sm font-medium text-white bg-[var(--color-cyc-primary)] hover:opacity-90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Translate

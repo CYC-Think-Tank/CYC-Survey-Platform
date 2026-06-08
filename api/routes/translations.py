@@ -542,13 +542,6 @@ async def translate_all_languages(request: Request):
 
         language_name = LANGUAGE_NAMES[target_language]
 
-        if provider == "openrouter":
-            API_URL = "https://openrouter.ai/api/v1/chat/completions"
-            MODELS = ["z-ai/glm-4.5-air:free", "openrouter/free"]
-        else:
-            API_URL = "https://opencode.ai/zen/go/v1/chat/completions"
-            MODELS = ["deepseek-v4-flash"]
-
         prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
 
 Return ONLY a JSON object with this exact structure:
@@ -586,59 +579,117 @@ Rules:
 
 Return ONLY the JSON object, no markdown wrapping, no explanations."""
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": MODELS[0],
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.1,
-            "max_tokens": 65536,
-        }
+        if provider == "gemini":
+            GOOGLE_AI_KEY = os.environ.get("GOOGLE_AI_KEY")
+            if not GOOGLE_AI_KEY:
+                raise HTTPException(status_code=400, detail="GOOGLE_AI_KEY not configured on server")
 
-        parsed = None
-        last_error = None
+            GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GOOGLE_AI_KEY}"
 
-        async with httpx.AsyncClient(timeout=600.0) as client:
-            for model in MODELS:
-                payload["model"] = model
+            gemini_payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "maxOutputTokens": 65536,
+                },
+            }
+
+            parsed = None
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                resp = await client.post(GEMINI_URL, json=gemini_payload)
+
+                if resp.status_code != 200:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Gemini API error ({target_language}): {resp.status_code} - {resp.text[:300]}",
+                    )
+
+                gemini_data = resp.json()
+                raw = gemini_data["candidates"][0]["content"]["parts"][0]["text"]
+
+                cleaned = raw.strip()
+                if not cleaned:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Gemini returned empty response for {target_language}",
+                    )
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1]
+                    if cleaned.endswith("```"):
+                        cleaned = cleaned[:-3]
+                    cleaned = cleaned.strip()
+
                 try:
-                    resp = await client.post(API_URL, json=payload, headers=headers)
+                    parsed = json_module.loads(cleaned)
+                except json_module.JSONDecodeError:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Gemini returned invalid JSON for {target_language}: {cleaned[:200]}",
+                    )
 
-                    if resp.status_code != 200:
-                        last_error = f"{model}: HTTP {resp.status_code} - {resp.text[:200]}"
-                        continue
+            result = {"translations": {target_language: parsed}}
 
-                    data = resp.json()
-                    raw = data["choices"][0]["message"]["content"]
+        else:
+            if provider == "openrouter":
+                API_URL = "https://openrouter.ai/api/v1/chat/completions"
+                MODELS = ["z-ai/glm-4.5-air:free", "openrouter/free"]
+            else:
+                API_URL = "https://opencode.ai/zen/go/v1/chat/completions"
+                MODELS = ["deepseek-v4-flash"]
 
-                    cleaned = raw.strip()
-                    if not cleaned:
-                        last_error = f"{model}: empty response"
-                        continue
-                    if cleaned.startswith("```"):
-                        cleaned = cleaned.split("\n", 1)[1]
-                        if cleaned.endswith("```"):
-                            cleaned = cleaned[:-3]
-                        cleaned = cleaned.strip()
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": MODELS[0],
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 65536,
+            }
 
+            parsed = None
+            last_error = None
+
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                for model in MODELS:
+                    payload["model"] = model
                     try:
-                        parsed = json_module.loads(cleaned)
-                    except json_module.JSONDecodeError:
-                        last_error = f"{model}: invalid JSON - {cleaned[:200]}"
+                        resp = await client.post(API_URL, json=payload, headers=headers)
+
+                        if resp.status_code != 200:
+                            last_error = f"{model}: HTTP {resp.status_code} - {resp.text[:200]}"
+                            continue
+
+                        data = resp.json()
+                        raw = data["choices"][0]["message"]["content"]
+
+                        cleaned = raw.strip()
+                        if not cleaned:
+                            last_error = f"{model}: empty response"
+                            continue
+                        if cleaned.startswith("```"):
+                            cleaned = cleaned.split("\n", 1)[1]
+                            if cleaned.endswith("```"):
+                                cleaned = cleaned[:-3]
+                            cleaned = cleaned.strip()
+
+                        try:
+                            parsed = json_module.loads(cleaned)
+                        except json_module.JSONDecodeError:
+                            last_error = f"{model}: invalid JSON - {cleaned[:200]}"
+                            continue
+
+                        break
+                    except httpx.TimeoutException:
+                        last_error = f"{model}: timed out"
                         continue
 
-                    break
-                except httpx.TimeoutException:
-                    last_error = f"{model}: timed out"
-                    continue
-
-            if parsed is None:
-                raise HTTPException(
-                    status_code=502,
-                    detail=f"All models failed for {target_language}: {last_error}",
-                )
+                if parsed is None:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"All models failed for {target_language}: {last_error}",
+                    )
 
             result = {"translations": {target_language: parsed}}
 
