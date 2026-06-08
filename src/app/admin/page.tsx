@@ -170,16 +170,17 @@ export default function AdminDashboard() {
     );
     if (!confirm) return;
 
-    try {
-      const authHeader = localStorage.getItem('cyc_admin_auth') || '';
+    const pwd = window.prompt('Please enter the admin password to authorize this email blast:');
+    if (!pwd) return;
 
+    try {
       const res = await fetch('/api/admin/notify-new-survey', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          password: authHeader, // The password is used as auth token currently
+          password: pwd,
         }),
       });
 
