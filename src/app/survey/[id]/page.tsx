@@ -5,6 +5,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { ArrowRight, CheckCircle2, FileText, Download } from 'lucide-react';
 import parse, { type DOMNode, Text as TextNode } from 'html-react-parser';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SUPPORTED_LANGUAGES } from '@/config/languages';
 
 interface Attachment {
   url: string;
@@ -121,10 +122,11 @@ export default function SurveyPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language, t } = useLanguage();
+  const { language, t, setEnabledLanguages } = useLanguage();
   const referralSource = searchParams.get('ref') || null;
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
+  const [languageBanner, setLanguageBanner] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 0 = email, 1+ = questions
   const [email, setEmail] = useState('');
@@ -266,6 +268,18 @@ export default function SurveyPage() {
 
         setSurvey(data);
 
+        const enabled = data.enabled_languages;
+        if (enabled && enabled.length > 0) {
+          setEnabledLanguages(enabled);
+        }
+
+        if (enabled && enabled.length > 0) {
+          const currentLang = localStorage.getItem('cyc_language') || 'en';
+          if (!enabled.includes(currentLang)) {
+            setLanguageBanner(currentLang);
+          }
+        }
+
         // Handle attention check injections
         let finalQuestions = [...(data.questions || [])];
         let loadedSaved = false;
@@ -341,6 +355,12 @@ export default function SurveyPage() {
         setLoading(false);
       });
   }, [params.id]);
+
+  useEffect(() => {
+    return () => {
+      setEnabledLanguages(null);
+    };
+  }, [setEnabledLanguages]);
 
   // Sync state changes to localStorage for robust resume support
   useEffect(() => {
@@ -1192,6 +1212,24 @@ export default function SurveyPage() {
             transition={pageTransition}
             className={`flex-1 flex flex-col max-w-2xl mx-auto w-full pb-4 pt-4 sm:pt-8 ${currentQuestion?.type === 'section_header' ? 'justify-center my-auto' : 'justify-start'}`}
           >
+            {languageBanner && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+                <span className="text-amber-800 text-sm">
+                  This survey is not available in{' '}
+                  {(() => {
+                    const cfg = SUPPORTED_LANGUAGES.find((l) => l.code === languageBanner);
+                    return cfg?.name || languageBanner;
+                  })()}
+                  . Showing English.
+                </span>
+                <button
+                  onClick={() => setLanguageBanner(null)}
+                  className="text-amber-600 hover:text-amber-800 text-lg leading-none ml-3"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
             {/* EMAIL STEP */}
             {isEmailStep && (
               <>
