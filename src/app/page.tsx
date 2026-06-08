@@ -347,7 +347,7 @@ export default function Home() {
 
       {/* Raffle Info Floating Box */}
       <motion.div
-        className="absolute top-[18%] lg:top-[22%] right-[-150px] md:right-[-120px] lg:right-[-100px] xl:right-[-60px] 2xl:right-[-20px] z-50 hidden md:flex flex-col items-center rotate-[3deg] cursor-pointer origin-right scale-50 md:scale-75 lg:scale-90"
+        className="absolute top-[18%] lg:top-[22%] right-[-200px] md:right-[-160px] lg:right-[-120px] xl:right-[-80px] 2xl:right-[-40px] z-50 hidden md:flex flex-col items-center rotate-[3deg] cursor-pointer origin-right scale-50 md:scale-75 lg:scale-90"
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: showIntro ? 0 : 1, scale: showIntro ? 0 : 1, y: [0, -10, 0] }}
         transition={{
@@ -358,6 +358,11 @@ export default function Home() {
       >
         <ReferralSection variant="heroCard" />
       </motion.div>
+
+      {/* Mobile Raffle Info */}
+      <div className="md:hidden block">
+        <ReferralSection variant="floating" />
+      </div>
 
       {/* Hero Section */}
       <motion.div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center z-40 mt-3 sm:mt-6 md:mt-10">
