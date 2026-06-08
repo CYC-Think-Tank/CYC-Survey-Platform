@@ -533,7 +533,7 @@ async def translate_all_languages(request: Request):
         OPencode_GO_URL = "https://opencode.ai/zen/go/v1/chat/completions"
         MODEL = "deepseek-v4-flash"
 
-        async def translate_one(language_code: str, language_name: str):
+        async def translate_one(client: httpx.AsyncClient, language_code: str, language_name: str):
             prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
 
 Return ONLY a JSON object with this exact structure:
@@ -582,8 +582,7 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
                 "max_tokens": 65536,
             }
 
-            async with httpx.AsyncClient(timeout=180.0) as client:
-                resp = await client.post(OPencode_GO_URL, json=payload, headers=headers)
+            resp = await client.post(OPencode_GO_URL, json=payload, headers=headers)
 
             if resp.status_code != 200:
                 raise HTTPException(
@@ -615,15 +614,16 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
                 )
             return language_code, parsed
 
-        tasks = [translate_one(code, name) for code, name in TARGET_LANGUAGES]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        async with httpx.AsyncClient(timeout=180.0) as shared_client:
+            tasks = [translate_one(shared_client, code, name) for code, name in TARGET_LANGUAGES]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        translations = {}
-        for result in results:
-            if isinstance(result, Exception):
-                continue
-            code, data = result
-            translations[code] = data
+            translations = {}
+            for result in results:
+                if isinstance(result, Exception):
+                    continue
+                code, data = result
+                translations[code] = data
 
         return {"translations": translations}
 
