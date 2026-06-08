@@ -265,12 +265,12 @@ async def duplicate_survey(survey_id: str):
             for old_q, new_q in zip(original_sorted, new_questions, strict=False):
                 old_to_new[old_q["id"]] = new_q["id"]
 
-            # Duplicate and Remap Translations
+            # Duplicate and Remap Translations from ai_analyses (legacy)
             existing_translations_res = (
                 supabase.table("ai_analyses")
                 .select("*")
                 .eq("survey_id", survey_id)
-                .in_("analysis_type", ["translation_fr", "translation_zh"])
+                .like("analysis_type", "translation_%")
                 .execute()
             )
             existing_translations = existing_translations_res.data
@@ -279,12 +279,9 @@ async def duplicate_survey(survey_id: str):
                 translations_to_insert = []
                 for trans in existing_translations:
                     trans_data = json_module.loads(json_module.dumps(trans["data"]))
-                    lang_suffix = (
-                        "fr" if "translation_fr" in trans["analysis_type"] else "zh"
-                    )
+                    lang_suffix = trans["analysis_type"].replace("translation_", "")
                     q_key = f"questions_{lang_suffix}"
 
-                    # Remap IDs inside the translation JSON
                     if q_key in trans_data and isinstance(trans_data[q_key], list):
                         for tq in trans_data[q_key]:
                             old_id = tq.get("id")
@@ -303,6 +300,39 @@ async def duplicate_survey(survey_id: str):
                     supabase.table("ai_analyses").insert(
                         translations_to_insert
                     ).execute()
+
+            # Duplicate translations from new translations table
+            try:
+                new_trans_res = (
+                    supabase.table("translations")
+                    .select("*")
+                    .eq("survey_id", survey_id)
+                    .execute()
+                )
+                if new_trans_res.data:
+                    new_trans_to_insert = []
+                    for row in new_trans_res.data:
+                        questions = row.get("questions")
+                        if isinstance(questions, list):
+                            for tq in questions:
+                                old_id = tq.get("id")
+                                if old_id in old_to_new:
+                                    tq["id"] = old_to_new[old_id]
+                        new_trans_to_insert.append(
+                            {
+                                "survey_id": new_survey["id"],
+                                "language_code": row["language_code"],
+                                "title": row.get("title", ""),
+                                "description": row.get("description", ""),
+                                "questions": questions,
+                            }
+                        )
+                    if new_trans_to_insert:
+                        supabase.table("translations").insert(
+                            new_trans_to_insert
+                        ).execute()
+            except Exception:
+                pass  # translations table might not exist yet
 
             updates_needed = []
             for new_q in new_questions:
