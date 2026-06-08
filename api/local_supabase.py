@@ -3,7 +3,6 @@ Minimal local psycopg2-backed Supabase client shim for testing against local Pos
 Set LOCAL_DB=postgresql://... in environment to use this instead of real Supabase.
 """
 import json
-import os
 import re
 import uuid
 from typing import Any
@@ -17,7 +16,7 @@ def _dict_row(cursor, row):
     if row is None:
         return None
     cols = [desc[0] for desc in cursor.description]
-    return dict(zip(cols, row))
+    return dict(zip(cols, row, strict=False))
 
 
 def _dict_rows(cursor, rows):

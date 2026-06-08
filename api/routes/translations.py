@@ -115,7 +115,7 @@ async def get_survey_translation(survey_id: str):
                     legacy[f"description_{lang}"] = row.get("description", "")
 
                 return {"translations": translations, **legacy}
-        except Exception as inner_e:
+        except Exception:
             # translations table doesn't exist yet — fall through to legacy
             pass
 
