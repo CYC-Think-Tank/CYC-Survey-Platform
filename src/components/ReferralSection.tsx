@@ -79,113 +79,88 @@ export function ReferralSection({
 
   if (variant === 'block') {
     return (
-      <div className="w-full max-w-6xl mx-auto bg-gradient-to-r from-[#0CA7A1] to-[#04377E] rounded-[2rem] p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between mt-16 mb-8 border-[6px] border-white/10 backdrop-blur-sm">
-        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
-          <Gift className="w-96 h-96 text-white" />
-        </div>
-
-        <div className="relative z-10 w-full md:w-1/2 mb-8 md:mb-0 text-white pr-0 md:pr-8">
-          <h2 className="text-4xl md:text-6xl font-black mb-6 flex items-center drop-shadow-lg tracking-tight">
-            <Gift className="w-12 h-12 mr-4 text-[#F5C518]" />
-            {t('Win $100!')}
-          </h2>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-5 rounded-2xl inline-block mb-6 shadow-inner">
-            <span className="text-2xl md:text-3xl font-black text-[#F5C518] tracking-wide drop-shadow-md block">
-              {t('1 Referral = +1 Entry')}
-            </span>
-            <span className="text-sm md:text-base text-teal-50 font-medium mt-1 block">
-              {t('No limit on entries! Share with everyone.')}
-            </span>
+      <div className="w-full max-w-5xl mx-auto bg-white rounded-2xl p-5 md:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-200 flex flex-col md:flex-row items-center gap-6 mt-6 md:mt-8 z-30 relative">
+        <div className="flex-1 flex items-center gap-4 w-full">
+          <div className="bg-teal-50 p-3.5 rounded-full hidden sm:flex items-center justify-center">
+            <Gift className="w-8 h-8 text-[#0CA7A1]" />
           </div>
-          <p className="text-teal-50/90 text-lg md:text-xl leading-relaxed font-medium">
-            {t(
-              'Generate your personal link. The more friends who complete the survey using your link, the higher your chances of winning the $100 prize!'
-            )}
-          </p>
+          <div className="flex flex-col text-left w-full">
+            <h2 className="text-xl md:text-2xl font-black text-[#04377E] flex items-center mb-1 drop-shadow-sm tracking-tight">
+              {t('Win $100! (1 Referral = +1 Entry)')}
+            </h2>
+            <p className="text-sm text-gray-500 font-medium">
+              {t(
+                'Generate your personal link. The more friends you invite, the higher your chances!'
+              )}
+            </p>
+          </div>
         </div>
 
-        <div className="relative z-10 w-full md:w-[45%] bg-white/95 backdrop-blur-xl rounded-3xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/50">
+        <div className="w-full md:w-auto min-w-[320px]">
           <AnimatePresence mode="wait">
             {!referralCode ? (
               <motion.form
                 key="form"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                exit={{ opacity: 0, y: -5 }}
                 onSubmit={handleGenerate}
-                className="w-full flex flex-col gap-4"
+                className="flex flex-col sm:flex-row gap-2 w-full"
               >
-                <div className="text-center mb-2">
-                  <h3 className="text-xl font-extrabold text-[#04377E] mb-2">
-                    {t('Get Your Link')}
-                  </h3>
-                  <p className="text-sm text-gray-500 font-medium">
-                    {t('Enter your email to generate a unique tracking link.')}
-                  </p>
-                </div>
                 <input
                   type="email"
                   required
                   placeholder={t('Your email address')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl text-base border-2 border-gray-200 text-gray-900 bg-gray-50 focus:outline-none focus:border-[#0CA7A1] focus:ring-4 focus:ring-[#0CA7A1]/20 font-medium placeholder:text-gray-400 transition-all"
+                  className="flex-1 px-4 py-3 rounded-xl text-sm border-2 border-gray-200 text-gray-900 bg-gray-50 focus:outline-none focus:border-[#0CA7A1] font-medium"
                 />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex items-center justify-center px-6 py-4 bg-[#F5C518] hover:bg-yellow-400 text-gray-900 text-lg font-black rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200 disabled:opacity-70 disabled:hover:translate-y-0 uppercase tracking-wider"
+                  className="px-6 py-3 bg-[#F5C518] hover:bg-yellow-400 text-gray-900 text-sm font-black rounded-xl shadow-md transition-all whitespace-nowrap disabled:opacity-70 flex items-center justify-center"
                 >
                   {loading ? (
-                    <div className="w-6 h-6 border-4 border-gray-900 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      {t('Generate Link')}
-                      <ArrowRight className="w-5 h-5 ml-2" />
+                      {t('Get Link')}
+                      <ArrowRight className="w-4 h-4 ml-1.5" />
                     </>
                   )}
                 </button>
                 {error && (
-                  <p className="text-red-500 mt-2 text-sm font-bold text-center">{error}</p>
+                  <p className="text-red-500 mt-1 text-xs font-bold absolute -bottom-5">{error}</p>
                 )}
               </motion.form>
             ) : (
               <motion.div
                 key="code"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-5 text-center"
+                className="flex flex-col sm:flex-row gap-2 w-full"
               >
-                <div className="mx-auto bg-green-100 p-3 rounded-full mb-2 text-green-600">
-                  <CheckCircle2 className="w-8 h-8" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-extrabold text-[#04377E] mb-1">
-                    {t('Link Generated!')}
-                  </h3>
-                  <p className="text-sm text-gray-500 font-medium">
-                    {t('Share this with your friends.')}
-                  </p>
-                </div>
-
-                <div className="w-full bg-slate-50 p-4 rounded-xl border-2 border-slate-200 relative group overflow-hidden">
-                  <code className="text-sm font-mono tracking-wide text-slate-800 block truncate select-all">
+                <div className="flex-1 bg-teal-50 px-4 py-3 rounded-xl border border-teal-100 flex flex-col justify-center overflow-hidden relative group">
+                  <span className="text-[10px] font-bold text-teal-600 uppercase mb-0.5">
+                    {t('Your Link')}
+                  </span>
+                  <code className="text-xs font-mono tracking-wide text-teal-900 block truncate select-all">
                     {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
                   </code>
                 </div>
                 <button
                   onClick={handleCopy}
-                  className="w-full flex items-center justify-center px-6 py-4 bg-[#0CA7A1] hover:bg-[#0A8A85] text-white text-lg font-black rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all duration-200 uppercase tracking-wider"
+                  className="px-6 py-3 bg-[#0CA7A1] hover:bg-[#0A8A85] text-white text-sm font-black rounded-xl shadow-md transition-all whitespace-nowrap flex items-center justify-center"
                 >
                   {copied ? (
                     <>
-                      <CheckCircle2 className="w-5 h-5 mr-2" />
+                      <CheckCircle2 className="w-4 h-4 mr-1.5" />
                       {t('Copied!')}
                     </>
                   ) : (
                     <>
-                      <Copy className="w-5 h-5 mr-2" />
-                      {t('Copy Link')}
+                      <Copy className="w-4 h-4 mr-1.5" />
+                      {t('Copy')}
                     </>
                   )}
                 </button>
