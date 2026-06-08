@@ -3,8 +3,13 @@ from api.utils.postal_geo import build_postal_geo_stats
 
 def test_build_postal_geo_stats_normalizes_and_counts_matched_prefixes():
     lookup = {
-        "M5V": {"province": "Ontario", "lat": 43.64, "lng": -79.39},
-        "V6B": {"province": "British Columbia", "lat": 49.28, "lng": -123.11},
+        "M5V": {"province": "Ontario", "city": "Toronto", "lat": 43.64, "lng": -79.39},
+        "V6B": {
+            "province": "British Columbia",
+            "city": "Vancouver",
+            "lat": 49.28,
+            "lng": -123.11,
+        },
     }
     answers = [
         {"answer_text": "m5v"},
@@ -26,6 +31,7 @@ def test_build_postal_geo_stats_normalizes_and_counts_matched_prefixes():
         {
             "fsa": "M5V",
             "province": "Ontario",
+            "city": "Toronto",
             "lat": 43.64,
             "lng": -79.39,
             "count": 3,
@@ -34,6 +40,7 @@ def test_build_postal_geo_stats_normalizes_and_counts_matched_prefixes():
         {
             "fsa": "V6B",
             "province": "British Columbia",
+            "city": "Vancouver",
             "lat": 49.28,
             "lng": -123.11,
             "count": 2,
@@ -44,7 +51,7 @@ def test_build_postal_geo_stats_normalizes_and_counts_matched_prefixes():
 
 def test_build_postal_geo_stats_reports_invalid_and_unknown_prefixes():
     lookup = {
-        "M5V": {"province": "Ontario", "lat": 43.64, "lng": -79.39},
+        "M5V": {"province": "Ontario", "city": "Toronto", "lat": 43.64, "lng": -79.39},
     }
     answers = [
         {"answer_text": "M5V"},
@@ -62,10 +69,15 @@ def test_build_postal_geo_stats_reports_invalid_and_unknown_prefixes():
     assert result["dots"][0]["fsa"] == "M5V"
 
 
-def test_build_postal_geo_stats_suppresses_low_count_dots():
+def test_build_postal_geo_stats_returns_low_count_dots():
     lookup = {
-        "M5V": {"province": "Ontario", "lat": 43.64, "lng": -79.39},
-        "V6B": {"province": "British Columbia", "lat": 49.28, "lng": -123.11},
+        "M5V": {"province": "Ontario", "city": "Toronto", "lat": 43.64, "lng": -79.39},
+        "V6B": {
+            "province": "British Columbia",
+            "city": "Vancouver",
+            "lat": 49.28,
+            "lng": -123.11,
+        },
     }
     answers = [
         {"answer_text": "M5V"},
@@ -79,7 +91,18 @@ def test_build_postal_geo_stats_suppresses_low_count_dots():
 
     result = build_postal_geo_stats("question-1", answers, lookup, min_display_count=5)
 
-    assert [dot["fsa"] for dot in result["dots"]] == ["M5V"]
-    assert result["suppressed_count"] == 2
-    assert result["suppressed_fsa_count"] == 1
+    assert [dot["fsa"] for dot in result["dots"]] == ["M5V", "V6B"]
+    assert result["suppressed_count"] == 0
+    assert result["suppressed_fsa_count"] == 0
+    assert result["min_display_count"] == 1
     assert result["matched_count"] == 7
+
+
+def test_build_postal_geo_stats_infers_city_when_lookup_has_no_city():
+    lookup = {
+        "M5V": {"province": "Ontario", "lat": 43.64, "lng": -79.39},
+    }
+
+    result = build_postal_geo_stats("question-1", [{"answer_text": "M5V"}], lookup)
+
+    assert result["dots"][0]["city"] == "Toronto"
