@@ -79,7 +79,7 @@ export function ReferralSection({
 
   if (variant === 'heroCard') {
     return (
-      <div className="bg-white border border-gray-100 shadow-[0_20px_50px_rgba(4,55,126,0.15)] rounded-3xl p-6 sm:p-8 w-[300px] sm:w-[340px] relative overflow-hidden flex flex-col text-center">
+      <div className="bg-white border border-gray-100 shadow-[0_20px_50px_rgba(4,55,126,0.15)] rounded-3xl p-4 sm:p-5 w-[240px] sm:w-[270px] relative overflow-hidden flex flex-col text-center">
         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none transform translate-x-4 -translate-y-4">
           <Gift className="w-32 h-32 text-[#0CA7A1]" />
         </div>
@@ -88,11 +88,11 @@ export function ReferralSection({
           {t('10 Winners!')}
         </div>
 
-        <h3 className="text-3xl sm:text-4xl font-black text-[#04377E] tracking-tight mb-1 drop-shadow-sm">
+        <h3 className="text-2xl sm:text-3xl font-black text-[#04377E] tracking-tight mb-1 drop-shadow-sm">
           {t('WIN $100')}
         </h3>
 
-        <p className="text-xl sm:text-2xl font-extrabold text-[#0CA7A1] mb-3 leading-tight tracking-wide">
+        <p className="text-lg sm:text-xl font-extrabold text-[#0CA7A1] mb-3 leading-tight tracking-wide">
           {t('Share to win!')}
         </p>
 
