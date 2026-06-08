@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 export function ReferralSection({
   variant = 'floating',
 }: {
-  variant?: 'floating' | 'inline' | 'block';
+  variant?: 'floating' | 'inline' | 'heroCard';
 }) {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
@@ -77,97 +77,106 @@ export function ReferralSection({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (variant === 'block') {
+  if (variant === 'heroCard') {
     return (
-      <div className="w-full max-w-5xl mx-auto bg-white rounded-2xl p-5 md:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-200 flex flex-col md:flex-row items-center gap-6 mt-6 md:mt-8 z-30 relative">
-        <div className="flex-1 flex items-center gap-4 w-full">
-          <div className="bg-teal-50 p-3.5 rounded-full hidden sm:flex items-center justify-center">
-            <Gift className="w-8 h-8 text-[#0CA7A1]" />
-          </div>
-          <div className="flex flex-col text-left w-full">
-            <h2 className="text-xl md:text-2xl font-black text-[#04377E] flex items-center mb-1 drop-shadow-sm tracking-tight">
-              {t('Win $100! (1 Referral = +1 Entry)')}
-            </h2>
-            <p className="text-sm text-gray-500 font-medium">
-              {t(
-                'Generate your personal link. The more friends you invite, the higher your chances!'
-              )}
-            </p>
-          </div>
+      <div className="bg-white border border-gray-100 shadow-[0_20px_50px_rgba(4,55,126,0.15)] rounded-3xl p-6 sm:p-8 w-[300px] sm:w-[340px] relative overflow-hidden flex flex-col text-center">
+        <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none transform translate-x-4 -translate-y-4">
+          <Gift className="w-32 h-32 text-[#0CA7A1]" />
         </div>
 
-        <div className="w-full md:w-auto min-w-[320px]">
-          <AnimatePresence mode="wait">
-            {!referralCode ? (
-              <motion.form
-                key="form"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                onSubmit={handleGenerate}
-                className="flex flex-col sm:flex-row gap-2 w-full"
-              >
-                <input
-                  type="email"
-                  required
-                  placeholder={t('Your email address')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 px-4 py-3 rounded-xl text-sm border-2 border-gray-200 text-gray-900 bg-gray-50 focus:outline-none focus:border-[#0CA7A1] font-medium"
-                />
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-6 py-3 bg-[#F5C518] hover:bg-yellow-400 text-gray-900 text-sm font-black rounded-xl shadow-md transition-all whitespace-nowrap disabled:opacity-70 flex items-center justify-center"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      {t('Get Link')}
-                      <ArrowRight className="w-4 h-4 ml-1.5" />
-                    </>
-                  )}
-                </button>
-                {error && (
-                  <p className="text-red-500 mt-1 text-xs font-bold absolute -bottom-5">{error}</p>
-                )}
-              </motion.form>
-            ) : (
-              <motion.div
-                key="code"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row gap-2 w-full"
-              >
-                <div className="flex-1 bg-teal-50 px-4 py-3 rounded-xl border border-teal-100 flex flex-col justify-center overflow-hidden relative group">
-                  <span className="text-[10px] font-bold text-teal-600 uppercase mb-0.5">
-                    {t('Your Link')}
-                  </span>
-                  <code className="text-xs font-mono tracking-wide text-teal-900 block truncate select-all">
-                    {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
-                  </code>
-                </div>
-                <button
-                  onClick={handleCopy}
-                  className="px-6 py-3 bg-[#0CA7A1] hover:bg-[#0A8A85] text-white text-sm font-black rounded-xl shadow-md transition-all whitespace-nowrap flex items-center justify-center"
-                >
-                  {copied ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                      {t('Copied!')}
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4 mr-1.5" />
-                      {t('Copy')}
-                    </>
-                  )}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="bg-[#e6f8f9] text-[#0CB7C4] text-[11px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full self-center mb-3 shadow-sm border border-[#0CB7C4]/20">
+          {t('10 Winners!')}
         </div>
+
+        <h3 className="text-3xl sm:text-4xl font-black text-[#04377E] tracking-tight mb-1 drop-shadow-sm">
+          {t('WIN $100')}
+        </h3>
+
+        <p className="text-xl sm:text-2xl font-extrabold text-[#0CA7A1] mb-3 leading-tight tracking-wide">
+          {t('Share to win!')}
+        </p>
+
+        <p className="text-xs sm:text-sm text-gray-500 font-medium mb-6 leading-relaxed px-1">
+          {t('1 Referral = +1 Entry. Share with everyone to boost your chances!')}
+        </p>
+
+        <AnimatePresence mode="wait">
+          {!isExpanded ? (
+            <motion.button
+              key="share-btn"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              onClick={() => setIsExpanded(true)}
+              className="w-full flex items-center justify-center px-4 py-3.5 bg-[#F5C518] hover:bg-yellow-400 text-[#1a1a1a] text-sm sm:text-base font-black rounded-xl shadow-md hover:shadow-lg transition-all duration-300 uppercase tracking-wider"
+            >
+              <Gift className="w-5 h-5 mr-2" />
+              {t('Click here to share')}
+            </motion.button>
+          ) : (
+            <motion.div
+              key="form-container"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col gap-3 w-full relative z-10"
+            >
+              {!referralCode ? (
+                <form onSubmit={handleGenerate} className="flex flex-col gap-2 w-full">
+                  <input
+                    type="email"
+                    required
+                    placeholder={t('Your email address')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl text-sm border-2 border-gray-100 text-gray-900 bg-gray-50 focus:outline-none focus:border-[#0CA7A1] font-medium placeholder:text-gray-400 transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center px-4 py-3 bg-[#0CA7A1] hover:bg-[#0A8A85] text-white text-sm font-black rounded-xl shadow-md transition-all disabled:opacity-70 uppercase tracking-wider"
+                  >
+                    {loading ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        {t('Get Link')}
+                        <ArrowRight className="w-4 h-4 ml-1.5" />
+                      </>
+                    )}
+                  </button>
+                  {error && <p className="text-red-500 mt-1 text-xs font-bold">{error}</p>}
+                </form>
+              ) : (
+                <div className="flex flex-col gap-2.5 w-full">
+                  <div className="overflow-hidden w-full bg-teal-50 px-3 py-2 rounded-xl border border-teal-100 text-left relative group">
+                    <span className="text-[10px] font-bold text-teal-600 uppercase mb-0.5 block">
+                      {t('Your Link')}
+                    </span>
+                    <code className="text-xs font-mono tracking-wide text-teal-900 block truncate select-all">
+                      {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
+                    </code>
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    className="w-full flex items-center justify-center px-4 py-3 bg-[#0CA7A1] hover:bg-[#0A8A85] text-white text-sm font-black rounded-xl shadow-md transition-all uppercase tracking-wider"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                        {t('Copied!')}
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-1.5" />
+                        {t('Copy')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

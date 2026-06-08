@@ -345,6 +345,20 @@ export default function Home() {
         transition={{ duration: 1.2, delay: 0.7 }}
       />
 
+      {/* Raffle Info Floating Box */}
+      <motion.div
+        className="absolute top-[35%] right-[2%] lg:right-[8%] z-50 hidden md:flex flex-col items-center rotate-[3deg] cursor-pointer"
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ opacity: showIntro ? 0 : 1, scale: showIntro ? 0 : 1, y: [0, -10, 0] }}
+        transition={{
+          opacity: { duration: 1.0, delay: 0.9 },
+          scale: { duration: 1.0, delay: 0.9, ease: 'easeOut' },
+          y: { duration: 5, repeat: Infinity, delay: 0, ease: 'easeInOut' },
+        }}
+      >
+        <ReferralSection variant="heroCard" />
+      </motion.div>
+
       {/* Hero Section */}
       <motion.div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center z-40 mt-3 sm:mt-6 md:mt-10">
         <motion.img
@@ -387,16 +401,6 @@ export default function Home() {
             {t('START NOW')}
           </Link>
         </motion.div>
-      </motion.div>
-
-      {/* Referral Link Section (Big Banner) */}
-      <motion.div
-        className="w-full relative z-30 px-4 md:px-8 mt-2 md:mt-4 mb-2 max-w-5xl mx-auto"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: showIntro ? 0 : 1, y: showIntro ? 20 : 0 }}
-        transition={{ duration: 1.0, delay: 0.5 }}
-      >
-        <ReferralSection variant="block" />
       </motion.div>
 
       {/* 3D Spinning Carousel */}
