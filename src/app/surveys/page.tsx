@@ -14,6 +14,7 @@ interface Survey {
   description_fr?: string;
   description_zh?: string;
   estimated_minutes?: number;
+  translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
 export default function SurveysPage() {
@@ -40,6 +41,7 @@ export default function SurveysPage() {
                 description_fr: tr?.description_fr,
                 title_zh: tr?.title_zh,
                 description_zh: tr?.description_zh,
+                translations: tr?.translations,
               };
             } catch {
               return survey;
@@ -77,17 +79,12 @@ export default function SurveysPage() {
         {surveys.map((item, idx) => {
           const isCompleted = completedIds.includes(item.id);
           const displayTitle =
-            (language === 'zh' && item.title_zh
-              ? item.title_zh
-              : language === 'fr' && item.title_fr
-                ? item.title_fr
-                : item.title) || item.title;
+            item.translations?.[language]?.title || item.title_fr || item.title_zh || item.title;
           const displayDescription =
-            (language === 'zh' && item.description_zh
-              ? item.description_zh
-              : language === 'fr' && item.description_fr
-                ? item.description_fr
-                : item.description) || item.description;
+            item.translations?.[language]?.description ||
+            item.description_fr ||
+            item.description_zh ||
+            item.description;
           return (
             <motion.div
               key={item.id}

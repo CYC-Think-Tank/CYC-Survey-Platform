@@ -26,6 +26,7 @@ interface Survey {
   displayTitle?: string;
   displayDescription?: string;
   isComingSoon?: boolean;
+  translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
 function TiltCard({
@@ -167,6 +168,7 @@ export default function Home() {
                 description_fr: tr?.description_fr,
                 title_zh: tr?.title_zh,
                 description_zh: tr?.description_zh,
+                translations: tr?.translations,
               };
             } catch {
               return survey;
@@ -225,17 +227,12 @@ export default function Home() {
 
   const baseItems = surveys.slice(0, 3).map((item) => {
     const displayTitle =
-      (language === 'zh' && item.title_zh
-        ? item.title_zh
-        : language === 'fr' && item.title_fr
-          ? item.title_fr
-          : item.title) || item.title;
+      item.translations?.[language]?.title || item.title_fr || item.title_zh || item.title;
     const displayDescription =
-      (language === 'zh' && item.description_zh
-        ? item.description_zh
-        : language === 'fr' && item.description_fr
-          ? item.description_fr
-          : item.description) || item.description;
+      item.translations?.[language]?.description ||
+      item.description_fr ||
+      item.description_zh ||
+      item.description;
     return { ...item, displayTitle, displayDescription };
   });
   const items = [...baseItems];
