@@ -119,15 +119,21 @@ export default function ThankYouPage() {
             <Gift className="w-48 h-48" />
           </div>
           <div className="relative z-10">
-            <h2 className="text-2xl md:text-4xl font-extrabold mb-4 flex justify-center items-center">
-              <Gift className="w-8 h-8 mr-3" />
-              {t('Get More Raffle Entries!')}
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 flex justify-center items-center drop-shadow-md">
+              <Gift className="w-10 h-10 mr-4" />
+              {t('Boost Your Chances to Win $100!')}
             </h2>
-            <p className="text-lg md:text-xl text-teal-50 mb-6 max-w-2xl mx-auto leading-relaxed">
-              {t(
-                'Share your personal link below. For every survey completed using your link, you earn an extra entry into the raffle!'
-              )}
-            </p>
+
+            <div className="bg-white/20 backdrop-blur-sm border border-white/30 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-inner">
+              <div className="text-2xl md:text-3xl font-black text-white mb-2 tracking-wide drop-shadow-sm">
+                {t('1 Referral = +1 Extra Raffle Entry')}
+              </div>
+              <p className="text-base md:text-lg text-teal-50 leading-relaxed font-medium mt-3">
+                {t(
+                  'Share your personal link below. There is no limit to how many entries you can earn. The more friends who complete the survey, the higher your chances of winning the $100 prize!'
+                )}
+              </p>
+            </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <code className="bg-white/10 px-4 py-3 rounded-xl text-base sm:text-lg font-mono tracking-wide backdrop-blur-md border border-white/20 select-all">
                 {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
