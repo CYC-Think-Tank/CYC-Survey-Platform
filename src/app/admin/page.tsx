@@ -164,11 +164,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleNotifyUsers = async (survey: Survey) => {
-    if (!survey.is_active) return;
-
+  const handleNotifyUsers = async () => {
     const confirm = window.confirm(
-      `Send an email blast to all previous respondents notifying them about "${survey.title}"?`
+      `Send a reminder email blast to all users who still have active surveys remaining?`
     );
     if (!confirm) return;
 
@@ -181,7 +179,6 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          surveyId: survey.id,
           password: authHeader, // The password is used as auth token currently
         }),
       });
@@ -312,11 +309,19 @@ export default function AdminDashboard() {
             Manage your surveys and view engagement metrics.
           </p>
         </div>
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 flex-wrap gap-y-2">
           <Link href="/admin/create" className="btn-primary flex items-center">
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
           </Link>
+
+          <button
+            onClick={() => handleNotifyUsers()}
+            className="text-blue-600 hover:text-blue-800 flex items-center font-semibold"
+          >
+            <Send className="w-4 h-4 mr-1" />
+            Remind Users
+          </button>
 
           <button
             onClick={openLeaderboard}
@@ -490,17 +495,6 @@ export default function AdminDashboard() {
                       <Power className="w-4 h-4 mr-1" />
                       {survey.is_active ? 'Deactivate' : 'Activate'}
                     </button>
-
-                    {survey.is_active && (
-                      <button
-                        onClick={() => handleNotifyUsers(survey)}
-                        className="text-blue-500 hover:text-blue-700 flex items-center"
-                        title="Notify all users about this survey"
-                      >
-                        <Send className="w-4 h-4 mr-1" />
-                        Notify Users
-                      </button>
-                    )}
 
                     {!survey.has_been_published ? (
                       <Link
