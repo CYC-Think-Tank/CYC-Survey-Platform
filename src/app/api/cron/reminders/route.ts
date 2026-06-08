@@ -14,6 +14,7 @@ interface ActiveSurvey {
 }
 
 interface CompletedSession {
+  id?: string;
   email: string;
   survey_id: string;
 }
@@ -46,9 +47,20 @@ export async function GET(request: NextRequest) {
       `${SUPABASE_URL}/rest/v1/response_sessions?is_completed=eq.false&reminder_sent=eq.false&started_at=lt.${cutoff}&select=id,email,survey_id,current_step`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
-    const incompleteSessions: IncompleteSession[] = await sessionsRes.json();
+    const incompleteSessions: IncompleteSession[] = (await sessionsRes.json()) || [];
 
-    if (!incompleteSessions?.length) {
+    // Also fetch completed sessions that haven't sent the "unstarted surveys" reminder yet
+    // Note: If the column unstarted_reminder_sent doesn't exist yet, this will fail gracefully
+    const unstartedRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/response_sessions?is_completed=eq.true&unstarted_reminder_sent=eq.false&updated_at=lt.${cutoff}&select=id,email,survey_id`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    let completedReminders: CompletedSession[] = [];
+    if (unstartedRes.ok) {
+      completedReminders = await unstartedRes.json();
+    }
+
+    if (!incompleteSessions.length && !completedReminders.length) {
       return NextResponse.json({ message: 'No reminders needed', sent: 0 });
     }
 
@@ -70,32 +82,78 @@ export async function GET(request: NextRequest) {
       completedMap[s.email].add(s.survey_id);
     }
 
-    const byEmail: Record<string, typeof incompleteSessions> = {};
+    // All users who need some kind of reminder
+    const allEmailsToRemind = new Set([
+      ...incompleteSessions.map((s) => s.email),
+      ...completedReminders.map((s) => s.email),
+    ]);
+
+    const byEmailIncomplete: Record<string, typeof incompleteSessions> = {};
     for (const s of incompleteSessions) {
-      if (!byEmail[s.email]) byEmail[s.email] = [];
-      byEmail[s.email].push(s);
+      if (!byEmailIncomplete[s.email]) byEmailIncomplete[s.email] = [];
+      byEmailIncomplete[s.email].push(s);
+    }
+
+    const byEmailCompletedReminders: Record<string, typeof completedReminders> = {};
+    for (const s of completedReminders) {
+      if (!byEmailCompletedReminders[s.email]) byEmailCompletedReminders[s.email] = [];
+      byEmailCompletedReminders[s.email].push(s);
     }
 
     let sentCount = 0;
 
-    for (const [email, sessions] of Object.entries(byEmail)) {
+    for (const email of Array.from(allEmailsToRemind)) {
+      const incompleteForEmail = byEmailIncomplete[email] || [];
+      const completedRemindersForEmail = byEmailCompletedReminders[email] || [];
+
       const completed = completedMap[email] || new Set();
 
       // remainingSurveys: all active surveys that aren't completed yet
       const remainingSurveys = activeSurveys.filter((s) => !completed.has(s.id));
 
-      const unfinishedCount = sessions.length;
+      const unfinishedCount = incompleteForEmail.length;
 
       // Set of unfinished survey IDs to identify which remaining ones haven't been started at all
-      const unfinishedSurveyIds = new Set(sessions.map((s) => s.survey_id));
+      const unfinishedSurveyIds = new Set(incompleteForEmail.map((s) => s.survey_id));
       const unstartedCount = remainingSurveys.filter((s) => !unfinishedSurveyIds.has(s.id)).length;
 
-      const subjectText =
-        unfinishedCount > 0 && unstartedCount > 0
-          ? `You have ${unfinishedCount} unfinished and ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`
-          : unfinishedCount > 0
-            ? `You have ${unfinishedCount} unfinished survey${unfinishedCount > 1 ? 's' : ''} waiting`
-            : `You have ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`;
+      // If they only had a completed reminder triggered, but no unstarted surveys left, skip!
+      if (unfinishedCount === 0 && unstartedCount === 0) {
+        // Still need to mark those completed sessions as "reminded" so we don't fetch them again
+        for (const s of completedRemindersForEmail) {
+          if (!s.id) continue;
+          await fetch(`${SUPABASE_URL}/rest/v1/response_sessions?id=eq.${s.id}`, {
+            method: 'PATCH',
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal',
+            },
+            body: JSON.stringify({ unstarted_reminder_sent: true }),
+          });
+        }
+        continue;
+      }
+
+      let subjectText = '';
+      let headline = '';
+      let introText = '';
+
+      if (unfinishedCount > 0) {
+        headline = "You're almost there! 🎯";
+        introText =
+          "We noticed you didn't get a chance to finish some of your active surveys. Your responses have been saved — pick up right where you left off!";
+        subjectText =
+          unstartedCount > 0
+            ? `You have ${unfinishedCount} unfinished and ${unstartedCount} new survey${unstartedCount > 1 ? 's' : ''} waiting`
+            : `You have ${unfinishedCount} unfinished survey${unfinishedCount > 1 ? 's' : ''} waiting`;
+      } else {
+        headline = 'New surveys await! ✨';
+        introText =
+          'Thanks for completing your previous survey! We have more active surveys waiting for your input.';
+        subjectText = `You have ${unstartedCount} active survey${unstartedCount > 1 ? 's' : ''} waiting for you`;
+      }
 
       const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f4f6f8;font-family:'Helvetica Neue',Arial,sans-serif;">
@@ -104,9 +162,9 @@ export async function GET(request: NextRequest) {
       <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:700;">CYC Survey Platform</h1>
     </div>
     <div style="padding:32px 40px;">
-      <h2 style="color:#04377E;font-size:20px;margin:0 0 16px;">You're almost there! 🎯</h2>
+      <h2 style="color:#04377E;font-size:20px;margin:0 0 16px;">${headline}</h2>
       <p style="color:#555;font-size:15px;line-height:1.7;margin:0 0 20px;">
-        We noticed you didn't get a chance to finish some of your active surveys. Your responses have been saved — pick up right where you left off!
+        ${introText}
       </p>
       
       <div style="background:#f0fdf4;border-left:4px solid #0CB7C4;padding:16px 20px;border-radius:8px;margin:0 0 24px;">
@@ -141,7 +199,9 @@ export async function GET(request: NextRequest) {
         });
 
         sentCount++;
-        for (const s of sessions) {
+
+        // Mark incomplete sessions as reminder_sent
+        for (const s of incompleteForEmail) {
           await fetch(`${SUPABASE_URL}/rest/v1/response_sessions?id=eq.${s.id}`, {
             method: 'PATCH',
             headers: {
@@ -151,6 +211,21 @@ export async function GET(request: NextRequest) {
               Prefer: 'return=minimal',
             },
             body: JSON.stringify({ reminder_sent: true }),
+          });
+        }
+
+        // Mark completed sessions as unstarted_reminder_sent
+        for (const s of completedRemindersForEmail) {
+          if (!s.id) continue;
+          await fetch(`${SUPABASE_URL}/rest/v1/response_sessions?id=eq.${s.id}`, {
+            method: 'PATCH',
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer: 'return=minimal',
+            },
+            body: JSON.stringify({ unstarted_reminder_sent: true }),
           });
         }
       } catch (emailErr) {

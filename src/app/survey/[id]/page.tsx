@@ -53,19 +53,63 @@ interface Question {
 interface Survey {
   id: string;
   title: string;
+  title_fr?: string;
+  title_zh?: string;
   description?: string;
+  description_fr?: string;
+  description_zh?: string;
   estimated_minutes?: number;
   description_alignment?: string;
   questions: Question[];
-  translations?: Record<
-    string,
-    {
-      title?: string;
-      description?: string;
-      questions?: Question[];
-    }
-  >;
+  questions_fr?: Question[];
+  questions_zh?: Question[];
+  referral_source?: string;
 }
+
+const InteractiveDefinition = ({ part, definition }: { part: string; definition: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  return (
+    <span
+      ref={containerRef}
+      className="relative inline-block cursor-pointer mx-1"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}
+    >
+      <span className="wavy-underline">{part}</span>
+      {isOpen && (
+        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-xl z-50 text-center font-normal tracking-normal leading-normal">
+          {definition}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-slate-100"></span>
+        </span>
+      )}
+    </span>
+  );
+};
 
 const RichTextRenderer = ({
   text,
@@ -97,15 +141,7 @@ const RichTextRenderer = ({
             {parts.map((part: string, i: number) => {
               const def = sortedDefs.find((d) => d.term.toLowerCase() === part.toLowerCase());
               if (def) {
-                return (
-                  <span key={i} className="relative inline-block group cursor-help mx-1">
-                    <span className="wavy-underline">{part}</span>
-                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-3 bg-gray-900 dark:bg-slate-100 text-white dark:text-slate-900 text-sm rounded-lg shadow-xl z-50 text-center font-normal tracking-normal leading-normal">
-                      {def.definition}
-                      <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-slate-100"></span>
-                    </span>
-                  </span>
-                );
+                return <InteractiveDefinition key={i} part={part} definition={def.definition} />;
               }
               return <span key={i}>{part}</span>;
             })}
@@ -123,10 +159,8 @@ export default function SurveyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { language, t, setEnabledLanguages } = useLanguage();
-  const referralSource = searchParams.get('ref') || null;
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
-  const [languageBanner, setLanguageBanner] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 0 = email, 1+ = questions
   const [email, setEmail] = useState('');
@@ -138,6 +172,7 @@ export default function SurveyPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [languageBanner, setLanguageBanner] = useState<string | null>(null);
 
   const [inactivityTriggered, setInactivityTriggered] = useState(false);
   const [inactivityChecksShown, setInactivityChecksShown] = useState(0);
@@ -220,6 +255,48 @@ export default function SurveyPage() {
   }, [params.id]);
 
   useEffect(() => {
+    if (email) {
+      fetch(`/api/user/profile-data?email=${encodeURIComponent(email)}`)
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((data) => setProfileData(data || {}))
+        .catch((err) => console.error('Failed to fetch profile data', err));
+    }
+  }, [email]);
+
+  useEffect(() => {
+    return () => {
+      setEnabledLanguages(null);
+    };
+  }, [setEnabledLanguages]);
+
+  useEffect(() => {
+    if (survey && profileData && Object.keys(profileData).length > 0) {
+      setAnswers((prev) => {
+        const newAnswers = { ...prev };
+        let changed = false;
+        survey.questions.forEach((q) => {
+          if (newAnswers[q.id] === undefined && profileData[q.question_text]) {
+            const pAns = profileData[q.question_text] as Record<string, unknown>;
+            let val = undefined;
+            if (pAns.answer_options !== null && pAns.answer_options !== undefined)
+              val = pAns.answer_options;
+            else if (pAns.answer_text !== null && pAns.answer_text !== undefined)
+              val = pAns.answer_text;
+            else if (pAns.answer_numeric !== null && pAns.answer_numeric !== undefined)
+              val = pAns.answer_numeric;
+
+            if (val !== undefined && val !== null) {
+              newAnswers[q.id] = val;
+              changed = true;
+            }
+          }
+        });
+        return changed ? newAnswers : prev;
+      });
+    }
+  }, [survey, profileData]);
+
+  useEffect(() => {
     if (!params.id) return;
 
     Promise.all([
@@ -237,33 +314,23 @@ export default function SurveyPage() {
           setAlreadyCompleted(true);
         }
 
-        // Merge new translations table format with legacy format
-        const mergedTranslations: Record<
-          string,
-          { title?: string; description?: string; questions?: Question[] }
-        > = {
-          ...(translationData?.translations && Object.keys(translationData.translations).length > 0
-            ? translationData.translations
-            : {}),
-        };
-
-        // Also pull from legacy fields if present
         if (translationData?.questions_fr !== undefined) {
-          mergedTranslations.fr = {
-            title: translationData.title_fr,
-            description: translationData.description_fr,
-            questions: translationData.questions_fr,
-          };
+          data.questions_fr = translationData.questions_fr;
+        }
+        if (translationData?.title_fr !== undefined) {
+          data.title_fr = translationData.title_fr;
+        }
+        if (translationData?.description_fr !== undefined) {
+          data.description_fr = translationData.description_fr;
         }
         if (translationData?.questions_zh !== undefined) {
-          mergedTranslations.zh = {
-            title: translationData.title_zh,
-            description: translationData.description_zh,
-            questions: translationData.questions_zh,
-          };
+          data.questions_zh = translationData.questions_zh;
         }
-        if (Object.keys(mergedTranslations).length > 0) {
-          data.translations = mergedTranslations;
+        if (translationData?.title_zh !== undefined) {
+          data.title_zh = translationData.title_zh;
+        }
+        if (translationData?.description_zh !== undefined) {
+          data.description_zh = translationData.description_zh;
         }
 
         setSurvey(data);
@@ -356,12 +423,6 @@ export default function SurveyPage() {
       });
   }, [params.id]);
 
-  useEffect(() => {
-    return () => {
-      setEnabledLanguages(null);
-    };
-  }, [setEnabledLanguages]);
-
   // Sync state changes to localStorage for robust resume support
   useEffect(() => {
     if (survey && sessionId) {
@@ -405,11 +466,7 @@ export default function SurveyPage() {
   useEffect(() => {
     if (survey && sessionId && currentStep > 0) {
       const currentQuestion = survey.questions[currentStep - 1];
-      if (
-        currentQuestion &&
-        currentQuestion.type !== 'section_header' &&
-        !currentQuestion.id.startsWith('attn-')
-      ) {
+      if (currentQuestion && !currentQuestion.id.startsWith('attn-')) {
         const val = answers[currentQuestion.id];
         if (val !== undefined) {
           const currentSessionTime = Date.now() - questionEnterTime;
@@ -431,6 +488,8 @@ export default function SurveyPage() {
             body.answer_numeric = val;
           } else if (currentQuestion.type === 'checkboxes' || currentQuestion.type === 'ranking') {
             body.answer_options = val;
+          } else if (currentQuestion.type === 'section_header') {
+            body.answer_text = 'viewed';
           }
 
           // Debounce text area auto-save to avoid spamming the DB on every single keystroke
@@ -449,64 +508,103 @@ export default function SurveyPage() {
     }
   }, [answers, sessionId, currentStep, survey, questionEnterTime, timeSpentAccumulator]);
 
+  const checkShouldSkip = (idx: number, pData: Record<string, unknown> | null): boolean => {
+    if (!survey) return false;
+    const q = survey.questions[idx];
+    let shouldSkip = false;
+
+    let wasAnsweredPreviously = false;
+    if (q && q.is_conditional) {
+      wasAnsweredPreviously = survey.questions.some((prevQ, i) => {
+        if (i >= idx) return false;
+        if (prevQ.question_text !== q.question_text) return false;
+        const ans = answers[prevQ.id];
+        if (ans === undefined || ans === null || ans === '') return false;
+        if (Array.isArray(ans) && ans.length === 0) return false;
+        return true;
+      });
+    }
+
+    if (q && q.is_conditional && (wasAnsweredPreviously || (pData && pData[q.question_text]))) {
+      shouldSkip = true;
+    }
+
+    const qOptions = q?.options as QuestionOptions | undefined;
+    if (!shouldSkip && q && qOptions?.logic_gates && qOptions.logic_gates.length > 0) {
+      const matchType = qOptions?.logic_gate_match_type || 'all';
+      const logicGates = qOptions?.logic_gates || [];
+
+      const gateResults = logicGates.map((gate: LogicGate) => {
+        if (!gate.question_id || !gate.value) return true;
+        const answer = answers[gate.question_id];
+
+        const dependencyQ = survey.questions.find((x: Question) => x.id === gate.question_id);
+        let targetValue = gate.value;
+        if (dependencyQ && language !== 'en') {
+          const enOptions = Array.isArray(dependencyQ.options)
+            ? dependencyQ.options
+            : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
+          const optIndex = enOptions.indexOf(gate.value);
+          if (optIndex !== -1) {
+            if (language === 'fr' && survey.questions_fr) {
+              const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
+              const frOpts = Array.isArray(frQ?.options)
+                ? frQ.options
+                : (frQ?.options as QuestionOptions | undefined)?.choices || [];
+              if (frOpts[optIndex]) targetValue = frOpts[optIndex];
+            } else if (language === 'zh' && survey.questions_zh) {
+              const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
+              const zhOpts = Array.isArray(zhQ?.options)
+                ? zhQ.options
+                : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
+              if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
+            }
+          }
+        }
+
+        if (Array.isArray(answer)) {
+          return answer.includes(targetValue);
+        } else {
+          return answer === targetValue;
+        }
+      });
+
+      const matched =
+        matchType === 'any'
+          ? gateResults.some((res: boolean) => res)
+          : gateResults.every((res: boolean) => res);
+      if (!matched) shouldSkip = true;
+    }
+
+    // Section Header specific logic:
+    // If a section header is marked "skip if answered previously",
+    // skip it IF ALL questions underneath it (until next header) are also skipped.
+    if (!shouldSkip && q && q.type === 'section_header' && q.is_conditional) {
+      let hasQuestions = false;
+      let allSkipped = true;
+      for (let j = idx + 1; j < survey.questions.length; j++) {
+        const nextQ = survey.questions[j];
+        if (nextQ.type === 'section_header') break;
+        hasQuestions = true;
+        if (!checkShouldSkip(j, pData)) {
+          allSkipped = false;
+          break;
+        }
+      }
+      // If the section has questions and ALL of them evaluate to skipped, skip the header too.
+      if (hasQuestions && allSkipped) {
+        shouldSkip = true;
+      }
+    }
+
+    return shouldSkip;
+  };
+
   const getNextVisibleStep = (startIdx: number, forward: boolean, pData = profileData) => {
     let idx = startIdx;
     if (!survey) return forward ? 0 : -1;
     while (idx >= 0 && idx < survey.questions.length) {
-      const q = survey.questions[idx];
-      let shouldSkip = false;
-
-      if (
-        q &&
-        q.is_conditional &&
-        (pData[q.question_text] as unknown as string | boolean | number)
-      ) {
-        shouldSkip = true;
-      }
-
-      const qOptions = q?.options as QuestionOptions | undefined;
-      if (!shouldSkip && q && qOptions?.logic_gates && qOptions.logic_gates.length > 0) {
-        const matchType = qOptions?.logic_gate_match_type || 'all';
-        const logicGates = qOptions?.logic_gates || [];
-
-        const gateResults = logicGates.map((gate: LogicGate) => {
-          if (!gate.question_id || !gate.value) return true;
-          const answer = answers[gate.question_id];
-
-          const dependencyQ = survey.questions.find((x: Question) => x.id === gate.question_id);
-          let targetValue = gate.value;
-          if (dependencyQ && language !== 'en') {
-            const enOptions = Array.isArray(dependencyQ.options)
-              ? dependencyQ.options
-              : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
-            const optIndex = enOptions.indexOf(gate.value);
-            if (optIndex !== -1) {
-              const transQuestions = survey.translations?.[language]?.questions;
-              if (transQuestions) {
-                const transQ = transQuestions.find((x: Question) => x.id === gate.question_id);
-                const transOpts = Array.isArray(transQ?.options)
-                  ? transQ.options
-                  : (transQ?.options as QuestionOptions | undefined)?.choices || [];
-                if (transOpts[optIndex]) targetValue = transOpts[optIndex];
-              }
-            }
-          }
-
-          if (Array.isArray(answer)) {
-            return answer.includes(targetValue);
-          } else {
-            return answer === targetValue;
-          }
-        });
-
-        const matched =
-          matchType === 'any'
-            ? gateResults.some((res: boolean) => res)
-            : gateResults.every((res: boolean) => res);
-        if (!matched) shouldSkip = true;
-      }
-
-      if (shouldSkip) {
+      if (checkShouldSkip(idx, pData)) {
         idx = forward ? idx + 1 : idx - 1;
       } else {
         break;
@@ -541,64 +639,67 @@ export default function SurveyPage() {
     return new Set(visibleQuestionIndices.map((i) => survey.questions[i]?.id).filter(Boolean));
   }, [survey, visibleQuestionIndices]);
 
+  useEffect(() => {
+    if (hasStarted && survey && !isEmailStep) {
+      if (!visibleQuestionIndices.includes(currentStep)) {
+        if (visibleQuestionIndices.length === 0) {
+          setCurrentStep(survey.questions.length);
+        } else {
+          const nextValid = visibleQuestionIndices.find((idx) => idx >= currentStep);
+          if (nextValid !== undefined) {
+            setCurrentStep(nextValid);
+          } else {
+            setCurrentStep(survey.questions.length);
+          }
+        }
+      }
+    }
+  }, [hasStarted, survey, visibleQuestionIndices, currentStep, isEmailStep]);
+
   const currentQuestionRaw = survey && !isEmailStep ? survey.questions[currentStep] : null;
   const currentQuestion = useMemo(() => {
     if (!currentQuestionRaw) return null;
     const finalQ = { ...currentQuestionRaw };
 
-    const transQuestions = survey?.translations?.[language]?.questions;
-    if (transQuestions && language !== 'en') {
-      const transQ = transQuestions.find((q: Question) => q.id === finalQ.id);
-      if (transQ) {
-        if (transQ.question_text && transQ.question_text.trim())
-          finalQ.question_text = transQ.question_text;
-        finalQ.options = transQ.options;
+    if (language === 'fr' && survey?.questions_fr) {
+      const frQ = survey.questions_fr.find((q: Question) => q.id === finalQ.id);
+      if (frQ) {
+        if (frQ.question_text && frQ.question_text.trim()) finalQ.question_text = frQ.question_text;
+        finalQ.options = frQ.options;
+      }
+    } else if (language === 'zh' && survey?.questions_zh) {
+      const zhQ = survey.questions_zh.find((q: Question) => q.id === finalQ.id);
+      if (zhQ) {
+        if (zhQ.question_text && zhQ.question_text.trim()) finalQ.question_text = zhQ.question_text;
+        finalQ.options = zhQ.options;
       }
     }
 
-    // Translate injected attention checks using locale files
-    if (language !== 'en' && finalQ.id.startsWith('attn-')) {
-      // Attention checks use the same keys as the locale files
-      // For now, only fr and zh have manual attention check translations
-      // Others will fall back to English
-      const attnTranslations: Record<
-        string,
-        Record<string, { text: string; choices?: string[] }>
-      > = {
-        fr: {
-          'attn-fixed-1': {
-            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Lorsque vous répondez à des questions sur la politique économique, il est important de lire attentivement chaque énoncé. Pour démontrer que vous êtes attentif, veuillez sélectionner l\'option de réponse "4 (D\'accord)" pour cette question spécifique.</span>Dans quelle mesure êtes-vous d\'accord ou en désaccord avec le calendrier des projets d\'infrastructure fédéraux actuels ?',
-          },
-          'attn-fixed-2': {
-            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Pour nous assurer que nos normes de qualité des données sont respectées, veuillez répondre à cet énoncé :</span>"Le gouvernement du Canada a officiellement dissous la monnaie du pays et interdit l\'échange de tous biens et services."',
-            choices: ['Vrai', 'Faux'],
-          },
-          'attn-inact-1': {
-            text: 'Êtes-vous toujours là ? Veuillez sélectionner "Oui" pour continuer.',
-            choices: ['Non', 'Oui', 'Peut-être'],
-          },
-        },
-        zh: {
-          'attn-fixed-1': {
-            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">在回答有关住房和经济政策的问题时，仔细阅读每项声明非常重要。为了表明您正在集中注意力，请在此特定问题中选择“4（同意）”选项。</span>您对当前联邦基础设施项目时间表的同意或不同意程度如何？',
-          },
-          'attn-fixed-2': {
-            text: '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">为确保我们的数据质量标准得到满足，请回答以下简单的声明：</span>“加拿大政府已正式解散该国货币并禁止所有商品和服务的交换。”',
-            choices: ['正确', '错误'],
-          },
-          'attn-inact-1': {
-            text: '您还在吗？请选择“是”以继续。',
-            choices: ['否', '是', '也许'],
-          },
-        },
-      };
-
-      const attnTrans = attnTranslations[language]?.[finalQ.id];
-      if (attnTrans) {
-        finalQ.question_text = attnTrans.text;
-        if (attnTrans.choices) {
-          finalQ.options = { choices: attnTrans.choices };
-        }
+    // Manually translate injected attention checks
+    if (language === 'fr' && finalQ.id.startsWith('attn-')) {
+      if (finalQ.id === 'attn-fixed-1') {
+        finalQ.question_text =
+          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Lorsque vous répondez à des questions sur la politique économique, il est important de lire attentivement chaque énoncé. Pour démontrer que vous êtes attentif, veuillez sélectionner l\'option de réponse "4 (D\'accord)" pour cette question spécifique.</span>Dans quelle mesure êtes-vous d\'accord ou en désaccord avec le calendrier des projets d\'infrastructure fédéraux actuels ?';
+      } else if (finalQ.id === 'attn-fixed-2') {
+        finalQ.question_text =
+          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">Pour nous assurer que nos normes de qualité des données sont respectées, veuillez répondre à cet énoncé :</span>"Le gouvernement du Canada a officiellement dissous la monnaie du pays et interdit l\'échange de tous biens et services."';
+        finalQ.options = { choices: ['Vrai', 'Faux'] };
+      } else if (finalQ.id === 'attn-inact-1') {
+        finalQ.question_text =
+          'Êtes-vous toujours là ? Veuillez sélectionner "Oui" pour continuer.';
+        finalQ.options = { choices: ['Non', 'Oui', 'Peut-être'] };
+      }
+    } else if (language === 'zh' && finalQ.id.startsWith('attn-')) {
+      if (finalQ.id === 'attn-fixed-1') {
+        finalQ.question_text =
+          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">在回答有关住房和经济政策的问题时，仔细阅读每项声明非常重要。为了表明您正在集中注意力，请在此特定问题中选择“4（同意）”选项。</span>您对当前联邦基础设施项目时间表的同意或不同意程度如何？';
+      } else if (finalQ.id === 'attn-fixed-2') {
+        finalQ.question_text =
+          '<span class="text-sm md:text-base font-normal text-gray-500 dark:text-slate-400 block mb-4">为确保我们的数据质量标准得到满足，请回答以下简单的声明：</span>“加拿大政府已正式解散该国货币并禁止所有商品和服务的交换。”';
+        finalQ.options = { choices: ['正确', '错误'] };
+      } else if (finalQ.id === 'attn-inact-1') {
+        finalQ.question_text = '您还在吗？请选择“是”以继续。';
+        finalQ.options = { choices: ['否', '是', '也许'] };
       }
     }
     return finalQ;
@@ -609,8 +710,18 @@ export default function SurveyPage() {
     : survey && visibleCount > 0
       ? (safeVisiblePosition / Math.max(1, visibleCount - 1)) * 100
       : 0;
-  const displayTitle = survey?.translations?.[language]?.title || survey?.title;
-  const displayDescription = survey?.translations?.[language]?.description || survey?.description;
+  const displayTitle =
+    language === 'fr' && survey?.title_fr
+      ? survey.title_fr
+      : language === 'zh' && survey?.title_zh
+        ? survey.title_zh
+        : survey?.title;
+  const displayDescription =
+    language === 'fr' && survey?.description_fr
+      ? survey.description_fr
+      : language === 'zh' && survey?.description_zh
+        ? survey.description_zh
+        : survey?.description;
 
   // Helper to shuffle array (Fisher-Yates)
   const shuffleArray = (array: string[]) => {
@@ -625,7 +736,7 @@ export default function SurveyPage() {
   // Get the translated version of a question for a given language
   const getTranslatedQuestion = (q: Question, lang: string, surveyData: Survey) => {
     if (lang === 'en') return q;
-    const translatedList = surveyData.translations?.[lang]?.questions;
+    const translatedList = lang === 'fr' ? surveyData.questions_fr : surveyData.questions_zh;
     if (!translatedList) return q;
     return translatedList.find((tq: Question) => tq.id === q.id) || q;
   };
@@ -854,6 +965,9 @@ export default function SurveyPage() {
     }
 
     if (!isEmailStep && currentQuestion) {
+      if (currentQuestion.type === 'section_header') {
+        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: 'viewed' }));
+      }
       // Evaluate attention check if applicable
       if (currentQuestion.id.startsWith('attn-')) {
         const val = answers[currentQuestion.id];
@@ -921,12 +1035,7 @@ export default function SurveyPage() {
           }
 
           if (v.max_length && typeof val === 'string' && val.length > v.max_length) {
-            alert(
-              t('Answer must be {{max}} characters or fewer.').replace(
-                '{{max}}',
-                String(v.max_length)
-              )
-            );
+            alert(`Answer must be ${v.max_length} characters or fewer.`);
             return;
           }
 
@@ -969,7 +1078,10 @@ export default function SurveyPage() {
         }));
       }
       setQuestionEnterTime(Date.now());
-      setCurrentStep(Math.max(0, getNextVisibleStep(currentStep - 1, false)));
+      const prevStep = getNextVisibleStep(currentStep - 1, false);
+      if (prevStep >= 0) {
+        setCurrentStep(prevStep);
+      }
     }
   };
 
@@ -1021,7 +1133,7 @@ export default function SurveyPage() {
     }
 
     // For regular questions, map by option index using the translation data
-    const translatedList = survey?.translations?.[language]?.questions;
+    const translatedList = language === 'fr' ? survey?.questions_fr : survey?.questions_zh;
     if (!translatedList) return value;
     const transQ = translatedList.find((tq: Question) => tq.id === qId);
     if (!transQ) return value;
@@ -1075,7 +1187,7 @@ export default function SurveyPage() {
       for (const [qId, val] of Object.entries(answers)) {
         if (!visibleQuestionIds.has(qId)) continue;
         const q = survey.questions.find((x: Question) => x.id === qId);
-        if (!q || q.type === 'section_header' || q.id.startsWith('attn-')) continue;
+        if (!q || q.id.startsWith('attn-')) continue;
 
         const answerObj: Record<string, unknown> = {
           question_id: q.id,
@@ -1087,8 +1199,16 @@ export default function SurveyPage() {
           answerObj.answer_numeric = val;
         } else if (q.type === 'checkboxes' || q.type === 'ranking') {
           answerObj.answer_options = normalizeAnswerToEnglish(qId, val);
+        } else if (q.type === 'section_header') {
+          answerObj.answer_text = 'viewed';
         }
         submissionAnswers.push(answerObj);
+      }
+
+      // Ensure we fetch the most up-to-date referral source right before submit
+      let finalReferralSource = searchParams.get('ref');
+      if (!finalReferralSource && typeof window !== 'undefined') {
+        finalReferralSource = localStorage.getItem('global_ref');
       }
 
       // Submit all at once via the legacy responses endpoint
@@ -1099,7 +1219,7 @@ export default function SurveyPage() {
           email,
           answers: submissionAnswers,
           language,
-          referral_source: referralSource,
+          referral_source: finalReferralSource || survey?.referral_source || null,
         }),
       });
 
@@ -1160,7 +1280,14 @@ export default function SurveyPage() {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setHasStarted(true)}
+            onClick={() => {
+              setHasStarted(true);
+              if (visibleQuestionIndices.length > 0) {
+                setCurrentStep(visibleQuestionIndices[0]);
+              } else {
+                setCurrentStep(survey.questions.length);
+              }
+            }}
             className="btn-primary text-xl px-10 py-4 rounded-full shadow-md shadow-teal-500/5 dark:shadow-teal-400/5 hover:shadow-lg transition-all flex items-center justify-center mx-auto"
           >
             {t('Start Survey')} <ArrowRight className="w-6 h-6 ml-3" />
@@ -1202,6 +1329,24 @@ export default function SurveyPage() {
       </motion.div>
 
       <div className="flex-1 flex flex-col bg-white dark:bg-white/5 dark:backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-8 shadow-xl relative h-auto min-h-[60vh]">
+        {languageBanner && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+            <span className="text-amber-800 text-sm">
+              This survey is not available in{' '}
+              {(() => {
+                const cfg = SUPPORTED_LANGUAGES.find((l) => l.code === languageBanner);
+                return cfg?.name || languageBanner;
+              })()}
+              . Showing English.
+            </span>
+            <button
+              onClick={() => setLanguageBanner(null)}
+              className="text-amber-600 hover:text-amber-800 text-lg leading-none ml-3"
+            >
+              &times;
+            </button>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -1212,24 +1357,6 @@ export default function SurveyPage() {
             transition={pageTransition}
             className={`flex-1 flex flex-col max-w-2xl mx-auto w-full pb-4 pt-4 sm:pt-8 ${currentQuestion?.type === 'section_header' ? 'justify-center my-auto' : 'justify-start'}`}
           >
-            {languageBanner && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
-                <span className="text-amber-800 text-sm">
-                  This survey is not available in{' '}
-                  {(() => {
-                    const cfg = SUPPORTED_LANGUAGES.find((l) => l.code === languageBanner);
-                    return cfg?.name || languageBanner;
-                  })()}
-                  . Showing English.
-                </span>
-                <button
-                  onClick={() => setLanguageBanner(null)}
-                  className="text-amber-600 hover:text-amber-800 text-lg leading-none ml-3"
-                >
-                  &times;
-                </button>
-              </div>
-            )}
             {/* EMAIL STEP */}
             {isEmailStep && (
               <>
@@ -1242,7 +1369,7 @@ export default function SurveyPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all text-base sm:text-lg text-center"
-                  placeholder={t('you@example.com')}
+                  placeholder="you@example.com"
                 />
                 <div className="text-center mt-5 px-2 max-w-xl mx-auto space-y-2">
                   <p className="text-sm sm:text-base font-medium text-gray-500 dark:text-slate-400 leading-snug">
@@ -1758,7 +1885,7 @@ export default function SurveyPage() {
                           />
                           {opts.validation.type === 'postal_code_prefix' && (
                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-2 text-center">
-                              {t('Enter the first 3 characters of your postal code (e.g. M5V).')}
+                              Enter the first 3 characters of your postal code (e.g. M5V).
                             </p>
                           )}
                         </>
@@ -1786,8 +1913,12 @@ export default function SurveyPage() {
               <div className="flex-shrink-0 flex justify-between items-center mt-auto pt-6 border-t border-gray-100 dark:border-white/5 bg-transparent">
                 <button
                   onClick={handleBack}
-                  disabled={currentStep === 0}
-                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${currentStep === 0 ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-900'}`}
+                  disabled={
+                    currentStep === 0 ||
+                    visibleQuestionIndices.length === 0 ||
+                    visibleQuestionIndices[0] === currentStep
+                  }
+                  className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-medium transition-all ${currentStep === 0 || visibleQuestionIndices.length === 0 || visibleQuestionIndices[0] === currentStep ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 hover:text-gray-900'}`}
                 >
                   {t('Back')}
                 </button>

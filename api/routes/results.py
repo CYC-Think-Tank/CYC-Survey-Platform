@@ -3,6 +3,7 @@ import random
 from fastapi import APIRouter, HTTPException
 
 from api.dependencies import supabase
+from api.utils.postal_geo import build_postal_geo_stats
 from api.utils.survey_utils import (
     calculate_median,
     calculate_mode,
@@ -23,21 +24,19 @@ async def _get_random_email_position(num_emails: int = 5) -> list:
     retrieval of total number of emails from the database.
     """
     try:
-        # Queries the database to get the total count of emails in the response_sessions table
+        # Queries the database to get the total count of emails in the raffle_entries table
         count_res = (
-            supabase.table("response_sessions").select("id", count="exact").execute()
+            supabase.table("raffle_entries").select("id", count="exact").execute()
         )
         total_emails = getattr(count_res, "count", None)
         if total_emails is None:
             total_emails = len(count_res.data) if count_res.data else 0
 
         if total_emails == 0:
-            raise ValueError(
-                "No emails found in response_sessions for raffle selection."
-            )
+            raise ValueError("No emails found in raffle_entries for raffle selection.")
 
-        return random.sample(range(total_emails), num_emails)
-    #    return random.randint(0, total_emails - 1)
+        num_to_select = min(num_emails, total_emails)
+        return random.sample(range(total_emails), num_to_select)
     except Exception as e:
         raise Exception(f"Failed to determine raffle position: {e}")
 
@@ -45,7 +44,7 @@ async def _get_random_email_position(num_emails: int = 5) -> list:
 @router.get("/api/admin/raffle-email")
 async def get_raffle_email():
     """
-    Returns a list of randomly selected email from the response_sessions table for raffle purposes.
+    Returns a list of randomly selected email from the raffle_entries table for raffle purposes.
     Handles any exceptions that may occur during the database query.
     """
     try:
@@ -53,7 +52,7 @@ async def get_raffle_email():
         emails = []
         for position in positions:
             response = (
-                supabase.table("response_sessions")
+                supabase.table("raffle_entries")
                 .select("email")
                 .order("id")
                 .range(position, position)
@@ -370,7 +369,18 @@ async def get_survey_summary(survey_id: str):
                 }
             elif q_type == "short_answer":
                 texts = [a.get("answer_text") for a in ans if a.get("answer_text")]
-                stats[qid] = {"texts": texts[:100]}
+                opts = q.get("options")
+                validation = opts.get("validation") if isinstance(opts, dict) else None
+                is_postal_prefix = (
+                    isinstance(validation, dict)
+                    and validation.get("type") == "postal_code_prefix"
+                )
+                stats[qid] = {
+                    "texts": [] if is_postal_prefix else texts[:100],
+                    "sample_size": len(texts),
+                }
+                if is_postal_prefix:
+                    stats[qid]["postal_geo"] = build_postal_geo_stats(qid, ans)
             elif q_type == "ranking":
                 sums = {}
                 counts = {}

@@ -3,7 +3,7 @@ import traceback
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 
 from api.dependencies import supabase
 from api.models import SurveyCreate, SurveyDetail, SurveyList
@@ -82,27 +82,6 @@ async def get_survey(survey_id: str):
         )
 
         survey["questions"] = questions_res.data
-
-        # Fetch translations from new table (gracefully skip if table doesn't exist yet)
-        try:
-            trans_res = (
-                supabase.table("translations")
-                .select("language_code, title, description, questions")
-                .eq("survey_id", survey_id)
-                .execute()
-            )
-            survey["translations"] = {}
-            if trans_res.data:
-                for row in trans_res.data:
-                    survey["translations"][row["language_code"]] = {
-                        "title": row.get("title", ""),
-                        "description": row.get("description", ""),
-                        "questions": row.get("questions", []),
-                    }
-        except Exception:
-            # translations table doesn't exist yet — skip silently
-            survey["translations"] = {}
-
         return survey
     except HTTPException:
         raise
@@ -134,7 +113,6 @@ async def create_survey(survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
-                    "enabled_languages": survey.enabled_languages,
                 }
             )
             .execute()
@@ -285,58 +263,33 @@ async def duplicate_survey(survey_id: str):
             for old_q, new_q in zip(original_sorted, new_questions, strict=False):
                 old_to_new[old_q["id"]] = new_q["id"]
 
-            # Duplicate and Remap Translations (new table)
+            # Duplicate and Remap Translations
             existing_translations_res = (
-                supabase.table("translations")
-                .select("*")
-                .eq("survey_id", survey_id)
-                .execute()
-            )
-            existing_translations = existing_translations_res.data
-
-            if existing_translations:
-                for trans in existing_translations:
-                    questions = trans.get("questions", [])
-                    if isinstance(questions, list):
-                        for tq in questions:
-                            old_id = tq.get("id")
-                            if old_id in old_to_new:
-                                tq["id"] = old_to_new[old_id]
-
-                    supabase.table("translations").insert({
-                        "survey_id": new_survey["id"],
-                        "language_code": trans["language_code"],
-                        "title": trans.get("title", ""),
-                        "description": trans.get("description", ""),
-                        "questions": questions,
-                    }).execute()
-
-            # Also duplicate legacy ai_analyses for backward compatibility
-            existing_legacy_res = (
                 supabase.table("ai_analyses")
                 .select("*")
                 .eq("survey_id", survey_id)
                 .in_("analysis_type", ["translation_fr", "translation_zh"])
                 .execute()
             )
-            existing_legacy = existing_legacy_res.data
+            existing_translations = existing_translations_res.data
 
-            if existing_legacy:
-                legacy_to_insert = []
-                for trans in existing_legacy:
+            if existing_translations:
+                translations_to_insert = []
+                for trans in existing_translations:
                     trans_data = json_module.loads(json_module.dumps(trans["data"]))
                     lang_suffix = (
                         "fr" if "translation_fr" in trans["analysis_type"] else "zh"
                     )
                     q_key = f"questions_{lang_suffix}"
 
+                    # Remap IDs inside the translation JSON
                     if q_key in trans_data and isinstance(trans_data[q_key], list):
                         for tq in trans_data[q_key]:
                             old_id = tq.get("id")
                             if old_id in old_to_new:
                                 tq["id"] = old_to_new[old_id]
 
-                    legacy_to_insert.append(
+                    translations_to_insert.append(
                         {
                             "survey_id": new_survey["id"],
                             "analysis_type": trans["analysis_type"],
@@ -344,9 +297,9 @@ async def duplicate_survey(survey_id: str):
                             "updated_at": datetime.utcnow().isoformat(),
                         }
                     )
-                if legacy_to_insert:
+                if translations_to_insert:
                     supabase.table("ai_analyses").insert(
-                        legacy_to_insert
+                        translations_to_insert
                     ).execute()
 
             updates_needed = []
@@ -425,7 +378,6 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
-                    "enabled_languages": survey.enabled_languages,
                     "updated_at": datetime.utcnow().isoformat(),
                 }
             )
@@ -558,36 +510,6 @@ async def toggle_survey_status(survey_id: str):
         updated = res.data[0]
         updated["response_count"] = 0
         return updated
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.patch("/api/surveys/{survey_id}/languages")
-async def update_survey_languages(survey_id: str, request: Request):
-    """Update enabled languages for a survey. Works even on locked/published surveys."""
-    try:
-        body = await request.json()
-        enabled_languages = body.get("enabled_languages")
-
-        res = (
-            supabase.table("surveys")
-            .update(
-                {
-                    "enabled_languages": enabled_languages,
-                    "updated_at": datetime.utcnow().isoformat(),
-                }
-            )
-            .eq("id", survey_id)
-            .execute()
-        )
-
-        if not res.data:
-            raise HTTPException(status_code=404, detail="Survey not found")
-
-        updated = res.data[0]
-        return updated
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

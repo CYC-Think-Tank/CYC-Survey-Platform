@@ -62,16 +62,6 @@ interface QuestionDraft {
   options_zh?: string[];
   section_description_zh?: string;
   definitions_zh?: { term: string; definition: string }[];
-  translations?: Record<
-    string,
-    {
-      question_text?: string;
-      options?: string[];
-      section_description?: string;
-      question_description?: string;
-      definitions?: { term: string; definition: string }[];
-    }
-  >;
 }
 
 const VALIDATION_PRESETS: Record<
@@ -86,10 +76,11 @@ const VALIDATION_PRESETS: Record<
 export default function CreateSurvey() {
   const router = useRouter();
   const [title, setTitle] = useState('');
+  const [titleFr, setTitleFr] = useState('');
+  const [titleZh, setTitleZh] = useState('');
   const [description, setDescription] = useState('');
-  const [translationsMeta, setTranslationsMeta] = useState<
-    Record<string, { title: string; description: string }>
-  >({});
+  const [descriptionFr, setDescriptionFr] = useState('');
+  const [descriptionZh, setDescriptionZh] = useState('');
   const [descriptionAlignment, setDescriptionAlignment] = useState('left');
   const [estimatedMinutes, setEstimatedMinutes] = useState(5);
   const [isActive, setIsActive] = useState(false);
@@ -119,50 +110,14 @@ export default function CreateSurvey() {
   };
 
   const getOptionsForDisplay = (q: QuestionDraft): string[] => {
-    if (language === 'en') return getOptionsArray(q.options);
-    const transOpts = q.translations?.[language]?.options;
-    if (transOpts && transOpts.length > 0) return transOpts;
-    const legacyOpts = getOptionsArray(
-      (q as unknown as Record<string, unknown>)[`options_${language}`]
-    );
-    if (legacyOpts.length > 0) return legacyOpts;
+    if (language === 'fr') {
+      const frOptions = getOptionsArray(q.options_fr);
+      if (frOptions.length > 0) return frOptions;
+    } else if (language === 'zh') {
+      const zhOptions = getOptionsArray(q.options_zh);
+      if (zhOptions.length > 0) return zhOptions;
+    }
     return getOptionsArray(q.options);
-  };
-
-  const getTransField = (q: QuestionDraft, field: string): string => {
-    if (language === 'en')
-      return ((q as unknown as Record<string, unknown>)[field] as string) || '';
-    const trans = q.translations?.[language] as Record<string, unknown> | undefined;
-    if (trans && field in trans) return (trans[field] as string) || '';
-    return ((q as unknown as Record<string, unknown>)[`${field}_${language}`] as string) || '';
-  };
-
-  const setTransField = (qId: string, field: string, value: string) => {
-    setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id !== qId) return q;
-        if (language === 'en') return { ...q, [field]: value };
-        return {
-          ...q,
-          translations: {
-            ...q.translations,
-            [language]: { ...q.translations?.[language], [field]: value },
-          },
-        };
-      })
-    );
-  };
-
-  const setTransMeta = (lang: string, key: 'title' | 'description', value: string) => {
-    setTranslationsMeta((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [key]: value },
-    }));
-  };
-
-  const getTransMeta = (lang: string, key: 'title' | 'description'): string => {
-    if (lang === 'en') return key === 'title' ? title : description;
-    return translationsMeta[lang]?.[key] || '';
   };
 
   const uploadFile = async (file: File): Promise<{ url: string; filename: string } | null> => {
@@ -298,20 +253,20 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'en') {
-          const newOptions = [...q.options];
-          newOptions[index] = value;
-          return { ...q, options: newOptions };
+        if (language === 'fr') {
+          const base = getOptionsArray(q.options_fr);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr[index] = value;
+          return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr[index] = value;
+          return { ...q, options_zh: arr };
         }
-        const trans = q.translations?.[language] || {};
-        const baseTransOpts = trans.options || [];
-        const fallbackOpts = getOptionsArray(q.options);
-        const arr = (baseTransOpts.length > 0 ? baseTransOpts : fallbackOpts).slice();
-        arr[index] = value;
-        return {
-          ...q,
-          translations: { ...q.translations, [language]: { ...trans, options: arr } },
-        };
+        const newOptions = [...q.options];
+        newOptions[index] = value;
+        return { ...q, options: newOptions };
       })
     );
   };
@@ -320,17 +275,18 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'en')
-          return { ...q, options: [...q.options, `Option ${q.options.length + 1}`] };
-        const trans = q.translations?.[language] || {};
-        const baseTransOpts = trans.options || [];
-        const fallbackOpts = getOptionsArray(q.options);
-        const arr = (baseTransOpts.length > 0 ? baseTransOpts : fallbackOpts).slice();
-        arr.push(`Option ${arr.length + 1}`);
-        return {
-          ...q,
-          translations: { ...q.translations, [language]: { ...trans, options: arr } },
-        };
+        if (language === 'fr') {
+          const base = getOptionsArray(q.options_fr);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options_fr: arr };
+        } else if (language === 'zh') {
+          const base = getOptionsArray(q.options_zh);
+          const arr = (base.length > 0 ? base : getOptionsArray(q.options)).slice();
+          arr.push(`Option ${arr.length + 1}`);
+          return { ...q, options_zh: arr };
+        }
+        return { ...q, options: [...q.options, `Option ${q.options.length + 1}`] };
       })
     );
   };
@@ -339,14 +295,18 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'en')
-          return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
-        const trans = q.translations?.[language] || {};
-        const defs = [...(trans.definitions || q.definitions || []), { term: '', definition: '' }];
-        return {
-          ...q,
-          translations: { ...q.translations, [language]: { ...trans, definitions: defs } },
-        };
+        if (language === 'fr') {
+          return {
+            ...q,
+            definitions_fr: [...(q.definitions_fr || []), { term: '', definition: '' }],
+          };
+        } else if (language === 'zh') {
+          return {
+            ...q,
+            definitions_zh: [...(q.definitions_zh || []), { term: '', definition: '' }],
+          };
+        }
+        return { ...q, definitions: [...(q.definitions || []), { term: '', definition: '' }] };
       })
     );
   };
@@ -360,20 +320,20 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'en') {
-          const newDefs = [...(q.definitions || [])];
+        if (language === 'fr') {
+          const newDefs = [...(q.definitions_fr || q.definitions || [])];
           if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
           newDefs[index] = { ...newDefs[index], [field]: value };
-          return { ...q, definitions: newDefs };
+          return { ...q, definitions_fr: newDefs };
+        } else if (language === 'zh') {
+          const newDefs = [...(q.definitions_zh || q.definitions || [])];
+          if (!newDefs[index]) newDefs[index] = { term: '', definition: '' };
+          newDefs[index] = { ...newDefs[index], [field]: value };
+          return { ...q, definitions_zh: newDefs };
         }
-        const trans = q.translations?.[language] || {};
-        const defs = [...(trans.definitions || q.definitions || [])];
-        if (!defs[index]) defs[index] = { term: '', definition: '' };
-        defs[index] = { ...defs[index], [field]: value };
-        return {
-          ...q,
-          translations: { ...q.translations, [language]: { ...trans, definitions: defs } },
-        };
+        const newDefs = [...(q.definitions || [])];
+        newDefs[index] = { ...newDefs[index], [field]: value };
+        return { ...q, definitions: newDefs };
       })
     );
   };
@@ -382,18 +342,18 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'en') {
-          const newDefs = [...(q.definitions || [])];
+        if (language === 'fr') {
+          const newDefs = [...(q.definitions_fr || [])];
           newDefs.splice(index, 1);
-          return { ...q, definitions: newDefs };
+          return { ...q, definitions_fr: newDefs };
+        } else if (language === 'zh') {
+          const newDefs = [...(q.definitions_zh || [])];
+          newDefs.splice(index, 1);
+          return { ...q, definitions_zh: newDefs };
         }
-        const trans = q.translations?.[language] || {};
-        const defs = [...(trans.definitions || q.definitions || [])];
-        defs.splice(index, 1);
-        return {
-          ...q,
-          translations: { ...q.translations, [language]: { ...trans, definitions: defs } },
-        };
+        const newDefs = [...(q.definitions || [])];
+        newDefs.splice(index, 1);
+        return { ...q, definitions: newDefs };
       })
     );
   };
@@ -417,19 +377,29 @@ export default function CreateSurvey() {
     setQuestions(
       questions.map((q) => {
         if (q.id !== qId) return q;
-        if (language === 'en') {
-          const newOptions = [...q.options];
-          newOptions.splice(index, 1);
-          return { ...q, options: newOptions };
+        const newQ = { ...q };
+
+        if (newQ.options_fr) {
+          const frArr = getOptionsArray(newQ.options_fr).slice();
+          if (frArr.length > index) {
+            frArr.splice(index, 1);
+            newQ.options_fr = frArr;
+          }
         }
-        const trans = q.translations?.[language] || {};
-        const baseTransOpts = trans.options || [];
-        const arr = baseTransOpts.slice();
-        arr.splice(index, 1);
-        return {
-          ...q,
-          translations: { ...q.translations, [language]: { ...trans, options: arr } },
-        };
+
+        if (newQ.options_zh) {
+          const zhArr = getOptionsArray(newQ.options_zh).slice();
+          if (zhArr.length > index) {
+            zhArr.splice(index, 1);
+            newQ.options_zh = zhArr;
+          }
+        }
+
+        const newOptions = [...newQ.options];
+        newOptions.splice(index, 1);
+        newQ.options = newOptions;
+
+        return newQ;
       })
     );
   };
@@ -487,6 +457,163 @@ export default function CreateSurvey() {
         return { ...q, logic_gates: newGates };
       })
     );
+  };
+
+  const toggleLanguage = (code: string) => {
+    if (code === 'en') return;
+    setEnabledLangs((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
+      return next;
+    });
+  };
+
+  const handleTranslateAll = async (
+    apiKey: string,
+    provider: 'opencode' | 'openrouter' | 'gemini'
+  ) => {
+    setShowTranslateDialog(false);
+    setTranslateApiKey('');
+    setTranslateAllLoading(true);
+    setTranslateAllError('');
+    setTranslateAllSuccess('');
+
+    const englishQuestions = questions.map((q, idx) => ({
+      index: idx,
+      type: q.type,
+      question_text: q.question_text,
+      options: getOptionsArray(q.options),
+      question_description: q.question_description || '',
+      section_description: q.section_description || '',
+      definitions: q.definitions || [],
+    }));
+
+    const langName = getLanguageConfig(language)?.name || language;
+
+    try {
+      const res = await fetch('/api/surveys/translate-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          provider,
+          target_language: language,
+          english_title: title,
+          english_description: description,
+          english_questions: englishQuestions,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Translation failed');
+      }
+
+      const data = await res.json();
+
+      const entries = Object.entries(data.translations || {});
+      if (entries.length === 0) {
+        throw new Error('Backend returned no translations');
+      }
+
+      const [lang, tData] = entries[0] as [
+        string,
+        {
+          title?: string;
+          description?: string;
+          questions?: Array<{
+            index: number;
+            question_text?: string;
+            options?: string[];
+            question_description?: string;
+            section_description?: string;
+            definitions?: { term: string; definition: string }[];
+          }>;
+        },
+      ];
+
+      if (!tData) {
+        throw new Error('Translation data is missing for ' + lang);
+      }
+
+      if (tData.title) {
+        if (lang === 'fr') setTitleFr(tData.title);
+        else if (lang === 'zh') setTitleZh(tData.title);
+      }
+      if (tData.description) {
+        if (lang === 'fr') setDescriptionFr(tData.description);
+        else if (lang === 'zh') setDescriptionZh(tData.description);
+      }
+
+      if (tData.questions) {
+        setQuestions((prev) =>
+          prev.map((q, idx) => {
+            const trans = tData.questions?.[idx];
+            if (!trans) return q;
+            const updates: Record<string, unknown> = {};
+            if (trans.question_text) updates.question_text = trans.question_text;
+            if (trans.options && trans.options.length > 0) updates.options = trans.options;
+            if (trans.section_description) updates.section_description = trans.section_description;
+            if (trans.question_description)
+              updates.question_description = trans.question_description;
+            if (trans.definitions && trans.definitions.length > 0)
+              updates.definitions = trans.definitions;
+            if (Object.keys(updates).length === 0) return q;
+            if (lang === 'fr') {
+              return {
+                ...q,
+                ...(updates.question_text
+                  ? { question_text_fr: updates.question_text as string }
+                  : {}),
+                ...(updates.options ? { options_fr: updates.options as string[] } : {}),
+                ...(updates.section_description
+                  ? { section_description_fr: updates.section_description as string }
+                  : {}),
+                ...(updates.question_description
+                  ? { question_description_fr: updates.question_description as string }
+                  : {}),
+                ...(updates.definitions
+                  ? {
+                      definitions_fr: updates.definitions as { term: string; definition: string }[],
+                    }
+                  : {}),
+              };
+            } else if (lang === 'zh') {
+              return {
+                ...q,
+                ...(updates.question_text
+                  ? { question_text_zh: updates.question_text as string }
+                  : {}),
+                ...(updates.options ? { options_zh: updates.options as string[] } : {}),
+                ...(updates.section_description
+                  ? { section_description_zh: updates.section_description as string }
+                  : {}),
+                ...(updates.question_description
+                  ? { question_description_zh: updates.question_description as string }
+                  : {}),
+                ...(updates.definitions
+                  ? {
+                      definitions_zh: updates.definitions as { term: string; definition: string }[],
+                    }
+                  : {}),
+              };
+            }
+            return q;
+          })
+        );
+      }
+
+      setTranslateAllSuccess(`Translated to ${langName} — review and save`);
+    } catch (err: unknown) {
+      console.error('Translate All failed:', err);
+      setTranslateAllError(err instanceof Error ? err.message : 'Translation failed');
+    } finally {
+      setTranslateAllLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -585,35 +712,30 @@ export default function CreateSurvey() {
       if (!res.ok) throw new Error('Failed to create survey');
       const createdSurvey = await res.json();
 
-      // Save translations for each non-English language
-      const buildTransOptions = (
-        draftQ: QuestionDraft,
-        q: (typeof payload.questions)[number],
-        lang: string
-      ): Record<string, unknown> | null => {
-        const trans = draftQ.translations?.[lang];
-        const transOpts = trans?.options || [];
-        const transDesc = trans?.section_description || draftQ.section_description || '';
-        const transQDesc = trans?.question_description || draftQ.question_description || '';
-
+      const payloadFr = payload.questions.map((q, idx) => {
+        const draftQ = questions[idx];
+        const createdQ = createdSurvey.questions?.[idx];
+        let optionsFr: Record<string, unknown> | null = null;
         if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
-          return {
-            choices: transOpts.length > 0 ? transOpts : q.options?.choices || [],
+          optionsFr = {
+            choices: draftQ.options_fr || q.options?.choices || [],
             has_other: q.options?.has_other || false,
             randomize_options: q.options?.randomize_options || false,
             locked_choices: q.options?.locked_choices || [],
           };
         } else if (q.type === 'checkboxes') {
-          return {
-            choices: transOpts.length > 0 ? transOpts : q.options?.choices || [],
+          optionsFr = {
+            choices: draftQ.options_fr || q.options?.choices || [],
             max_selections: q.options?.max_selections,
             has_other: q.options?.has_other || false,
             randomize_options: q.options?.randomize_options || false,
             locked_choices: q.options?.locked_choices || [],
           };
+        } else if (q.type === 'rating_scale' && draftQ.reference_number) {
+          optionsFr = { has_calculator: true };
         } else if (q.type === 'section_header') {
-          return {
-            description: transDesc,
+          optionsFr = {
+            description: draftQ.section_description_fr || draftQ.section_description || '',
             attachments: draftQ.attachments || [],
             description_alignment: draftQ.description_alignment || 'left',
           };
@@ -627,189 +749,120 @@ export default function CreateSurvey() {
                   normalize_uppercase: draftQ.validation_normalize_uppercase || false,
                 }
               : undefined;
-          return {
-            description: transQDesc,
+          optionsFr = {
+            description: draftQ.question_description_fr || draftQ.question_description || '',
             ...(validation ? { validation } : {}),
           };
         }
-        return null;
-      };
-
-      for (const lang of SUPPORTED_LANGUAGES.filter((l) => l.code !== 'en')) {
-        const langQuestions = payload.questions
-          .map((q, idx) => {
-            const draftQ = questions[idx];
-            const createdQ = createdSurvey.questions?.[idx];
-            const trans = draftQ.translations?.[lang.code];
-            const hasText = trans?.question_text;
-            const hasOptions = trans?.options?.length;
-
-            // Skip if nothing was translated for this language
-            if (
-              !hasText &&
-              !hasOptions &&
-              !trans?.section_description &&
-              !trans?.question_description
-            ) {
-              return null;
-            }
-
-            let optionsPayload = buildTransOptions(draftQ, q, lang.code);
-            if (trans?.definitions?.length) {
-              if (!optionsPayload) optionsPayload = {};
-              optionsPayload.definitions = trans.definitions;
-            }
-            if (draftQ.logic_gates?.length) {
-              if (!optionsPayload) optionsPayload = {};
-              optionsPayload.logic_gates = draftQ.logic_gates;
-              optionsPayload.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
-            }
-
-            return {
-              ...q,
-              id: createdQ?.id || q.id,
-              question_text: hasText || draftQ.question_text || '',
-              options: optionsPayload,
-            };
-          })
-          .filter(Boolean);
-
-        if (langQuestions.length > 0) {
-          const resTr = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              language_code: lang.code,
-              questions: langQuestions,
-              title: translationsMeta[lang.code]?.title || '',
-              description: translationsMeta[lang.code]?.description || '',
-            }),
-          });
-          if (!resTr.ok) throw new Error(`Failed to save ${lang.name} translations`);
+        if (draftQ.definitions_fr && draftQ.definitions_fr.length > 0) {
+          if (!optionsFr) optionsFr = {};
+          optionsFr.definitions = draftQ.definitions_fr;
         }
+        if (draftQ.logic_gates && draftQ.logic_gates.length > 0) {
+          if (!optionsFr) optionsFr = {};
+          optionsFr.logic_gates = draftQ.logic_gates;
+          optionsFr.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
+        }
+        return {
+          ...q,
+          id: createdQ?.id || q.id,
+          question_text: draftQ.question_text_fr || draftQ.question_text || '',
+          options: optionsFr,
+        };
+      });
+
+      const filteredPayloadFr = payloadFr.filter((q) => q.id);
+      if (filteredPayloadFr.length > 0) {
+        const resFr = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questions_fr: filteredPayloadFr,
+            title_fr: titleFr || '',
+            description_fr: descriptionFr || '',
+          }),
+        });
+
+        if (!resFr.ok) throw new Error('Failed to save French translations');
+      }
+
+      const payloadZh = payload.questions.map((q, idx: number) => {
+        const draftQ = questions[idx];
+        const createdQ = createdSurvey.questions?.[idx];
+        let optionsZh: Record<string, unknown> | null = null;
+        if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
+          optionsZh = {
+            choices: draftQ.options_zh || q.options?.choices || [],
+            has_other: q.options?.has_other || false,
+            randomize_options: q.options?.randomize_options || false,
+            locked_choices: q.options?.locked_choices || [],
+          };
+        } else if (q.type === 'checkboxes') {
+          optionsZh = {
+            choices: draftQ.options_zh || q.options?.choices || [],
+            max_selections: q.options?.max_selections,
+            has_other: q.options?.has_other || false,
+            randomize_options: q.options?.randomize_options || false,
+            locked_choices: q.options?.locked_choices || [],
+          };
+        } else if (q.type === 'rating_scale' && draftQ.reference_number) {
+          optionsZh = { has_calculator: true };
+        } else if (q.type === 'section_header') {
+          optionsZh = {
+            description: draftQ.section_description_zh || draftQ.section_description || '',
+            attachments: draftQ.attachments || [],
+            description_alignment: draftQ.description_alignment || 'left',
+          };
+        } else if (q.type === 'short_answer') {
+          const validation =
+            draftQ.validation_type && draftQ.validation_type !== 'none'
+              ? {
+                  type: draftQ.validation_type,
+                  regex: draftQ.validation_regex || '',
+                  max_length: draftQ.validation_max_length,
+                  normalize_uppercase: draftQ.validation_normalize_uppercase || false,
+                }
+              : undefined;
+          optionsZh = {
+            description: draftQ.question_description_zh || draftQ.question_description || '',
+            ...(validation ? { validation } : {}),
+          };
+        }
+        if (draftQ.definitions_zh && draftQ.definitions_zh.length > 0) {
+          if (!optionsZh) optionsZh = {};
+          optionsZh.definitions = draftQ.definitions_zh;
+        }
+        if (draftQ.logic_gates && draftQ.logic_gates.length > 0) {
+          if (!optionsZh) optionsZh = {};
+          optionsZh.logic_gates = draftQ.logic_gates;
+          optionsZh.logic_gate_match_type = draftQ.logic_gate_match_type || 'all';
+        }
+        return {
+          ...q,
+          id: createdQ?.id || q.id,
+          question_text: draftQ.question_text_zh || draftQ.question_text || '',
+          options: optionsZh,
+        };
+      });
+
+      const filteredPayloadZh = payloadZh.filter((q) => q.id);
+      if (filteredPayloadZh.length > 0) {
+        const resZh = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            questions_zh: filteredPayloadZh,
+            title_zh: titleZh || '',
+            description_zh: descriptionZh || '',
+          }),
+        });
+
+        if (!resZh.ok) throw new Error('Failed to save Chinese translations');
       }
       router.push('/admin');
     } catch (err: unknown) {
       setError((err as { message?: string }).message || 'Error saving survey');
       setSubmitting(false);
-    }
-  };
-
-  const toggleLanguage = (code: string) => {
-    if (code === 'en') return;
-    setEnabledLangs((prev) => {
-      const next = new Set(prev);
-      if (next.has(code)) {
-        next.delete(code);
-      } else {
-        next.add(code);
-      }
-      return next;
-    });
-  };
-
-  const handleTranslateAll = async (
-    apiKey: string,
-    provider: 'opencode' | 'openrouter' | 'gemini'
-  ) => {
-    setShowTranslateDialog(false);
-    setTranslateApiKey('');
-    setTranslateAllLoading(true);
-    setTranslateAllError('');
-    setTranslateAllSuccess('');
-
-    const englishQuestions = questions.map((q, idx) => ({
-      index: idx,
-      type: q.type,
-      question_text: q.question_text,
-      options: getOptionsArray(q.options),
-      question_description: q.question_description || '',
-      section_description: q.section_description || '',
-      definitions: q.definitions || [],
-    }));
-
-    const langName = getLanguageConfig(language)?.name || language;
-
-    try {
-      const res = await fetch('/api/surveys/translate-all', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          api_key: apiKey,
-          provider,
-          target_language: language,
-          english_title: title,
-          english_description: description,
-          english_questions: englishQuestions,
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Translation failed');
-      }
-
-      const data = await res.json();
-
-      const entries = Object.entries(data.translations || {});
-      if (entries.length === 0) {
-        throw new Error('Backend returned no translations');
-      }
-
-      const [lang, tData] = entries[0] as [
-        string,
-        {
-          title?: string;
-          description?: string;
-          questions?: Array<{
-            index: number;
-            question_text?: string;
-            options?: string[];
-            question_description?: string;
-            section_description?: string;
-            definitions?: { term: string; definition: string }[];
-          }>;
-        },
-      ];
-
-      if (!tData) {
-        throw new Error('Translation data is missing for ' + lang);
-      }
-
-      if (tData.title) setTransMeta(lang, 'title', tData.title);
-      if (tData.description) setTransMeta(lang, 'description', tData.description);
-
-      if (tData.questions) {
-        setQuestions((prev) =>
-          prev.map((q, idx) => {
-            const trans = tData.questions?.[idx];
-            if (!trans) return q;
-            const updates: Record<string, unknown> = {};
-            if (trans.question_text) updates.question_text = trans.question_text;
-            if (trans.options && trans.options.length > 0) updates.options = trans.options;
-            if (trans.section_description) updates.section_description = trans.section_description;
-            if (trans.question_description)
-              updates.question_description = trans.question_description;
-            if (trans.definitions && trans.definitions.length > 0)
-              updates.definitions = trans.definitions;
-            if (Object.keys(updates).length === 0) return q;
-            return {
-              ...q,
-              translations: {
-                ...q.translations,
-                [lang]: { ...q.translations?.[lang], ...updates },
-              },
-            };
-          })
-        );
-      }
-
-      setTranslateAllSuccess(`Translated to ${langName} — review and save`);
-    } catch (err: unknown) {
-      console.error('Translate All failed:', err);
-      setTranslateAllError(err instanceof Error ? err.message : 'Translation failed');
-    } finally {
-      setTranslateAllLoading(false);
     }
   };
 
@@ -839,7 +892,7 @@ export default function CreateSurvey() {
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                 Survey Title
               </label>
-              {language !== 'en' && (
+              {language === 'fr' && (
                 <div className="text-sm text-gray-500 dark:text-slate-400 mb-1 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                   {title || 'No English title provided'}
                 </div>
@@ -847,17 +900,21 @@ export default function CreateSurvey() {
               <input
                 type="text"
                 required={language === 'en'}
-                value={language === 'en' ? title : getTransMeta(language, 'title')}
+                value={language === 'en' ? title : language === 'fr' ? titleFr : titleZh}
                 onChange={(e) =>
                   language === 'en'
                     ? setTitle(e.target.value)
-                    : setTransMeta(language, 'title', e.target.value)
+                    : language === 'fr'
+                      ? setTitleFr(e.target.value)
+                      : setTitleZh(e.target.value)
                 }
                 className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 placeholder={
-                  language === 'en'
-                    ? 'e.g. Mental Health Perspectives 2026'
-                    : `Title in ${getLanguageConfig(language)?.name || language}`
+                  language === 'fr'
+                    ? 'Titre en francais'
+                    : language === 'zh'
+                      ? '中文标题'
+                      : 'e.g. Mental Health Perspectives 2026'
                 }
               />
             </div>
@@ -879,22 +936,32 @@ export default function CreateSurvey() {
                   </select>
                 </div>
               </div>
-              {language !== 'en' && (
+              {language === 'fr' && (
                 <div className="text-sm text-gray-500 dark:text-slate-400 mb-2 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                   {description || 'No English description provided'}
                 </div>
               )}
               <RichTextEditor
-                value={language === 'en' ? description : getTransMeta(language, 'description')}
+                value={
+                  language === 'en'
+                    ? description
+                    : language === 'fr'
+                      ? descriptionFr
+                      : descriptionZh
+                }
                 onChange={(val) =>
                   language === 'en'
                     ? setDescription(val)
-                    : setTransMeta(language, 'description', val)
+                    : language === 'fr'
+                      ? setDescriptionFr(val)
+                      : setDescriptionZh(val)
                 }
                 placeholder={
-                  language === 'en'
-                    ? 'What is this survey about?'
-                    : `Description in ${getLanguageConfig(language)?.name || language}`
+                  language === 'fr'
+                    ? "De quoi s'agit-il?"
+                    : language === 'zh'
+                      ? '调查描述'
+                      : 'What is this survey about?'
                 }
               />
             </div>
@@ -1153,20 +1220,38 @@ export default function CreateSurvey() {
                     <label className="block text-sm font-medium text-gray-600 dark:text-slate-400 capitalize mb-1">
                       {q.type.replace('_', ' ')}
                     </label>
-                    {language !== 'en' && (
+                    {language === 'fr' && (
                       <div className="text-sm text-gray-500 dark:text-slate-400 mb-2 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                         {q.question_text || 'No English text provided'}
                       </div>
                     )}
                     <RichTextEditor
-                      value={getTransField(q, 'question_text')}
-                      onChange={(val) => setTransField(q.id, 'question_text', val)}
+                      value={
+                        language === 'en'
+                          ? q.question_text
+                          : language === 'fr'
+                            ? q.question_text_fr || ''
+                            : q.question_text_zh || ''
+                      }
+                      onChange={(val) =>
+                        updateQuestion(
+                          q.id,
+                          language === 'en'
+                            ? 'question_text'
+                            : language === 'fr'
+                              ? 'question_text_fr'
+                              : 'question_text_zh',
+                          val
+                        )
+                      }
                       placeholder={
                         language === 'en'
                           ? q.type === 'section_header'
                             ? 'Section Title'
                             : 'Type your question here...'
-                          : `Translation in ${getLanguageConfig(language)?.name || language}`
+                          : language === 'fr'
+                            ? 'Traduction francaise'
+                            : '中文翻译'
                       }
                     />
                   </div>
@@ -1315,27 +1400,27 @@ export default function CreateSurvey() {
                   className={`flex items-center flex-wrap gap-3 mb-4 text-sm text-gray-600 dark:text-slate-400 ml-10 ${language !== 'en' ? 'hidden' : ''}`}
                 >
                   {q.type !== 'section_header' && (
-                    <>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={q.is_required}
-                          onChange={(e) => updateQuestion(q.id, 'is_required', e.target.checked)}
-                          className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
-                        />
-                        Required
-                      </label>
-                      <label className="flex items-center cursor-pointer ml-4">
-                        <input
-                          type="checkbox"
-                          checked={q.is_conditional || false}
-                          onChange={(e) => updateQuestion(q.id, 'is_conditional', e.target.checked)}
-                          className="mr-2 h-4 w-4 text-purple-500"
-                        />
-                        Skip if answered previously
-                      </label>
-                    </>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={q.is_required}
+                        onChange={(e) => updateQuestion(q.id, 'is_required', e.target.checked)}
+                        className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
+                      />
+                      Required
+                    </label>
                   )}
+                  <label
+                    className={`flex items-center cursor-pointer ${q.type !== 'section_header' ? 'ml-4' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={q.is_conditional || false}
+                      onChange={(e) => updateQuestion(q.id, 'is_conditional', e.target.checked)}
+                      className="mr-2 h-4 w-4 text-purple-500"
+                    />
+                    Skip if answered previously
+                  </label>
                   {q.type === 'checkboxes' && (
                     <label className="flex items-center">
                       <span className="mr-2">Max Selections:</span>
@@ -1813,8 +1898,6 @@ export default function CreateSurvey() {
             </button>
           </div>
         </form>
-
-        {/* Language sidebar */}
         <div className="flex flex-col gap-1 w-32 flex-shrink-0 pt-0 sticky top-4 self-start">
           {SUPPORTED_LANGUAGES.map((lang) => {
             const isEnabled = enabledLangs.has(lang.code);
@@ -1846,9 +1929,7 @@ export default function CreateSurvey() {
                       toggleLanguage(lang.code);
                     }
                   }}
-                  className={`cursor-pointer flex-shrink-0 ml-1 ${
-                    isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'
-                  }`}
+                  className={`cursor-pointer flex-shrink-0 ml-1 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'}`}
                   title={
                     isLocked
                       ? 'English is always enabled'

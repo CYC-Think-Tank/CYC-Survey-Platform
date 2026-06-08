@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { Fragment, useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   ArrowLeft,
   BarChart3,
@@ -15,9 +16,19 @@ import {
   Sparkles,
   AlertTriangle,
   Globe,
+  MapPinned,
 } from 'lucide-react';
-import { getLanguageConfig } from '@/config/languages';
 import AiInsightsTab from '@/components/AiInsightsTab';
+import type { FsaMapDot } from '@/components/FsaDotMap';
+
+const FsaDotMap = dynamic(() => import('@/components/FsaDotMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full min-h-[280px] items-center justify-center text-sm text-gray-500">
+      Loading map...
+    </div>
+  ),
+});
 
 interface Answer {
   id?: string;
@@ -90,6 +101,29 @@ interface QuestionSummaryStats {
   quartiles?: Quartiles;
   outliers?: number[];
   texts?: string[];
+  postal_geo?: PostalGeoStats;
+}
+
+interface PostalGeoStats {
+  type: 'fsa_dot_map';
+  question_id: string;
+  total_usable: number;
+  matched_count: number;
+  unmatched_count: number;
+  suppressed_count: number;
+  suppressed_fsa_count: number;
+  min_display_count: number;
+  dots: FsaMapDot[];
+}
+
+type PostalGeoGroupBy = 'fsa' | 'city' | 'province';
+
+interface PostalGeoListRow {
+  key: string;
+  label: string;
+  sublabel: string;
+  count: number;
+  percentage: number;
 }
 
 export default function ResultsPage() {
@@ -98,6 +132,7 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'summary' | 'individual' | 'ai'>('summary');
   const [showAdvanced, setShowAdvanced] = useState<Record<string, boolean>>({});
+  const [postalGeoGroupBy, setPostalGeoGroupBy] = useState<PostalGeoGroupBy>('fsa');
 
   // Summary State
   const [summaryStats, setSummaryStats] = useState<Record<string, QuestionSummaryStats> | null>(
@@ -115,7 +150,7 @@ export default function ResultsPage() {
   const toggleAdvanced = (qId: string) =>
     setShowAdvanced((prev) => ({ ...prev, [qId]: !prev[qId] }));
 
-  const fetchResults = () => {
+  const fetchResults = useCallback(() => {
     fetch(`/api/surveys/${params.id}/results`)
       .then((res) => res.json())
       .then((d) => {
@@ -123,7 +158,7 @@ export default function ResultsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  };
+  }, [params.id]);
 
   const fetchSummary = useCallback(() => {
     setSummaryLoading(true);
@@ -159,7 +194,7 @@ export default function ResultsPage() {
 
   useEffect(() => {
     fetchResults();
-  }, [params.id]);
+  }, [fetchResults]);
 
   useEffect(() => {
     if (tab === 'summary' && !summaryStats && !loading) {
@@ -250,6 +285,157 @@ export default function ResultsPage() {
       )}
     </div>
   );
+
+  const renderPostalGeoCard = (q: Question, stat: QuestionSummaryStats) => {
+    const postalGeo = stat.postal_geo;
+    if (!postalGeo) return null;
+
+    const groupOptions: Array<{ label: string; value: PostalGeoGroupBy }> = [
+      { label: 'FSA', value: 'fsa' },
+      { label: 'City', value: 'city' },
+      { label: 'Province', value: 'province' },
+    ];
+
+    const listRows = Array.from(
+      postalGeo.dots
+        .reduce((rows, dot) => {
+          const city = dot.city || dot.fsa;
+          const group =
+            postalGeoGroupBy === 'province'
+              ? {
+                  key: dot.province,
+                  label: dot.province,
+                  sublabel: 'Province / territory',
+                }
+              : postalGeoGroupBy === 'city'
+                ? {
+                    key: `${city}-${dot.province}`,
+                    label: city,
+                    sublabel: dot.province,
+                  }
+                : {
+                    key: dot.fsa,
+                    label: dot.fsa,
+                    sublabel: dot.province,
+                  };
+
+          const existing = rows.get(group.key);
+          if (existing) {
+            existing.count += dot.count;
+          } else {
+            rows.set(group.key, {
+              ...group,
+              count: dot.count,
+              percentage: 0,
+            });
+          }
+          return rows;
+        }, new Map<string, PostalGeoListRow>())
+        .values()
+    )
+      .map((row) => ({
+        ...row,
+        percentage: postalGeo.matched_count
+          ? Math.round((row.count / postalGeo.matched_count) * 1000) / 10
+          : 0,
+      }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+    const metrics = (
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <span className="block text-xs text-gray-500">Matched</span>
+          <span className="font-bold text-[var(--color-cyc-secondary)]">
+            {postalGeo.matched_count}
+          </span>
+        </div>
+        <div>
+          <span className="block text-xs text-gray-500">Unmatched</span>
+          <span className="font-bold text-[var(--color-cyc-secondary)]">
+            {postalGeo.unmatched_count}
+          </span>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
+          <MapPinned className="w-4 h-4 mr-2" />
+          Response Geography
+        </h3>
+        <p className="text-xs text-gray-400 mb-1">
+          Approximate postal prefix areas from: {q.question_text}
+        </p>
+        <p className="text-xs text-gray-400 mb-5">
+          Dots represent FSA prefix areas, not exact respondent locations. Small response counts are
+          shown individually, so use caution when sharing this view.
+        </p>
+
+        {postalGeo.dots.length === 0 ? (
+          <div className="space-y-4">
+            {metrics}
+            <div className="border border-dashed border-gray-200 rounded-xl p-8 text-center text-sm text-gray-500">
+              No matched Canadian postal prefix areas are available to map yet.
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.8fr)]">
+            <div className="h-[320px] overflow-hidden rounded-xl border border-gray-200 bg-slate-50">
+              <FsaDotMap dots={postalGeo.dots} />
+            </div>
+
+            <div>
+              <div className="mb-4">{metrics}</div>
+              <div
+                aria-label="Group geography results by"
+                className="mb-4 grid grid-cols-3 rounded-lg bg-gray-100 p-1 text-xs font-semibold"
+              >
+                {groupOptions.map((option) => (
+                  <button
+                    className={`rounded-md px-2 py-1.5 transition-colors ${
+                      postalGeoGroupBy === option.value
+                        ? 'bg-white text-[var(--color-cyc-secondary)] shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    key={option.value}
+                    onClick={() => setPostalGeoGroupBy(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="space-y-2 max-h-72 overflow-y-auto pr-1"
+                data-testid="geography-ranked-list"
+              >
+                {listRows.map((row) => (
+                  <div key={row.key}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-semibold text-gray-700">
+                        {row.label}
+                        <span className="ml-2 font-normal text-gray-400">{row.sublabel}</span>
+                      </span>
+                      <span className="text-gray-500">
+                        {row.count} ({row.percentage}%)
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[var(--color-cyc-primary)]"
+                        style={{ width: `${Math.max(8, row.percentage)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   function renderSummaryForQuestion(q: Question) {
     if (!summaryStats || !summaryStats[q.id]) {
@@ -577,6 +763,12 @@ export default function ResultsPage() {
               Validation: {validationType.replace(/_/g, ' ')}
             </div>
           )}
+          {validationType === 'postal_code_prefix' && stat.postal_geo && (
+            <p className="text-sm text-gray-500 mb-3">
+              Postal prefixes are aggregated in the Response Geography card above. Raw prefix lists
+              are hidden here for privacy.
+            </p>
+          )}
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {texts.map((t: string, i: number) => (
               <div
@@ -716,7 +908,14 @@ export default function ResultsPage() {
                     {Object.entries(data.language_breakdown as Record<string, number>)
                       .sort(([, a], [, b]) => b - a)
                       .map(([lang, count]) => {
-                        const label = getLanguageConfig(lang)?.name || lang;
+                        const label =
+                          lang === 'en'
+                            ? 'English'
+                            : lang === 'fr'
+                              ? 'Français'
+                              : lang === 'zh'
+                                ? '中文'
+                                : lang;
                         const pct =
                           total_responses > 0 ? Math.round((count / total_responses) * 100) : 0;
                         return (
@@ -739,6 +938,13 @@ export default function ResultsPage() {
                   </div>
                 </div>
               )}
+
+              {questions.map((q: Question) => {
+                const stat = summaryStats?.[q.id];
+                return stat?.postal_geo ? (
+                  <Fragment key={q.id}>{renderPostalGeoCard(q, stat)}</Fragment>
+                ) : null;
+              })}
 
               {questions.map((q: Question, idx: number) => (
                 <div key={q.id} className="bg-white rounded-xl shadow border border-gray-200 p-6">
@@ -811,10 +1017,24 @@ export default function ResultsPage() {
                   </span>
                   {currentResp.language && (
                     <div
-                      className={`mt-2 inline-flex items-center px-2 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider bg-gray-100 text-gray-700`}
+                      className={`mt-2 inline-flex items-center px-2 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${
+                        currentResp.language === 'en'
+                          ? 'bg-blue-100 text-blue-700'
+                          : currentResp.language === 'fr'
+                            ? 'bg-purple-100 text-purple-700'
+                            : currentResp.language === 'zh'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                      }`}
                     >
                       <Globe className="w-3 h-3 mr-1" />
-                      {getLanguageConfig(currentResp.language)?.name || currentResp.language}
+                      {currentResp.language === 'en'
+                        ? 'English'
+                        : currentResp.language === 'fr'
+                          ? 'Français'
+                          : currentResp.language === 'zh'
+                            ? '中文'
+                            : currentResp.language}
                     </div>
                   )}
                   {currentResp.attention_check_failures &&

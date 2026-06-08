@@ -61,12 +61,97 @@ async def get_share_links(survey_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/api/global-share-links")
+async def create_global_share_link(body: ShareLinkCreate):
+    """Generate a unique global share link code."""
+    try:
+        code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
+        row = {"survey_id": None, "code": code, "label": body.label or None}
+        res = supabase.table("share_links").insert(row).execute()
+        return res.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/global-share-links")
+async def get_global_share_links():
+    """Get all global share links with their response counts."""
+    try:
+        links_res = (
+            supabase.table("share_links")
+            .select("*")
+            .is_("survey_id", "null")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        links = links_res.data
+
+        if not links:
+            return []
+
+        # Get response counts per referral_source code
+        codes = [link["code"] for link in links]
+        sessions_res = (
+            supabase.table("response_sessions")
+            .select("referral_source")
+            .in_("referral_source", codes)
+            .execute()
+        )
+
+        counts = {}
+        for s in sessions_res.data:
+            ref = s.get("referral_source")
+            if ref:
+                counts[ref] = counts.get(ref, 0) + 1
+
+        for link in links:
+            link["response_count"] = counts.get(link["code"], 0)
+
+        return links
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.delete("/api/share-links/{link_id}")
 async def delete_share_link(link_id: str):
     """Delete a share link."""
     try:
         supabase.table("share_links").delete().eq("id", link_id).execute()
         return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/user/referral-link")
+async def get_or_create_referral_link(email: str):
+    """Get or generate a unique global share link code for a user email."""
+    try:
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Check if one already exists
+        existing = (
+            supabase.table("share_links")
+            .select("*")
+            .eq("email", email)
+            .is_("survey_id", "null")
+            .execute()
+        )
+        if existing.data:
+            return existing.data[0]
+
+        # Generate new one
+        code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
+        row = {
+            "survey_id": None,
+            "code": code,
+            "label": "User Referral",
+            "email": email,
+        }
+        res = supabase.table("share_links").insert(row).execute()
+        return res.data[0]
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
