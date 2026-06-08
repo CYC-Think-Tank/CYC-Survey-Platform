@@ -96,9 +96,14 @@ export function ReferralSection({
           {t('Share to win!')}
         </p>
 
-        <p className="text-xs sm:text-sm text-gray-500 font-medium mb-6 leading-relaxed px-1">
-          {t('1 Referral = +1 Entry. Share with everyone to boost your chances!')}
-        </p>
+        <div className="bg-teal-50 border border-teal-100 rounded-xl p-3 mb-4 shadow-inner relative overflow-hidden">
+          <p className="text-base sm:text-[17px] font-black text-[#04377E] mb-0.5 tracking-tight drop-shadow-sm">
+            {t('1 Referral = +1 Entry')}
+          </p>
+          <p className="text-[11px] sm:text-xs text-teal-800 font-medium leading-relaxed">
+            {t('Share with everyone to boost your chances!')}
+          </p>
+        </div>
 
         <AnimatePresence mode="wait">
           {!isExpanded ? (
