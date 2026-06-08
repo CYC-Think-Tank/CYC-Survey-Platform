@@ -102,6 +102,9 @@ export default function CreateSurvey() {
   const [translateAllLoading, setTranslateAllLoading] = useState(false);
   const [translateAllError, setTranslateAllError] = useState('');
   const [translateAllSuccess, setTranslateAllSuccess] = useState('');
+  const [showTranslateDialog, setShowTranslateDialog] = useState(false);
+  const [translateApiKey, setTranslateApiKey] = useState('');
+  const [translateProvider, setTranslateProvider] = useState<'opencode' | 'openrouter'>('opencode');
   const [enabledLangs, setEnabledLangs] = useState<Set<string>>(new Set(['en', 'fr', 'zh']));
 
   const getOptionsArray = (options: unknown): string[] => {
@@ -703,10 +706,9 @@ export default function CreateSurvey() {
     });
   };
 
-  const handleTranslateAll = async () => {
-    const apiKey = window.prompt('Enter your OpenCode Go API key (sk-l...):');
-    if (!apiKey) return;
-
+  const handleTranslateAll = async (apiKey: string, provider: 'opencode' | 'openrouter') => {
+    setShowTranslateDialog(false);
+    setTranslateApiKey('');
     setTranslateAllLoading(true);
     setTranslateAllError('');
     setTranslateAllSuccess('');
@@ -729,6 +731,7 @@ export default function CreateSurvey() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           api_key: apiKey,
+          provider,
           target_language: language,
           english_title: title,
           english_description: description,
@@ -981,7 +984,7 @@ export default function CreateSurvey() {
                   <div className="mt-3 flex items-center gap-3">
                     <button
                       type="button"
-                      onClick={handleTranslateAll}
+                      onClick={() => setShowTranslateDialog(true)}
                       disabled={translateAllLoading}
                       className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                         translateAllLoading
@@ -1004,6 +1007,71 @@ export default function CreateSurvey() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {showTranslateDialog && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Translate to {getLanguageConfig(language)?.name || language}
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={translateApiKey}
+                        onChange={(e) => setTranslateApiKey(e.target.value)}
+                        placeholder="sk-l... or sk-or-..."
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && translateApiKey.trim()) {
+                            handleTranslateAll(translateApiKey.trim(), translateProvider);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        Provider
+                      </label>
+                      <select
+                        value={translateProvider}
+                        onChange={(e) =>
+                          setTranslateProvider(e.target.value as 'opencode' | 'openrouter')
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
+                      >
+                        <option value="opencode">OpenCode Go (DeepSeek V4 Flash)</option>
+                        <option value="openrouter">OpenRouter (free)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowTranslateDialog(false);
+                        setTranslateApiKey('');
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-md transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTranslateAll(translateApiKey.trim(), translateProvider)}
+                      disabled={!translateApiKey.trim()}
+                      className="px-4 py-2 text-sm font-medium text-white bg-[var(--color-cyc-primary)] hover:opacity-90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Translate
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

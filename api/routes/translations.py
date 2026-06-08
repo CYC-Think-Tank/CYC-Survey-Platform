@@ -1,4 +1,3 @@
-import asyncio
 import io
 import json as json_module
 import os
@@ -506,35 +505,51 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
 
 @router.post("/api/surveys/translate-all")
 async def translate_all_languages(request: Request):
-    """Translate survey content from English to all target languages concurrently."""
+    """Translate survey content from English to the target language."""
+    result = None
     try:
         body = await request.json()
         api_key = body.get("api_key")
+        provider = body.get("provider", "opencode")
+        target_language = body.get("target_language")
         english_title = body.get("english_title", "")
         english_description = body.get("english_description", "")
         english_questions = body.get("english_questions", [])
 
         if not api_key:
             raise HTTPException(status_code=400, detail="API key is required")
+        if not target_language:
+            raise HTTPException(status_code=400, detail="Target language is required")
         if not english_questions:
             raise HTTPException(status_code=400, detail="No questions to translate")
 
-        TARGET_LANGUAGES = [
-            ("es", "Spanish"),
-            ("pa", "Punjabi"),
-            ("ar", "Arabic"),
-            ("tl", "Tagalog"),
-            ("yue", "Cantonese"),
-            ("it", "Italian"),
-            ("de", "German"),
-            ("ta", "Tamil"),
-        ]
+        LANGUAGE_NAMES = {
+            "es": "Spanish",
+            "pa": "Punjabi",
+            "ar": "Arabic",
+            "tl": "Tagalog",
+            "yue": "Cantonese",
+            "it": "Italian",
+            "de": "German",
+            "ta": "Tamil",
+        }
 
-        OPencode_GO_URL = "https://opencode.ai/zen/go/v1/chat/completions"
-        MODEL = "deepseek-v4-flash"
+        if target_language not in LANGUAGE_NAMES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported target language: {target_language}",
+            )
 
-        async def translate_one(client: httpx.AsyncClient, language_code: str, language_name: str):
-            prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
+        language_name = LANGUAGE_NAMES[target_language]
+
+        if provider == "openrouter":
+            API_URL = "https://openrouter.ai/api/v1/chat/completions"
+            MODEL = "openrouter/free"
+        else:
+            API_URL = "https://opencode.ai/zen/go/v1/chat/completions"
+            MODEL = "deepseek-v4-flash"
+
+        prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
 
 Return ONLY a JSON object with this exact structure:
 {{
@@ -571,23 +586,24 @@ Rules:
 
 Return ONLY the JSON object, no markdown wrapping, no explanations."""
 
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            }
-            payload = {
-                "model": MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.1,
-                "max_tokens": 65536,
-            }
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,
+            "max_tokens": 65536,
+        }
 
-            resp = await client.post(OPencode_GO_URL, json=payload, headers=headers)
+        async with httpx.AsyncClient(timeout=600.0) as client:
+            resp = await client.post(API_URL, json=payload, headers=headers)
 
             if resp.status_code != 200:
                 raise HTTPException(
                     status_code=502,
-                    detail=f"OpenCode Go API error ({language_code}): {resp.status_code} - {resp.text[:300]}",
+                    detail=f"Translation API error ({target_language}): {resp.status_code} - {resp.text[:300]}",
                 )
 
             data = resp.json()
@@ -597,7 +613,7 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
             if not cleaned:
                 raise HTTPException(
                     status_code=502,
-                    detail=f"OpenCode Go returned empty response for {language_code}",
+                    detail=f"Translation API returned empty response for {target_language}",
                 )
             if cleaned.startswith("```"):
                 cleaned = cleaned.split("\n", 1)[1]
@@ -610,23 +626,16 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
             except json_module.JSONDecodeError:
                 raise HTTPException(
                     status_code=502,
-                    detail=f"OpenCode Go returned invalid JSON for {language_code}: {cleaned[:200]}",
+                    detail=f"Translation API returned invalid JSON for {target_language}: {cleaned[:200]}",
                 )
-            return language_code, parsed
 
-        async with httpx.AsyncClient(timeout=180.0) as shared_client:
-            tasks = [translate_one(shared_client, code, name) for code, name in TARGET_LANGUAGES]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            result = {"translations": {target_language: parsed}}
 
-            translations = {}
-            for result in results:
-                if isinstance(result, Exception):
-                    continue
-                code, data = result
-                translations[code] = data
-
-        return {"translations": translations}
-
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Translation timed out for {target_language}. The request took too long — try again.",
+        )
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
@@ -634,3 +643,9 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+    if result is None:
+        raise HTTPException(
+            status_code=500, detail="Translation produced no result — please try again."
+        )
+    return result
