@@ -139,6 +139,7 @@ export default function EditSurvey() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const [language, setLanguage] = useState<string>('en');
+  const [enabledLangs, setEnabledLangs] = useState<Set<string>>(new Set(['en', 'fr', 'zh']));
   const [isLocked, setIsLocked] = useState(false);
   const [translationUploading, setTranslationUploading] = useState(false);
   const [translationUploadError, setTranslationUploadError] = useState('');
@@ -282,6 +283,12 @@ export default function EditSurvey() {
         setEstimatedMinutes(data.estimated_minutes);
         setIsActive(data.is_active);
         setThumbnailUrl(data.thumbnail_url || '');
+        const loaded = data.enabled_languages;
+        if (loaded && loaded.length > 0) {
+          setEnabledLangs(new Set(loaded));
+        } else {
+          setEnabledLangs(new Set(SUPPORTED_LANGUAGES.map((l) => l.code)));
+        }
 
         const metaMap: Record<string, { title: string; description: string }> = {};
         for (const lang of SUPPORTED_LANGUAGES.filter((l) => l.code !== 'en')) {
@@ -797,6 +804,7 @@ export default function EditSurvey() {
         thumbnail_url: thumbnailUrl || undefined,
         estimated_minutes: estimatedMinutes,
         is_active: isActive,
+        enabled_languages: [...enabledLangs],
         questions: questions.map((q, idx) => {
           let optionsPayload: OptionsPayload | null = null;
           if (q.type === 'multiple_choice' || q.type === 'dropdown' || q.type === 'ranking') {
@@ -1006,12 +1014,15 @@ export default function EditSurvey() {
       definitions: q.definitions || [],
     }));
 
+    const langName = getLanguageConfig(language)?.name || language;
+
     try {
       const res = await fetch('/api/surveys/translate-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           api_key: apiKey,
+          target_language: language,
           english_title: title,
           english_description: description,
           english_questions: englishQuestions,
@@ -1025,9 +1036,14 @@ export default function EditSurvey() {
 
       const data = await res.json();
 
-      for (const [langCode, langData] of Object.entries(data.translations)) {
-        const lang = langCode as string;
-        const tData = langData as {
+      const entries = Object.entries(data.translations || {});
+      if (entries.length === 0) {
+        throw new Error('Backend returned no translations');
+      }
+
+      const [lang, tData] = entries[0] as [
+        string,
+        {
           title?: string;
           description?: string;
           questions?: Array<{
@@ -1038,46 +1054,61 @@ export default function EditSurvey() {
             section_description?: string;
             definitions?: { term: string; definition: string }[];
           }>;
-        };
+        },
+      ];
 
-        if (tData.title) setTransMeta(lang, 'title', tData.title);
-        if (tData.description) setTransMeta(lang, 'description', tData.description);
-
-        if (tData.questions) {
-          setQuestions((prev) =>
-            prev.map((q, idx) => {
-              const trans = tData.questions?.[idx];
-              if (!trans) return q;
-              const updates: Record<string, unknown> = {};
-              if (trans.question_text) updates.question_text = trans.question_text;
-              if (trans.options && trans.options.length > 0) updates.options = trans.options;
-              if (trans.section_description)
-                updates.section_description = trans.section_description;
-              if (trans.question_description)
-                updates.question_description = trans.question_description;
-              if (trans.definitions && trans.definitions.length > 0)
-                updates.definitions = trans.definitions;
-              if (Object.keys(updates).length === 0) return q;
-              return {
-                ...q,
-                translations: {
-                  ...q.translations,
-                  [lang]: { ...q.translations?.[lang], ...updates },
-                },
-              };
-            })
-          );
-        }
+      if (!tData) {
+        throw new Error('Translation data is missing for ' + lang);
       }
 
-      setTranslateAllSuccess(
-        `Translated to ${Object.keys(data.translations).length} languages — review and save`
-      );
+      if (tData.title) setTransMeta(lang, 'title', tData.title);
+      if (tData.description) setTransMeta(lang, 'description', tData.description);
+
+      if (tData.questions) {
+        setQuestions((prev) =>
+          prev.map((q, idx) => {
+            const trans = tData.questions?.[idx];
+            if (!trans) return q;
+            const updates: Record<string, unknown> = {};
+            if (trans.question_text) updates.question_text = trans.question_text;
+            if (trans.options && trans.options.length > 0) updates.options = trans.options;
+            if (trans.section_description) updates.section_description = trans.section_description;
+            if (trans.question_description)
+              updates.question_description = trans.question_description;
+            if (trans.definitions && trans.definitions.length > 0)
+              updates.definitions = trans.definitions;
+            if (Object.keys(updates).length === 0) return q;
+            return {
+              ...q,
+              translations: {
+                ...q.translations,
+                [lang]: { ...q.translations?.[lang], ...updates },
+              },
+            };
+          })
+        );
+      }
+
+      setTranslateAllSuccess(`Translated to ${langName} — review and save`);
     } catch (err: unknown) {
+      console.error('Translate All failed:', err);
       setTranslateAllError(err instanceof Error ? err.message : 'Translation failed');
     } finally {
       setTranslateAllLoading(false);
     }
+  };
+
+  const toggleLanguage = (code: string) => {
+    if (code === 'en') return;
+    setEnabledLangs((prev) => {
+      const next = new Set(prev);
+      if (next.has(code)) {
+        next.delete(code);
+      } else {
+        next.add(code);
+      }
+      return next;
+    });
   };
 
   return (
@@ -1299,7 +1330,9 @@ export default function EditSurvey() {
                         }`}
                       >
                         <Upload className="w-4 h-4 mr-1.5" />
-                        {translateAllLoading ? 'Translating...' : 'Translate All'}
+                        {translateAllLoading
+                          ? `Translating to ${getLanguageConfig(language)?.name || language}...`
+                          : `Translate to ${getLanguageConfig(language)?.name || language}`}
                       </button>
                       {translateAllSuccess && (
                         <span className="text-green-600 dark:text-green-400">
@@ -2012,20 +2045,99 @@ export default function EditSurvey() {
 
         {/* Language sidebar */}
         <div className="flex flex-col gap-1 w-32 flex-shrink-0 pt-0 sticky top-4 self-start">
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              onClick={() => setLanguage(lang.code)}
-              className={`w-full text-left px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                language === lang.code
-                  ? 'bg-[var(--color-cyc-primary)] text-white shadow-sm'
-                  : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              {lang.name}
-            </button>
-          ))}
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const isEnabled = enabledLangs.has(lang.code);
+            const isLocked = lang.code === 'en';
+            return (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => setLanguage(lang.code)}
+                className={`w-full text-left px-3 py-2 text-xs font-medium rounded-md transition-colors flex items-center justify-between ${
+                  language === lang.code
+                    ? 'bg-[var(--color-cyc-primary)] text-white shadow-sm'
+                    : isEnabled
+                      ? 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
+                      : 'text-gray-400 dark:text-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800 opacity-50'
+                }`}
+              >
+                <span>{lang.name}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLanguage(lang.code);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.stopPropagation();
+                      toggleLanguage(lang.code);
+                    }
+                  }}
+                  className={`cursor-pointer flex-shrink-0 ml-1 ${
+                    isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'
+                  }`}
+                  title={
+                    isLocked
+                      ? 'English is always enabled'
+                      : isEnabled
+                        ? 'Click to hide from end users'
+                        : 'Click to make visible to end users'
+                  }
+                >
+                  {isLocked ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  ) : isEnabled ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
