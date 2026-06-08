@@ -3,7 +3,7 @@ import traceback
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from api.dependencies import supabase
 from api.models import SurveyCreate, SurveyDetail, SurveyList
@@ -113,6 +113,7 @@ async def create_survey(survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
+                    "enabled_languages": survey.enabled_languages,
                 }
             )
             .execute()
@@ -378,6 +379,7 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
+                    "enabled_languages": survey.enabled_languages,
                     "updated_at": datetime.utcnow().isoformat(),
                 }
             )
@@ -510,6 +512,36 @@ async def toggle_survey_status(survey_id: str):
         updated = res.data[0]
         updated["response_count"] = 0
         return updated
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/api/surveys/{survey_id}/languages")
+async def update_survey_languages(survey_id: str, request: Request):
+    """Update enabled languages for a survey. Works even on locked/published surveys."""
+    try:
+        body = await request.json()
+        enabled_languages = body.get("enabled_languages")
+
+        res = (
+            supabase.table("surveys")
+            .update(
+                {
+                    "enabled_languages": enabled_languages,
+                    "updated_at": datetime.utcnow().isoformat(),
+                }
+            )
+            .eq("id", survey_id)
+            .execute()
+        )
+
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Survey not found")
+
+        updated = res.data[0]
+        return updated
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { SUPPORTED_LANGUAGES } from '@/config/languages';
 
 export function Header() {
@@ -44,7 +44,7 @@ export function Header() {
           <nav className="flex items-center space-x-2 sm:space-x-6 relative">
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => setLanguage(e.target.value as Language)}
               className="text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] cursor-pointer"
             >
               {SUPPORTED_LANGUAGES.map((lang) => (

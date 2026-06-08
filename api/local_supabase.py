@@ -2,6 +2,7 @@
 Minimal local psycopg2-backed Supabase client shim for testing against local Postgres.
 Set LOCAL_DB=postgresql://... in environment to use this instead of real Supabase.
 """
+
 import json
 import re
 import uuid
@@ -118,7 +119,9 @@ class LocalQueryBuilder:
             direction = "DESC" if self._order_desc else "ASC"
             order = f'ORDER BY "{self._order_col}" {direction}'
 
-        query = f'SELECT {select_cols} FROM "{self._table}" {where_clause} {order}'.strip()
+        query = (
+            f'SELECT {select_cols} FROM "{self._table}" {where_clause} {order}'.strip()
+        )
         cur = self._conn.cursor()
         try:
             cur.execute(query, params)
@@ -135,10 +138,15 @@ class LocalQueryBuilder:
             rel_name, col = embedded[0], embedded[1]
             for r in rows:
                 c = self._conn.cursor()
-                c.execute(f'SELECT {col}(*) as ct FROM "{rel_name}" WHERE survey_id = %s', (r["id"],))
+                c.execute(
+                    f'SELECT {col}(*) as ct FROM "{rel_name}" WHERE survey_id = %s',
+                    (r["id"],),
+                )
                 cr = _dict_row(c, c.fetchone())
                 c.close()
-                r["response_sessions"] = [{"count": cr.get("ct", 0)}] if cr else [{"count": 0}]
+                r["response_sessions"] = (
+                    [{"count": cr.get("ct", 0)}] if cr else [{"count": 0}]
+                )
 
         return LocalResponse([_serialize_row(r) for r in rows])
 
@@ -146,7 +154,10 @@ class LocalQueryBuilder:
         items = data if isinstance(data, list) else [data]
         inserted = []
         for item in items:
-            serialized = {k: Json(v) if isinstance(v, (dict, list)) else v for k, v in item.items()}
+            serialized = {
+                k: Json(v) if isinstance(v, (dict, list)) else v
+                for k, v in item.items()
+            }
             cols = ", ".join(f'"{c}"' for c in serialized)
             placeholders = ", ".join(["%s"] * len(serialized))
             query = f'INSERT INTO "{self._table}" ({cols}) VALUES ({placeholders}) RETURNING *'
@@ -189,7 +200,10 @@ class LocalUpdateBuilder:
         return self
 
     def execute(self):
-        set_items = {k: Json(v) if isinstance(v, (dict, list)) else v for k, v in self._data.items()}
+        set_items = {
+            k: Json(v) if isinstance(v, (dict, list)) else v
+            for k, v in self._data.items()
+        }
         params = list(set_items.values())
         set_parts = [f'"{k}" = %s' for k in set_items]
 

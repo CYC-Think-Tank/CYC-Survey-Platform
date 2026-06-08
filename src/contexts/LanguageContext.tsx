@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type Language = 'en' | 'fr' | 'zh';
+export type Language = 'en' | 'fr' | 'zh' | 'es' | 'pa' | 'ar' | 'tl' | 'yue' | 'it' | 'de' | 'ta';
 
 interface LanguageContextType {
   language: Language;
@@ -12,7 +12,7 @@ interface LanguageContextType {
   setEnabledLanguages: (langs: string[] | null) => void;
 }
 
-const translations: Record<Language, Record<string, string>> = {
+const translations: Record<string, Record<string, string>> = {
   en: {
     Admin: 'Admin',
     'Start Survey': 'Start Survey',
@@ -323,7 +323,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   };
 
   const t = (key: string) => {
-    return translations[language][key] || key;
+    return translations[language]?.[key] || translations.en[key] || key;
   };
 
   return (

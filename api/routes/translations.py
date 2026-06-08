@@ -173,7 +173,9 @@ async def update_survey_translation(survey_id: str, request: Request):
 
         questions = body.get("questions") or body.get(f"questions_{language_code}")
         title = body.get("title") or body.get(f"title_{language_code}", "")
-        description = body.get("description") or body.get(f"description_{language_code}", "")
+        description = body.get("description") or body.get(
+            f"description_{language_code}", ""
+        )
 
         # 1. Write to new translations table
         existing = (
@@ -198,7 +200,9 @@ async def update_survey_translation(survey_id: str, request: Request):
             supabase.table("translations").insert(payload).execute()
 
         # 2. Also write to ai_analyses for backward compatibility
-        _save_to_legacy_ai_analyses(survey_id, language_code, title, description, questions)
+        _save_to_legacy_ai_analyses(
+            survey_id, language_code, title, description, questions
+        )
 
         return {"success": True}
     except Exception as e:
@@ -485,7 +489,9 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
             supabase.table("translations").insert(payload).execute()
 
         # 2. Also save to ai_analyses for backward compatibility
-        _save_to_legacy_ai_analyses(survey_id, language, title, description, questions_translated)
+        _save_to_legacy_ai_analyses(
+            survey_id, language, title, description, questions_translated
+        )
 
         print(
             f"[upload_translation_pdf] Successfully saved translations, {len(questions_translated)} questions"
@@ -582,7 +588,9 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
         if provider == "gemini":
             GOOGLE_AI_KEY = os.environ.get("GOOGLE_AI_KEY")
             if not GOOGLE_AI_KEY:
-                raise HTTPException(status_code=400, detail="GOOGLE_AI_KEY not configured on server")
+                raise HTTPException(
+                    status_code=400, detail="GOOGLE_AI_KEY not configured on server"
+                )
 
             GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GOOGLE_AI_KEY}"
 
@@ -658,7 +666,9 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
                         resp = await client.post(API_URL, json=payload, headers=headers)
 
                         if resp.status_code != 200:
-                            last_error = f"{model}: HTTP {resp.status_code} - {resp.text[:200]}"
+                            last_error = (
+                                f"{model}: HTTP {resp.status_code} - {resp.text[:200]}"
+                            )
                             continue
 
                         data = resp.json()
@@ -701,7 +711,9 @@ Return ONLY the JSON object, no markdown wrapping, no explanations."""
     except HTTPException:
         raise
     except json_module.JSONDecodeError as e:
-        raise HTTPException(status_code=502, detail=f"Failed to parse AI response: {str(e)}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        )
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
