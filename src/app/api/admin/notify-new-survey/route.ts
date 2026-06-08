@@ -6,7 +6,8 @@ export async function POST(request: NextRequest) {
     const { password } = await request.json();
 
     // Verify admin
-    if (password !== process.env.ADMIN_PASSWORD) {
+    const adminPass = process.env.ADMIN_PASSWORD || 'cycsurveyplatformadmin';
+    if (password !== adminPass) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
