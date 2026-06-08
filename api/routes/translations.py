@@ -191,7 +191,7 @@ async def get_survey_translation(survey_id: str):
                         "questions": data.get(f"questions_{lang}", []),
                     }
 
-            return legacy
+        return legacy
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
