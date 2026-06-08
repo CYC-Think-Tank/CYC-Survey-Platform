@@ -888,8 +888,6 @@ export default function EditSurvey() {
 
       for (const lang of SUPPORTED_LANGUAGES.filter((l) => l.code !== 'en')) {
         const meta = translationsMeta[lang.code];
-        const hasTitle = meta?.title;
-        const hasDesc = meta?.description;
 
         const langQuestions = payload.questions
           .map((q, idx) => {
@@ -969,7 +967,7 @@ export default function EditSurvey() {
           })
           .filter(Boolean);
 
-        if (langQuestions.length > 0 || hasTitle || hasDesc) {
+        if (langQuestions.length > 0) {
           const resTrans = await fetch(`/api/surveys/${params.id}/translation`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
