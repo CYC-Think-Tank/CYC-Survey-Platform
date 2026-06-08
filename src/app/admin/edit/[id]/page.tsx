@@ -1422,21 +1422,6 @@ export default function EditSurvey() {
                         />
                       </div>
                     )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                        Provider
-                      </label>
-                      <select
-                        value={translateProvider}
-                        onChange={(e) =>
-                          setTranslateProvider(e.target.value as 'opencode' | 'openrouter')
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
-                      >
-                        <option value="opencode">OpenCode Go (DeepSeek V4 Flash)</option>
-                        <option value="openrouter">OpenRouter (free)</option>
-                      </select>
-                    </div>
                   </div>
                   <div className="mt-6 flex justify-end gap-3">
                     <button
