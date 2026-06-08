@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Gift, Copy, CheckCircle2, ArrowRight, Share2 } from 'lucide-react';
+import { Gift, Copy, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export function ReferralSection({ variant = 'floating' }: { variant?: 'floating' | 'inline' }) {
@@ -15,25 +15,28 @@ export function ReferralSection({ variant = 'floating' }: { variant?: 'floating'
   const [isExpanded, setIsExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const fetchReferral = async (targetEmail: string) => {
-    try {
-      setLoading(true);
-      setError('');
-      const res = await fetch(`/api/user/referral-link?email=${encodeURIComponent(targetEmail)}`);
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
-      if (data.code) {
-        setReferralCode(data.code);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('cyc_global_email', targetEmail);
+  const fetchReferral = useCallback(
+    async (targetEmail: string) => {
+      try {
+        setLoading(true);
+        setError('');
+        const res = await fetch(`/api/user/referral-link?email=${encodeURIComponent(targetEmail)}`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        if (data.code) {
+          setReferralCode(data.code);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cyc_global_email', targetEmail);
+          }
         }
+      } catch {
+        setError(t('Something went wrong. Please try again.'));
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError(t('Something went wrong. Please try again.'));
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [t]
+  );
 
   useEffect(() => {
     const savedEmail =
@@ -42,7 +45,7 @@ export function ReferralSection({ variant = 'floating' }: { variant?: 'floating'
       setEmail(savedEmail);
       fetchReferral(savedEmail);
     }
-  }, []);
+  }, [fetchReferral]);
 
   useEffect(() => {
     if (variant !== 'inline') return;
@@ -196,11 +199,21 @@ export function ReferralSection({ variant = 'floating' }: { variant?: 'floating'
 
       {isFloating ? (
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="w-12 h-12 rounded-full bg-[#0CA7A1] text-white flex items-center justify-center shadow-[0_8px_20px_rgba(12,167,161,0.4)] hover:shadow-[0_12px_25px_rgba(12,167,161,0.5)] transition-all duration-200"
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          className="pr-5 pl-2 py-2 rounded-full bg-gradient-to-r from-[#0CA7A1] to-[#0A8A85] text-white flex items-center shadow-[0_8px_25px_rgba(12,167,161,0.5)] hover:shadow-[0_12px_30px_rgba(12,167,161,0.6)] transition-all duration-300 border border-teal-400/30"
         >
-          <Share2 className="w-5 h-5" />
+          <div className="flex items-center justify-center bg-white/20 rounded-full p-2.5 mr-3 backdrop-blur-sm">
+            <Gift className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-[13px] font-black leading-tight tracking-wide uppercase drop-shadow-md">
+              {t('Win $100!')}
+            </span>
+            <span className="text-[10px] font-bold text-teal-50 tracking-wide mt-0.5 opacity-95">
+              {t('1 Referral = +1 Entry')}
+            </span>
+          </div>
         </motion.button>
       ) : (
         <motion.button
