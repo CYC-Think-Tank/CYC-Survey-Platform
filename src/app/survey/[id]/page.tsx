@@ -64,6 +64,8 @@ interface Survey {
   questions_fr?: Question[];
   questions_zh?: Question[];
   referral_source?: string;
+  translations?: Record<string, { title?: string; description?: string; questions?: Question[] }>;
+  enabled_languages?: string[];
 }
 
 const InteractiveDefinition = ({ part, definition }: { part: string; definition: string }) => {
@@ -546,18 +548,13 @@ export default function SurveyPage() {
             : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
           const optIndex = enOptions.indexOf(gate.value);
           if (optIndex !== -1) {
-            if (language === 'fr' && survey.questions_fr) {
-              const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
-              const frOpts = Array.isArray(frQ?.options)
-                ? frQ.options
-                : (frQ?.options as QuestionOptions | undefined)?.choices || [];
-              if (frOpts[optIndex]) targetValue = frOpts[optIndex];
-            } else if (language === 'zh' && survey.questions_zh) {
-              const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
-              const zhOpts = Array.isArray(zhQ?.options)
-                ? zhQ.options
-                : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
-              if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
+            const transQuestions = survey.translations?.[language]?.questions;
+            if (transQuestions) {
+              const transQ = transQuestions.find((x: Question) => x.id === gate.question_id);
+              const transOpts = Array.isArray(transQ?.options)
+                ? transQ.options
+                : (transQ?.options as QuestionOptions | undefined)?.choices || [];
+              if (transOpts[optIndex]) targetValue = transOpts[optIndex];
             }
           }
         }
@@ -661,17 +658,13 @@ export default function SurveyPage() {
     if (!currentQuestionRaw) return null;
     const finalQ = { ...currentQuestionRaw };
 
-    if (language === 'fr' && survey?.questions_fr) {
-      const frQ = survey.questions_fr.find((q: Question) => q.id === finalQ.id);
-      if (frQ) {
-        if (frQ.question_text && frQ.question_text.trim()) finalQ.question_text = frQ.question_text;
-        finalQ.options = frQ.options;
-      }
-    } else if (language === 'zh' && survey?.questions_zh) {
-      const zhQ = survey.questions_zh.find((q: Question) => q.id === finalQ.id);
-      if (zhQ) {
-        if (zhQ.question_text && zhQ.question_text.trim()) finalQ.question_text = zhQ.question_text;
-        finalQ.options = zhQ.options;
+    const transQuestions = survey?.translations?.[language]?.questions;
+    if (transQuestions && language !== 'en') {
+      const transQ = transQuestions.find((q: Question) => q.id === finalQ.id);
+      if (transQ) {
+        if (transQ.question_text && transQ.question_text.trim())
+          finalQ.question_text = transQ.question_text;
+        if (transQ.options) finalQ.options = transQ.options;
       }
     }
 
@@ -710,18 +703,8 @@ export default function SurveyPage() {
     : survey && visibleCount > 0
       ? (safeVisiblePosition / Math.max(1, visibleCount - 1)) * 100
       : 0;
-  const displayTitle =
-    language === 'fr' && survey?.title_fr
-      ? survey.title_fr
-      : language === 'zh' && survey?.title_zh
-        ? survey.title_zh
-        : survey?.title;
-  const displayDescription =
-    language === 'fr' && survey?.description_fr
-      ? survey.description_fr
-      : language === 'zh' && survey?.description_zh
-        ? survey.description_zh
-        : survey?.description;
+  const displayTitle = survey?.translations?.[language]?.title || survey?.title;
+  const displayDescription = survey?.translations?.[language]?.description || survey?.description;
 
   // Helper to shuffle array (Fisher-Yates)
   const shuffleArray = (array: string[]) => {
@@ -736,7 +719,7 @@ export default function SurveyPage() {
   // Get the translated version of a question for a given language
   const getTranslatedQuestion = (q: Question, lang: string, surveyData: Survey) => {
     if (lang === 'en') return q;
-    const translatedList = lang === 'fr' ? surveyData.questions_fr : surveyData.questions_zh;
+    const translatedList = surveyData.translations?.[lang]?.questions;
     if (!translatedList) return q;
     return translatedList.find((tq: Question) => tq.id === q.id) || q;
   };
@@ -1133,7 +1116,7 @@ export default function SurveyPage() {
     }
 
     // For regular questions, map by option index using the translation data
-    const translatedList = language === 'fr' ? survey?.questions_fr : survey?.questions_zh;
+    const translatedList = survey?.translations?.[language]?.questions;
     if (!translatedList) return value;
     const transQ = translatedList.find((tq: Question) => tq.id === qId);
     if (!transQ) return value;
