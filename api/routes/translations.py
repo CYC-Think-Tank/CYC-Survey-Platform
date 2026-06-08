@@ -97,7 +97,6 @@ async def get_survey_translation(survey_id: str):
             )
 
             if res.data:
-                # Return in the new generic format
                 translations = {}
                 for row in res.data:
                     translations[row["language_code"]] = {
@@ -105,6 +104,34 @@ async def get_survey_translation(survey_id: str):
                         "description": row.get("description", ""),
                         "questions": row.get("questions", []),
                     }
+
+                # Also pull legacy fr/zh from ai_analyses if not already in new table
+                for lang in ["fr", "zh"]:
+                    if lang not in translations:
+                        try:
+                            legacy_r = (
+                                supabase.table("ai_analyses")
+                                .select("data")
+                                .eq("survey_id", survey_id)
+                                .eq("analysis_type", f"translation_{lang}")
+                                .execute()
+                            )
+                            if legacy_r.data:
+                                legacy_data = legacy_r.data[0]["data"]
+                                if isinstance(legacy_data, list):
+                                    translations[lang] = {
+                                        "title": "",
+                                        "description": "",
+                                        "questions": legacy_data,
+                                    }
+                                elif isinstance(legacy_data, dict):
+                                    translations[lang] = {
+                                        "title": legacy_data.get(f"title_{lang}", ""),
+                                        "description": legacy_data.get(f"description_{lang}", ""),
+                                        "questions": legacy_data.get(f"questions_{lang}", []),
+                                    }
+                        except Exception:
+                            pass
 
                 # Also return legacy fields for backward compatibility during transition
                 legacy = {}
@@ -142,12 +169,22 @@ async def get_survey_translation(survey_id: str):
                 data = r.data[0]["data"]
                 if isinstance(data, list):
                     legacy[f"questions_{lang}"] = data
+                    legacy["translations"][lang] = {
+                        "title": "",
+                        "description": "",
+                        "questions": data,
+                    }
                 elif isinstance(data, dict):
                     legacy[f"questions_{lang}"] = data.get(f"questions_{lang}")
                     legacy[f"title_{lang}"] = data.get(f"title_{lang}")
                     legacy[f"description_{lang}"] = data.get(f"description_{lang}")
+                    legacy["translations"][lang] = {
+                        "title": data.get(f"title_{lang}", ""),
+                        "description": data.get(f"description_{lang}", ""),
+                        "questions": data.get(f"questions_{lang}", []),
+                    }
 
-        return legacy
+            return legacy
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
