@@ -67,7 +67,7 @@ export function Footer() {
               {t('Follow Us!')}
             </h4>
             <a
-              href="https://www.instagram.com/youth.champions/?hl=en"
+              href="https://www.instagram.com/thinktank.cyc/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow The Canadian Youth Champions on Instagram"
