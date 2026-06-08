@@ -62,6 +62,21 @@ export function ReferralSection({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [variant]);
 
+  const handleGenerate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      fetchReferral(email.trim());
+    }
+  };
+
+  const handleCopy = () => {
+    if (!referralCode) return;
+    const url = `${window.location.origin}?ref=${referralCode}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   if (variant === 'block') {
     return (
       <div className="w-full max-w-6xl mx-auto bg-gradient-to-r from-[#0CA7A1] to-[#04377E] rounded-[2rem] p-8 md:p-12 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between mt-16 mb-8 border-[6px] border-white/10 backdrop-blur-sm">
@@ -181,21 +196,6 @@ export function ReferralSection({
       </div>
     );
   }
-
-  const handleGenerate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      fetchReferral(email.trim());
-    }
-  };
-
-  const handleCopy = () => {
-    if (!referralCode) return;
-    const url = `${window.location.origin}?ref=${referralCode}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const isFloating = variant === 'floating';
 
