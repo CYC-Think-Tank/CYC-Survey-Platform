@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
 import type { FsaMapDot } from '@/components/FsaDotMap';
+import { getLanguageConfig } from '@/config/languages';
 
 const FsaDotMap = dynamic(() => import('@/components/FsaDotMap'), {
   ssr: false,
