@@ -220,8 +220,8 @@ async def duplicate_survey(survey_id: str):
                         "description_alignment", "left"
                     ),
                     "estimated_minutes": original_survey.get("estimated_minutes", 5),
-                    "is_active": False,  # Duplicate should be inactive by default
-                    "has_been_published": False,  # Duplicate hasn't been published
+                    "is_active": False,
+                    "has_been_published": False,
                     "thumbnail_url": original_survey.get("thumbnail_url"),
                     "enabled_languages": original_survey.get("enabled_languages"),
                 }
