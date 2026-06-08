@@ -122,15 +122,17 @@ async def get_survey_translation(survey_id: str):
                                 legacy_title = ""
                                 legacy_desc = ""
                             elif isinstance(legacy_data, dict):
-                                legacy_questions = legacy_data.get(f"questions_{lang}", [])
+                                legacy_questions = legacy_data.get(
+                                    f"questions_{lang}", []
+                                )
                                 legacy_title = legacy_data.get(f"title_{lang}", "")
                                 legacy_desc = legacy_data.get(f"description_{lang}", "")
 
                             existing = translations.get(lang, {})
                             existing_has_content = (
-                                (existing.get("questions") and len(existing["questions"]) > 0)
-                                or existing.get("title")
-                            )
+                                existing.get("questions")
+                                and len(existing["questions"]) > 0
+                            ) or existing.get("title")
                             if not existing_has_content:
                                 translations[lang] = {
                                     "title": legacy_title,
