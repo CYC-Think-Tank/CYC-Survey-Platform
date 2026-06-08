@@ -11,6 +11,8 @@ interface LanguageContextType {
   t: (key: string) => string;
   isLoading: boolean;
   isRtl: boolean;
+  enabledLanguages: string[] | null;
+  setEnabledLanguages: (langs: string[] | null) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType>({
@@ -19,6 +21,8 @@ const LanguageContext = createContext<LanguageContextType>({
   t: (key: string) => key,
   isLoading: false,
   isRtl: false,
+  enabledLanguages: null,
+  setEnabledLanguages: () => {},
 });
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
@@ -26,6 +30,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   const [translations, setTranslations] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [enabledLanguages, setEnabledLanguages] = useState<string[] | null>(null);
 
   // Load translations for the current language
   useEffect(() => {
@@ -83,7 +88,9 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   const isRtl = config?.isRtl || false;
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isLoading, isRtl }}>
+    <LanguageContext.Provider
+      value={{ language, setLanguage, t, isLoading, isRtl, enabledLanguages, setEnabledLanguages }}
+    >
       <div
         className={`flex-1 flex flex-col w-full transition-opacity duration-300 ease-in-out ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
       >
