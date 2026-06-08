@@ -23,6 +23,7 @@ class SurveyList(BaseModel):
     has_been_published: bool = False
     thumbnail_url: str | None = None
     response_count: int | None = 0
+    enabled_languages: list[str] | None = None
 
 
 class SurveyDetail(SurveyList):
@@ -62,6 +63,7 @@ class SurveyCreate(BaseModel):
     is_active: bool = True
     has_been_published: bool = False
     thumbnail_url: str | None = None
+    enabled_languages: list[str] | None = None
     questions: list[QuestionCreate]
 
 
