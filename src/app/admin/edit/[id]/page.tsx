@@ -981,6 +981,17 @@ export default function EditSurvey() {
         }
       }
 
+      if (isLocked) {
+        const langRes = await fetch(`/api/surveys/${params.id}/languages`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled_languages: [...enabledLangs] }),
+        });
+        if (!langRes.ok) {
+          throw new Error('Failed to save language visibility settings');
+        }
+      }
+
       router.push('/admin');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error saving survey');
