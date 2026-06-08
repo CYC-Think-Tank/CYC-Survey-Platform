@@ -105,33 +105,40 @@ async def get_survey_translation(survey_id: str):
                         "questions": row.get("questions", []),
                     }
 
-                # Also pull legacy fr/zh from ai_analyses if not already in new table
+                # Also pull legacy fr/zh from ai_analyses and prefer them over empty new-table entries
                 for lang in ["fr", "zh"]:
-                    if lang not in translations:
-                        try:
-                            legacy_r = (
-                                supabase.table("ai_analyses")
-                                .select("data")
-                                .eq("survey_id", survey_id)
-                                .eq("analysis_type", f"translation_{lang}")
-                                .execute()
+                    try:
+                        legacy_r = (
+                            supabase.table("ai_analyses")
+                            .select("data")
+                            .eq("survey_id", survey_id)
+                            .eq("analysis_type", f"translation_{lang}")
+                            .execute()
+                        )
+                        if legacy_r.data:
+                            legacy_data = legacy_r.data[0]["data"]
+                            if isinstance(legacy_data, list):
+                                legacy_questions = legacy_data
+                                legacy_title = ""
+                                legacy_desc = ""
+                            elif isinstance(legacy_data, dict):
+                                legacy_questions = legacy_data.get(f"questions_{lang}", [])
+                                legacy_title = legacy_data.get(f"title_{lang}", "")
+                                legacy_desc = legacy_data.get(f"description_{lang}", "")
+
+                            existing = translations.get(lang, {})
+                            existing_has_content = (
+                                (existing.get("questions") and len(existing["questions"]) > 0)
+                                or existing.get("title")
                             )
-                            if legacy_r.data:
-                                legacy_data = legacy_r.data[0]["data"]
-                                if isinstance(legacy_data, list):
-                                    translations[lang] = {
-                                        "title": "",
-                                        "description": "",
-                                        "questions": legacy_data,
-                                    }
-                                elif isinstance(legacy_data, dict):
-                                    translations[lang] = {
-                                        "title": legacy_data.get(f"title_{lang}", ""),
-                                        "description": legacy_data.get(f"description_{lang}", ""),
-                                        "questions": legacy_data.get(f"questions_{lang}", []),
-                                    }
-                        except Exception:
-                            pass
+                            if not existing_has_content:
+                                translations[lang] = {
+                                    "title": legacy_title,
+                                    "description": legacy_desc,
+                                    "questions": legacy_questions,
+                                }
+                    except Exception:
+                        pass
 
                 # Also return legacy fields for backward compatibility during transition
                 legacy = {}
