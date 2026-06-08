@@ -134,6 +134,7 @@ async def create_survey(survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
+                    "enabled_languages": survey.enabled_languages,
                 }
             )
             .execute()
@@ -424,6 +425,7 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
+                    "enabled_languages": survey.enabled_languages,
                     "updated_at": datetime.utcnow().isoformat(),
                 }
             )
