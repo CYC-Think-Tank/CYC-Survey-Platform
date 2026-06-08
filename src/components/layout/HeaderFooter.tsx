@@ -21,15 +21,8 @@ export function Header() {
     }
   }, [pathname]);
 
-  const visibleLanguages = enabledLanguages
-    ? SUPPORTED_LANGUAGES.filter((l) => enabledLanguages.includes(l.code))
-    : SUPPORTED_LANGUAGES;
-
-  useEffect(() => {
-    if (enabledLanguages && enabledLanguages.length > 0 && !enabledLanguages.includes(language)) {
-      setLanguage('en');
-    }
-  }, [enabledLanguages, language, setLanguage]);
+  const languageUnavailable =
+    enabledLanguages && enabledLanguages.length > 0 && !enabledLanguages.includes(language);
 
   return (
     <header
@@ -54,12 +47,30 @@ export function Header() {
               onChange={(e) => setLanguage(e.target.value)}
               className="text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] cursor-pointer"
             >
-              {visibleLanguages.map((lang) => (
-                <option key={lang.code} value={lang.code}>
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option
+                  key={lang.code}
+                  value={lang.code}
+                  disabled={
+                    enabledLanguages != null &&
+                    enabledLanguages.length > 0 &&
+                    !enabledLanguages.includes(lang.code)
+                  }
+                >
                   {lang.name}
                 </option>
               ))}
             </select>
+            {languageUnavailable && (
+              <span className="text-amber-600 text-xs whitespace-nowrap">
+                &rarr;{' '}
+                {(() => {
+                  const cfg = SUPPORTED_LANGUAGES.find((l) => l.code === language);
+                  return cfg?.name || language;
+                })()}{' '}
+                unavailable &middot; showing English
+              </span>
+            )}
           </nav>
         </div>
       </div>
