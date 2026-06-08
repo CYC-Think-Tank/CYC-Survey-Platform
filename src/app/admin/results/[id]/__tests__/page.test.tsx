@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ResultsPage from '../page';
@@ -61,9 +61,9 @@ const renderWithPostalGeoDots = (dots: Array<Record<string, string | number>>) =
             total_usable: 120,
             matched_count: 120,
             unmatched_count: 3,
-            suppressed_count: 52,
-            suppressed_fsa_count: 35,
-            min_display_count: 5,
+            suppressed_count: 0,
+            suppressed_fsa_count: 0,
+            min_display_count: 1,
             dots,
           },
         },
@@ -94,11 +94,12 @@ describe('ResultsPage geography summary', () => {
               unmatched_count: 1,
               suppressed_count: 0,
               suppressed_fsa_count: 0,
-              min_display_count: 5,
+              min_display_count: 1,
               dots: [
                 {
                   fsa: 'M5V',
                   province: 'Ontario',
+                  city: 'Toronto',
                   lat: 43.64,
                   lng: -79.39,
                   count: 8,
@@ -124,7 +125,7 @@ describe('ResultsPage geography summary', () => {
     expect(screen.getByText('Unmatched')).toBeInTheDocument();
   });
 
-  it('renders a no-data state when postal dots are suppressed for privacy', async () => {
+  it('renders a no-data state when there are no matched postal dots', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({ json: async () => resultsPayload } as Response)
       .mockResolvedValueOnce({
@@ -135,12 +136,12 @@ describe('ResultsPage geography summary', () => {
             postal_geo: {
               type: 'fsa_dot_map',
               question_id: 'postal-question',
-              total_usable: 2,
-              matched_count: 2,
+              total_usable: 0,
+              matched_count: 0,
               unmatched_count: 0,
-              suppressed_count: 2,
-              suppressed_fsa_count: 1,
-              min_display_count: 5,
+              suppressed_count: 0,
+              suppressed_fsa_count: 0,
+              min_display_count: 1,
               dots: [],
             },
           },
@@ -151,9 +152,7 @@ describe('ResultsPage geography summary', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          /Not enough matched postal prefix responses to display a privacy-safe map yet/
-        )
+        screen.getByText(/No matched Canadian postal prefix areas are available to map yet/)
       ).toBeInTheDocument();
     });
   });
@@ -163,6 +162,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'L6J',
         province: 'Ontario',
+        city: 'Oakville',
         lat: 43.47455,
         lng: -79.6596,
         count: 21,
@@ -171,6 +171,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'L6K',
         province: 'Ontario',
+        city: 'Oakville',
         lat: 43.4359,
         lng: -79.68965,
         count: 13,
@@ -179,6 +180,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'M5V',
         province: 'Ontario',
+        city: 'Toronto',
         lat: 43.63505,
         lng: -79.40995,
         count: 9,
@@ -187,6 +189,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'L3P',
         province: 'Ontario',
+        city: 'Markham',
         lat: 43.9054,
         lng: -79.2544,
         count: 7,
@@ -195,6 +198,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'L4S',
         province: 'Ontario',
+        city: 'Richmond Hill',
         lat: 43.9269,
         lng: -79.42465,
         count: 6,
@@ -203,6 +207,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'L6M',
         province: 'Ontario',
+        city: 'Oakville',
         lat: 43.4373,
         lng: -79.7431,
         count: 5,
@@ -228,6 +233,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'V6B',
         province: 'British Columbia',
+        city: 'Vancouver',
         lat: 49.2829,
         lng: -123.1163,
         count: 20,
@@ -236,6 +242,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'M5V',
         province: 'Ontario',
+        city: 'Toronto',
         lat: 43.63505,
         lng: -79.40995,
         count: 15,
@@ -244,6 +251,7 @@ describe('ResultsPage geography summary', () => {
       {
         fsa: 'B3J',
         province: 'Nova Scotia',
+        city: 'Halifax',
         lat: 44.6439,
         lng: -63.56925,
         count: 15,
@@ -259,5 +267,56 @@ describe('ResultsPage geography summary', () => {
     expect(within(map).getByText('V6B')).toBeInTheDocument();
     expect(within(map).getByText('M5V')).toBeInTheDocument();
     expect(within(map).getByText('B3J')).toBeInTheDocument();
+  });
+
+  it('switches the geography side list between FSA, city, and province grouping', async () => {
+    renderWithPostalGeoDots([
+      {
+        fsa: 'L6J',
+        province: 'Ontario',
+        city: 'Oakville',
+        lat: 43.47455,
+        lng: -79.6596,
+        count: 21,
+        percentage: 17.5,
+      },
+      {
+        fsa: 'L6K',
+        province: 'Ontario',
+        city: 'Oakville',
+        lat: 43.4359,
+        lng: -79.68965,
+        count: 13,
+        percentage: 10.8,
+      },
+      {
+        fsa: 'V6B',
+        province: 'British Columbia',
+        city: 'Vancouver',
+        lat: 49.2829,
+        lng: -123.1163,
+        count: 20,
+        percentage: 16.7,
+      },
+    ]);
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByTestId('geography-ranked-list')).getByText('L6J')
+      ).toBeInTheDocument();
+    });
+
+    const rankedList = () => within(screen.getByTestId('geography-ranked-list'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'City' }));
+    expect(rankedList().getByText('Oakville')).toBeInTheDocument();
+    expect(rankedList().getByText('34 (28.3%)')).toBeInTheDocument();
+    expect(rankedList().queryByText('L6J')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Province' }));
+    expect(rankedList().getByText('Ontario')).toBeInTheDocument();
+    expect(rankedList().getByText('34 (28.3%)')).toBeInTheDocument();
+    expect(rankedList().getByText('British Columbia')).toBeInTheDocument();
+    expect(rankedList().getByText('20 (16.7%)')).toBeInTheDocument();
   });
 });

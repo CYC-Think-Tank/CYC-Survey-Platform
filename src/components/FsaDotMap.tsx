@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 export interface FsaMapDot {
   fsa: string;
   province: string;
+  city?: string;
   lat: number;
   lng: number;
   count: number;
@@ -19,21 +20,25 @@ interface FsaDotMapProps {
   dots: FsaMapDot[];
 }
 
-function radiusForCount(count: number, maxCount: number) {
-  if (maxCount <= 0) return 8;
-  return 8 + (count / maxCount) * 18;
+const FSA_MARKER_SIZE = 34;
+const FSA_CLUSTER_SIZE = 46;
+const FSA_BLUE_HUE = 211;
+const FSA_BLUE_SATURATION = 88;
+
+function lightnessForCount(count: number, minCount: number, maxCount: number) {
+  const range = maxCount - minCount;
+  const ratio = range > 0 ? (count - minCount) / range : 1;
+  return Math.round(74 - ratio * 44);
 }
 
-const createCircleIcon = (radius: number, count: number, maxCount: number) => {
-  const size = Math.max(radius * 2, 24); // Ensure minimum size to fit text
-  const ratio = maxCount > 0 ? count / maxCount : 1;
-  const alpha = 0.2 + ratio * 0.7; // Scales opacity from 0.2 to 0.9
+const createCircleIcon = (count: number, minCount: number, maxCount: number) => {
+  const lightness = lightnessForCount(count, minCount, maxCount);
 
   return L.divIcon({
     className: 'custom-circle-icon',
-    html: `<div style="background-color: rgba(4, 55, 126, ${alpha}); border: 2px solid rgba(4, 55, 126, 0.6); border-radius: 50%; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center; color: ${ratio > 0.4 ? '#ffffff' : '#04377e'}; font-weight: bold; font-size: ${Math.max(10, size / 2.5)}px;">${count}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    html: `<div style="background-color: hsl(${FSA_BLUE_HUE} ${FSA_BLUE_SATURATION}% ${lightness}%); border: 2px solid hsl(${FSA_BLUE_HUE} ${FSA_BLUE_SATURATION}% 24%); border-radius: 50%; width: ${FSA_MARKER_SIZE}px; height: ${FSA_MARKER_SIZE}px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-weight: 800; font-size: 13px; line-height: 1; box-shadow: 0 2px 8px rgba(4, 55, 126, 0.28);">${count}</div>`,
+    iconSize: [FSA_MARKER_SIZE, FSA_MARKER_SIZE],
+    iconAnchor: [FSA_MARKER_SIZE / 2, FSA_MARKER_SIZE / 2],
   });
 };
 
@@ -45,9 +50,9 @@ const createClusterIcon = (cluster: L.MarkerCluster) => {
   });
 
   return L.divIcon({
-    html: `<div style="background-color: rgba(4, 55, 126, 0.85); color: #ffffff; font-weight: bold; border: 2px solid rgba(12, 183, 196, 0.8); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(0,0,0,0.2); font-size: 14px;"><span>${totalCount}</span></div>`,
+    html: `<div style="background-color: hsl(${FSA_BLUE_HUE} ${FSA_BLUE_SATURATION}% 30%); color: #ffffff; font-weight: 800; border: 2px solid hsl(${FSA_BLUE_HUE} ${FSA_BLUE_SATURATION}% 24%); border-radius: 50%; width: ${FSA_CLUSTER_SIZE}px; height: ${FSA_CLUSTER_SIZE}px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(4, 55, 126, 0.28); font-size: 14px; line-height: 1;"><span>${totalCount}</span></div>`,
     className: 'custom-cluster-icon',
-    iconSize: L.point(44, 44),
+    iconSize: L.point(FSA_CLUSTER_SIZE, FSA_CLUSTER_SIZE),
   });
 };
 
@@ -72,8 +77,23 @@ function FitFsaBounds({ dots }: FsaDotMapProps) {
   return null;
 }
 
+function RefreshMapSize() {
+  const map = useMap();
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [map]);
+
+  return null;
+}
+
 export default function FsaDotMap({ dots }: FsaDotMapProps) {
   const maxCount = Math.max(1, ...dots.map((dot) => dot.count));
+  const minCount = Math.min(maxCount, ...dots.map((dot) => dot.count));
 
   return (
     <MapContainer
@@ -87,6 +107,7 @@ export default function FsaDotMap({ dots }: FsaDotMapProps) {
         attribution="&copy; OpenStreetMap contributors"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <RefreshMapSize />
       <FitFsaBounds dots={dots} />
       <MarkerClusterGroup
         chunkedLoading
@@ -95,15 +116,14 @@ export default function FsaDotMap({ dots }: FsaDotMapProps) {
         maxClusterRadius={60}
       >
         {dots.map((dot) => {
-          const r = radiusForCount(dot.count, maxCount);
           return (
             <Marker
               position={[dot.lat, dot.lng]}
               key={dot.fsa}
-              icon={createCircleIcon(r, dot.count, maxCount)}
+              icon={createCircleIcon(dot.count, minCount, maxCount)}
               title={dot.count.toString()}
             >
-              <Tooltip direction="top" offset={[0, -r]} opacity={0.95}>
+              <Tooltip direction="top" offset={[0, -FSA_MARKER_SIZE / 2]} opacity={0.95}>
                 {dot.fsa}: {dot.count} responses
               </Tooltip>
               <Popup>

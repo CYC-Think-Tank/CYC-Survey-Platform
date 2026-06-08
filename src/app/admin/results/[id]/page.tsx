@@ -116,12 +116,23 @@ interface PostalGeoStats {
   dots: FsaMapDot[];
 }
 
+type PostalGeoGroupBy = 'fsa' | 'city' | 'province';
+
+interface PostalGeoListRow {
+  key: string;
+  label: string;
+  sublabel: string;
+  count: number;
+  percentage: number;
+}
+
 export default function ResultsPage() {
   const params = useParams();
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'summary' | 'individual' | 'ai'>('summary');
   const [showAdvanced, setShowAdvanced] = useState<Record<string, boolean>>({});
+  const [postalGeoGroupBy, setPostalGeoGroupBy] = useState<PostalGeoGroupBy>('fsa');
 
   // Summary State
   const [summaryStats, setSummaryStats] = useState<Record<string, QuestionSummaryStats> | null>(
@@ -279,6 +290,57 @@ export default function ResultsPage() {
     const postalGeo = stat.postal_geo;
     if (!postalGeo) return null;
 
+    const groupOptions: Array<{ label: string; value: PostalGeoGroupBy }> = [
+      { label: 'FSA', value: 'fsa' },
+      { label: 'City', value: 'city' },
+      { label: 'Province', value: 'province' },
+    ];
+
+    const listRows = Array.from(
+      postalGeo.dots
+        .reduce((rows, dot) => {
+          const city = dot.city || dot.fsa;
+          const group =
+            postalGeoGroupBy === 'province'
+              ? {
+                  key: dot.province,
+                  label: dot.province,
+                  sublabel: 'Province / territory',
+                }
+              : postalGeoGroupBy === 'city'
+                ? {
+                    key: `${city}-${dot.province}`,
+                    label: city,
+                    sublabel: dot.province,
+                  }
+                : {
+                    key: dot.fsa,
+                    label: dot.fsa,
+                    sublabel: dot.province,
+                  };
+
+          const existing = rows.get(group.key);
+          if (existing) {
+            existing.count += dot.count;
+          } else {
+            rows.set(group.key, {
+              ...group,
+              count: dot.count,
+              percentage: 0,
+            });
+          }
+          return rows;
+        }, new Map<string, PostalGeoListRow>())
+        .values()
+    )
+      .map((row) => ({
+        ...row,
+        percentage: postalGeo.matched_count
+          ? Math.round((row.count / postalGeo.matched_count) * 1000) / 10
+          : 0,
+      }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
     const metrics = (
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
@@ -291,13 +353,6 @@ export default function ResultsPage() {
           <span className="block text-xs text-gray-500">Unmatched</span>
           <span className="font-bold text-[var(--color-cyc-secondary)]">
             {postalGeo.unmatched_count}
-          </span>
-        </div>
-        <div className="col-span-2">
-          <span className="block text-xs text-gray-500">Suppressed for privacy</span>
-          <span className="font-bold text-[var(--color-cyc-secondary)]">
-            {postalGeo.suppressed_count} responses across {postalGeo.suppressed_fsa_count} FSA
-            {postalGeo.suppressed_fsa_count === 1 ? '' : 's'}
           </span>
         </div>
       </div>
@@ -313,17 +368,15 @@ export default function ResultsPage() {
           Approximate postal prefix areas from: {q.question_text}
         </p>
         <p className="text-xs text-gray-400 mb-5">
-          Dots represent FSA prefix areas, not exact respondent locations. Prefixes with fewer than{' '}
-          {postalGeo.min_display_count} responses are grouped for privacy.
+          Dots represent FSA prefix areas, not exact respondent locations. Small response counts are
+          shown individually, so use caution when sharing this view.
         </p>
 
         {postalGeo.dots.length === 0 ? (
           <div className="space-y-4">
             {metrics}
             <div className="border border-dashed border-gray-200 rounded-xl p-8 text-center text-sm text-gray-500">
-              Not enough matched postal prefix responses to display a privacy-safe map yet. Many
-              responses may be grouped because fewer than {postalGeo.min_display_count} people share
-              the same visible FSA.
+              No matched Canadian postal prefix areas are available to map yet.
             </div>
           </div>
         ) : (
@@ -334,22 +387,44 @@ export default function ResultsPage() {
 
             <div>
               <div className="mb-4">{metrics}</div>
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {postalGeo.dots.map((dot) => (
-                  <div key={dot.fsa}>
+              <div
+                aria-label="Group geography results by"
+                className="mb-4 grid grid-cols-3 rounded-lg bg-gray-100 p-1 text-xs font-semibold"
+              >
+                {groupOptions.map((option) => (
+                  <button
+                    className={`rounded-md px-2 py-1.5 transition-colors ${
+                      postalGeoGroupBy === option.value
+                        ? 'bg-white text-[var(--color-cyc-secondary)] shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                    key={option.value}
+                    onClick={() => setPostalGeoGroupBy(option.value)}
+                    type="button"
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="space-y-2 max-h-72 overflow-y-auto pr-1"
+                data-testid="geography-ranked-list"
+              >
+                {listRows.map((row) => (
+                  <div key={row.key}>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="font-semibold text-gray-700">
-                        {dot.fsa}
-                        <span className="ml-2 font-normal text-gray-400">{dot.province}</span>
+                        {row.label}
+                        <span className="ml-2 font-normal text-gray-400">{row.sublabel}</span>
                       </span>
                       <span className="text-gray-500">
-                        {dot.count} ({dot.percentage}%)
+                        {row.count} ({row.percentage}%)
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-[var(--color-cyc-primary)]"
-                        style={{ width: `${Math.max(8, dot.percentage)}%` }}
+                        style={{ width: `${Math.max(8, row.percentage)}%` }}
                       />
                     </div>
                   </div>

@@ -9,8 +9,20 @@ vi.mock('react-leaflet', () => ({
   TileLayer: ({ attribution, url }: { attribution: string; url: string }) => (
     <div data-testid="tile-layer" data-attribution={attribution} data-url={url} />
   ),
-  Marker: ({ position, children }: { position: [number, number]; children: React.ReactNode }) => (
-    <div data-center={`${position[0]},${position[1]}`} data-testid="circle-marker">
+  Marker: ({
+    icon,
+    position,
+    children,
+  }: {
+    icon: { options?: { html?: string } };
+    position: [number, number];
+    children: React.ReactNode;
+  }) => (
+    <div
+      data-center={`${position[0]},${position[1]}`}
+      data-icon-html={icon.options?.html}
+      data-testid="circle-marker"
+    >
       {children}
     </div>
   ),
@@ -110,5 +122,43 @@ describe('FsaDotMap', () => {
 
     expect(screen.getByTestId('leaflet-map')).toBeInTheDocument();
     expect(screen.queryAllByTestId('circle-marker')).toHaveLength(0);
+  });
+
+  it('uses the same marker design while only changing blue lightness by count', () => {
+    render(
+      <FsaDotMap
+        dots={[
+          {
+            fsa: 'A1A',
+            province: 'Newfoundland and Labrador',
+            lat: 47.56,
+            lng: -52.71,
+            count: 1,
+            percentage: 10,
+          },
+          {
+            fsa: 'M5V',
+            province: 'Ontario',
+            lat: 43.64,
+            lng: -79.39,
+            count: 9,
+            percentage: 90,
+          },
+        ]}
+      />
+    );
+
+    const markerHtml = screen
+      .getAllByTestId('circle-marker')
+      .map((marker) => marker.getAttribute('data-icon-html') ?? '');
+
+    expect(markerHtml[0]).toContain('width: 34px');
+    expect(markerHtml[1]).toContain('width: 34px');
+    expect(markerHtml[0]).toContain('height: 34px');
+    expect(markerHtml[1]).toContain('height: 34px');
+    expect(markerHtml[0]).toContain('color: #ffffff');
+    expect(markerHtml[1]).toContain('color: #ffffff');
+    expect(markerHtml[0]).toContain('background-color: hsl(211 88% 74%)');
+    expect(markerHtml[1]).toContain('background-color: hsl(211 88% 30%)');
   });
 });
