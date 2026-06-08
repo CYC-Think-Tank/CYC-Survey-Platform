@@ -13,6 +13,7 @@ vi.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     t: (key: string) => key,
     language: 'en',
+    setEnabledLanguages: vi.fn(),
   }),
 }));
 
