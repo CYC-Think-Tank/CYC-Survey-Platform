@@ -15,6 +15,42 @@ from api.dependencies import supabase
 router = APIRouter()
 
 
+def _save_to_legacy_ai_analyses(
+    survey_id: str,
+    language_code: str,
+    title: str,
+    description: str,
+    questions: list,
+):
+    """Also write to ai_analyses for backward compatibility during transition."""
+    analysis_type = f"translation_{language_code}"
+    payload = {
+        f"questions_{language_code}": questions,
+        f"title_{language_code}": title,
+        f"description_{language_code}": description,
+    }
+    existing = (
+        supabase.table("ai_analyses")
+        .select("id")
+        .eq("survey_id", survey_id)
+        .eq("analysis_type", analysis_type)
+        .execute()
+    )
+    if existing.data:
+        supabase.table("ai_analyses").update(
+            {"data": payload, "updated_at": datetime.utcnow().isoformat()}
+        ).eq("id", existing.data[0]["id"]).execute()
+    else:
+        supabase.table("ai_analyses").insert(
+            {
+                "survey_id": survey_id,
+                "analysis_type": analysis_type,
+                "data": payload,
+                "updated_at": datetime.utcnow().isoformat(),
+            }
+        ).execute()
+
+
 @router.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     """
@@ -49,118 +85,170 @@ async def upload_file(file: UploadFile = File(...)):
 
 @router.get("/api/surveys/{survey_id}/translation")
 async def get_survey_translation(survey_id: str):
-    """Fetch the translated questions if they exist."""
+    """Fetch translations from new table; fallback to ai_analyses for backward compat."""
     try:
-        res_fr = (
-            supabase.table("ai_analyses")
-            .select("data")
-            .eq("survey_id", survey_id)
-            .eq("analysis_type", "translation_fr")
-            .execute()
-        )
-        res_zh = (
-            supabase.table("ai_analyses")
-            .select("data")
-            .eq("survey_id", survey_id)
-            .eq("analysis_type", "translation_zh")
-            .execute()
-        )
+        # Try new translations table first
+        try:
+            res = (
+                supabase.table("translations")
+                .select("language_code, title, description, questions")
+                .eq("survey_id", survey_id)
+                .execute()
+            )
 
-        result = {
+            if res.data:
+                translations = {}
+                for row in res.data:
+                    translations[row["language_code"]] = {
+                        "title": row.get("title", ""),
+                        "description": row.get("description", ""),
+                        "questions": row.get("questions", []),
+                    }
+
+                # Also pull legacy fr/zh from ai_analyses and prefer them over empty new-table entries
+                for lang in ["fr", "zh"]:
+                    try:
+                        legacy_r = (
+                            supabase.table("ai_analyses")
+                            .select("data")
+                            .eq("survey_id", survey_id)
+                            .eq("analysis_type", f"translation_{lang}")
+                            .execute()
+                        )
+                        if legacy_r.data:
+                            legacy_data = legacy_r.data[0]["data"]
+                            if isinstance(legacy_data, list):
+                                legacy_questions = legacy_data
+                                legacy_title = ""
+                                legacy_desc = ""
+                            elif isinstance(legacy_data, dict):
+                                legacy_questions = legacy_data.get(
+                                    f"questions_{lang}", []
+                                )
+                                legacy_title = legacy_data.get(f"title_{lang}", "")
+                                legacy_desc = legacy_data.get(f"description_{lang}", "")
+
+                            existing = translations.get(lang, {})
+                            existing_has_content = (
+                                existing.get("questions")
+                                and len(existing["questions"]) > 0
+                            ) or existing.get("title")
+                            if not existing_has_content:
+                                translations[lang] = {
+                                    "title": legacy_title,
+                                    "description": legacy_desc,
+                                    "questions": legacy_questions,
+                                }
+                    except Exception:
+                        pass
+
+                # Also return legacy fields for backward compatibility during transition
+                legacy = {}
+                for row in res.data:
+                    lang = row["language_code"]
+                    legacy[f"questions_{lang}"] = row.get("questions", [])
+                    legacy[f"title_{lang}"] = row.get("title", "")
+                    legacy[f"description_{lang}"] = row.get("description", "")
+
+                return {"translations": translations, **legacy}
+        except Exception:
+            # translations table doesn't exist yet — fall through to legacy
+            pass
+
+        # Fallback to legacy ai_analyses
+        legacy = {
             "questions_fr": None,
             "title_fr": None,
             "description_fr": None,
             "questions_zh": None,
             "title_zh": None,
             "description_zh": None,
+            "translations": {},
         }
 
-        if res_fr.data:
-            data_fr = res_fr.data[0]["data"]
-            if isinstance(data_fr, list):
-                result["questions_fr"] = data_fr
-            elif isinstance(data_fr, dict):
-                result["questions_fr"] = data_fr.get("questions_fr")
-                result["title_fr"] = data_fr.get("title_fr")
-                result["description_fr"] = data_fr.get("description_fr")
+        for lang in ["fr", "zh"]:
+            r = (
+                supabase.table("ai_analyses")
+                .select("data")
+                .eq("survey_id", survey_id)
+                .eq("analysis_type", f"translation_{lang}")
+                .execute()
+            )
+            if r.data:
+                data = r.data[0]["data"]
+                if isinstance(data, list):
+                    legacy[f"questions_{lang}"] = data
+                    legacy["translations"][lang] = {
+                        "title": "",
+                        "description": "",
+                        "questions": data,
+                    }
+                elif isinstance(data, dict):
+                    legacy[f"questions_{lang}"] = data.get(f"questions_{lang}")
+                    legacy[f"title_{lang}"] = data.get(f"title_{lang}")
+                    legacy[f"description_{lang}"] = data.get(f"description_{lang}")
+                    legacy["translations"][lang] = {
+                        "title": data.get(f"title_{lang}", ""),
+                        "description": data.get(f"description_{lang}", ""),
+                        "questions": data.get(f"questions_{lang}", []),
+                    }
 
-        if res_zh.data:
-            data_zh = res_zh.data[0]["data"]
-            if isinstance(data_zh, list):
-                result["questions_zh"] = data_zh
-            elif isinstance(data_zh, dict):
-                result["questions_zh"] = data_zh.get("questions_zh")
-                result["title_zh"] = data_zh.get("title_zh")
-                result["description_zh"] = data_zh.get("description_zh")
-
-        return result
+        return legacy
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/api/surveys/{survey_id}/translation")
 async def update_survey_translation(survey_id: str, request: Request):
-    """Manually update the translated questions JSON."""
+    """Save translations to new table AND legacy ai_analyses (dual-write)."""
     try:
         body = await request.json()
 
-        # FR Translation
-        questions_fr = body.get("questions_fr")
-        if questions_fr is not None:
-            payload_fr = {
-                "questions_fr": questions_fr,
-                "title_fr": body.get("title_fr"),
-                "description_fr": body.get("description_fr"),
-            }
-            existing_fr = (
-                supabase.table("ai_analyses")
-                .select("id")
-                .eq("survey_id", survey_id)
-                .eq("analysis_type", "translation_fr")
-                .execute()
-            )
-            if existing_fr.data:
-                supabase.table("ai_analyses").update(
-                    {"data": payload_fr, "updated_at": datetime.utcnow().isoformat()}
-                ).eq("id", existing_fr.data[0]["id"]).execute()
-            else:
-                supabase.table("ai_analyses").insert(
-                    {
-                        "survey_id": survey_id,
-                        "analysis_type": "translation_fr",
-                        "data": payload_fr,
-                        "updated_at": datetime.utcnow().isoformat(),
-                    }
-                ).execute()
+        # Support both new generic format and legacy format during transition
+        language_code = body.get("language_code")
 
-        # ZH Translation
-        questions_zh = body.get("questions_zh")
-        if questions_zh is not None:
-            payload_zh = {
-                "questions_zh": questions_zh,
-                "title_zh": body.get("title_zh"),
-                "description_zh": body.get("description_zh"),
-            }
-            existing_zh = (
-                supabase.table("ai_analyses")
-                .select("id")
-                .eq("survey_id", survey_id)
-                .eq("analysis_type", "translation_zh")
-                .execute()
-            )
-            if existing_zh.data:
-                supabase.table("ai_analyses").update(
-                    {"data": payload_zh, "updated_at": datetime.utcnow().isoformat()}
-                ).eq("id", existing_zh.data[0]["id"]).execute()
-            else:
-                supabase.table("ai_analyses").insert(
-                    {
-                        "survey_id": survey_id,
-                        "analysis_type": "translation_zh",
-                        "data": payload_zh,
-                        "updated_at": datetime.utcnow().isoformat(),
-                    }
-                ).execute()
+        # Handle legacy hardcoded keys
+        if not language_code:
+            if body.get("questions_fr") is not None:
+                language_code = "fr"
+            elif body.get("questions_zh") is not None:
+                language_code = "zh"
+
+        if not language_code:
+            raise HTTPException(status_code=400, detail="language_code is required")
+
+        questions = body.get("questions") or body.get(f"questions_{language_code}")
+        title = body.get("title") or body.get(f"title_{language_code}", "")
+        description = body.get("description") or body.get(
+            f"description_{language_code}", ""
+        )
+
+        # 1. Write to new translations table
+        existing = (
+            supabase.table("translations")
+            .select("id")
+            .eq("survey_id", survey_id)
+            .eq("language_code", language_code)
+            .execute()
+        )
+        payload = {
+            "survey_id": survey_id,
+            "language_code": language_code,
+            "title": title,
+            "description": description,
+            "questions": questions,
+        }
+        if existing.data:
+            supabase.table("translations").update(
+                {**payload, "updated_at": datetime.utcnow().isoformat()}
+            ).eq("id", existing.data[0]["id"]).execute()
+        else:
+            supabase.table("translations").insert(payload).execute()
+
+        # 2. Also write to ai_analyses for backward compatibility
+        _save_to_legacy_ai_analyses(
+            survey_id, language_code, title, description, questions
+        )
 
         return {"success": True}
     except Exception as e:
@@ -203,8 +291,9 @@ async def upload_translation_pdf(
     if not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
-    if language not in ("fr", "zh"):
-        raise HTTPException(status_code=400, detail="Language must be 'fr' or 'zh'")
+    # Accept any language code, not just fr/zh
+    if not language or len(language) < 2:
+        raise HTTPException(status_code=400, detail="Language code is required")
 
     try:
         print(
@@ -266,7 +355,20 @@ async def upload_translation_pdf(
                     ref["options"] = {"description": opts["description"]}
             reference_questions.append(ref)
 
-        language_name = "French" if language == "fr" else "Chinese"
+        # Map common language codes to full names for the prompt
+        LANGUAGE_NAMES = {
+            "fr": "French",
+            "zh": "Chinese",
+            "es": "Spanish",
+            "pa": "Punjabi",
+            "ar": "Arabic",
+            "tl": "Tagalog",
+            "yue": "Cantonese",
+            "it": "Italian",
+            "de": "German",
+            "ta": "Tamil",
+        }
+        language_name = LANGUAGE_NAMES.get(language, language.capitalize())
 
         prompt = f"""You are an expert translator. Below is a survey with its English questions, followed by {language_name} translations extracted from a PDF.
 
@@ -407,37 +509,35 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
                 }
             questions_translated.append(translated)
 
-        title_key = f"title_{language}"
-        description_key = f"description_{language}"
-        questions_key = f"questions_{language}"
-        analysis_type = f"translation_{language}"
+        title = parsed.get("title", "") or ""
+        description = parsed.get("description", "") or ""
 
-        payload = {
-            questions_key: questions_translated,
-            title_key: parsed.get("title", "") or "",
-            description_key: parsed.get("description", "") or "",
-        }
-
+        # 1. Save to new translations table
         existing = (
-            supabase.table("ai_analyses")
+            supabase.table("translations")
             .select("id")
             .eq("survey_id", survey_id)
-            .eq("analysis_type", analysis_type)
+            .eq("language_code", language)
             .execute()
         )
+        payload = {
+            "survey_id": survey_id,
+            "language_code": language,
+            "title": title,
+            "description": description,
+            "questions": questions_translated,
+        }
         if existing.data:
-            supabase.table("ai_analyses").update(
-                {"data": payload, "updated_at": datetime.utcnow().isoformat()}
+            supabase.table("translations").update(
+                {**payload, "updated_at": datetime.utcnow().isoformat()}
             ).eq("id", existing.data[0]["id"]).execute()
         else:
-            supabase.table("ai_analyses").insert(
-                {
-                    "survey_id": survey_id,
-                    "analysis_type": analysis_type,
-                    "data": payload,
-                    "updated_at": datetime.utcnow().isoformat(),
-                }
-            ).execute()
+            supabase.table("translations").insert(payload).execute()
+
+        # 2. Also save to ai_analyses for backward compatibility
+        _save_to_legacy_ai_analyses(
+            survey_id, language, title, description, questions_translated
+        )
 
         print(
             f"[upload_translation_pdf] Successfully saved translations, {len(questions_translated)} questions"
@@ -453,3 +553,219 @@ Return ONLY the JSON object, no markdown wrapping or extra text."""
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/surveys/translate-all")
+async def translate_all_languages(request: Request):
+    """Translate survey content from English to the target language."""
+    result = None
+    try:
+        body = await request.json()
+        api_key = body.get("api_key")
+        provider = body.get("provider", "opencode")
+        target_language = body.get("target_language")
+        english_title = body.get("english_title", "")
+        english_description = body.get("english_description", "")
+        english_questions = body.get("english_questions", [])
+
+        if not api_key and provider != "gemini":
+            raise HTTPException(status_code=400, detail="API key is required")
+        if not target_language:
+            raise HTTPException(status_code=400, detail="Target language is required")
+        if not english_questions:
+            raise HTTPException(status_code=400, detail="No questions to translate")
+
+        LANGUAGE_NAMES = {
+            "es": "Spanish",
+            "pa": "Punjabi",
+            "ar": "Arabic",
+            "tl": "Tagalog",
+            "yue": "Cantonese",
+            "it": "Italian",
+            "de": "German",
+            "ta": "Tamil",
+        }
+
+        if target_language not in LANGUAGE_NAMES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported target language: {target_language}",
+            )
+
+        language_name = LANGUAGE_NAMES[target_language]
+
+        prompt = f"""You are an expert translator. Translate the following survey content from English into {language_name}.
+
+Return ONLY a JSON object with this exact structure:
+{{
+  "title": "translated survey title",
+  "description": "translated survey description or empty string",
+  "questions": [
+    {{
+      "index": 0,
+      "question_text": "translated question text",
+      "options": ["translated option 1", "translated option 2"],
+      "question_description": "translated helper text or empty string",
+      "section_description": "translated section description or empty string",
+      "definitions": [{{"term": "translated term", "definition": "translated definition"}}]
+    }}
+  ]
+}}
+
+Rules:
+- Preserve any HTML tags like <strong>, <em>, <span> exactly as they appear
+- Translate ALL content — nothing should remain in English
+- For empty fields in the source, return an empty string
+- For empty arrays, return an empty array
+- Keep option counts identical — do not add or remove options
+- Translate definitions as key-value pairs
+
+=== SURVEY TITLE ===
+{english_title}
+
+=== SURVEY DESCRIPTION ===
+{english_description}
+
+=== QUESTIONS ===
+{json_module.dumps(english_questions, ensure_ascii=False)}
+
+Return ONLY the JSON object, no markdown wrapping, no explanations."""
+
+        if provider == "gemini":
+            GOOGLE_AI_KEY = os.environ.get("GOOGLE_AI_KEY")
+            if not GOOGLE_AI_KEY:
+                raise HTTPException(
+                    status_code=400, detail="GOOGLE_AI_KEY not configured on server"
+                )
+
+            GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GOOGLE_AI_KEY}"
+
+            gemini_payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "maxOutputTokens": 65536,
+                },
+            }
+
+            parsed = None
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                resp = await client.post(GEMINI_URL, json=gemini_payload)
+
+                if resp.status_code != 200:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Gemini API error ({target_language}): {resp.status_code} - {resp.text[:300]}",
+                    )
+
+                gemini_data = resp.json()
+                raw = gemini_data["candidates"][0]["content"]["parts"][0]["text"]
+
+                cleaned = raw.strip()
+                if not cleaned:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Gemini returned empty response for {target_language}",
+                    )
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1]
+                    if cleaned.endswith("```"):
+                        cleaned = cleaned[:-3]
+                    cleaned = cleaned.strip()
+
+                try:
+                    parsed = json_module.loads(cleaned)
+                except json_module.JSONDecodeError:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"Gemini returned invalid JSON for {target_language}: {cleaned[:200]}",
+                    )
+
+            result = {"translations": {target_language: parsed}}
+
+        else:
+            if provider == "openrouter":
+                API_URL = "https://openrouter.ai/api/v1/chat/completions"
+                MODELS = ["z-ai/glm-4.5-air:free", "openrouter/free"]
+            else:
+                API_URL = "https://opencode.ai/zen/go/v1/chat/completions"
+                MODELS = ["deepseek-v4-flash"]
+
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": MODELS[0],
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1,
+                "max_tokens": 65536,
+            }
+
+            parsed = None
+            last_error = None
+
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                for model in MODELS:
+                    payload["model"] = model
+                    try:
+                        resp = await client.post(API_URL, json=payload, headers=headers)
+
+                        if resp.status_code != 200:
+                            last_error = (
+                                f"{model}: HTTP {resp.status_code} - {resp.text[:200]}"
+                            )
+                            continue
+
+                        data = resp.json()
+                        raw = data["choices"][0]["message"]["content"]
+
+                        cleaned = raw.strip()
+                        if not cleaned:
+                            last_error = f"{model}: empty response"
+                            continue
+                        if cleaned.startswith("```"):
+                            cleaned = cleaned.split("\n", 1)[1]
+                            if cleaned.endswith("```"):
+                                cleaned = cleaned[:-3]
+                            cleaned = cleaned.strip()
+
+                        try:
+                            parsed = json_module.loads(cleaned)
+                        except json_module.JSONDecodeError:
+                            last_error = f"{model}: invalid JSON - {cleaned[:200]}"
+                            continue
+
+                        break
+                    except httpx.TimeoutException:
+                        last_error = f"{model}: timed out"
+                        continue
+
+                if parsed is None:
+                    raise HTTPException(
+                        status_code=502,
+                        detail=f"All models failed for {target_language}: {last_error}",
+                    )
+
+            result = {"translations": {target_language: parsed}}
+
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Translation timed out for {target_language}. The request took too long — try again.",
+        )
+    except HTTPException:
+        raise
+    except json_module.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to parse AI response: {str(e)}"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+    if result is None:
+        raise HTTPException(
+            status_code=500, detail="Translation produced no result — please try again."
+        )
+    return result

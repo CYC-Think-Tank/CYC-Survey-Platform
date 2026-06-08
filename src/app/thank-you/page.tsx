@@ -13,6 +13,9 @@ interface Survey {
   thumbnail_url?: string;
   title_fr?: string;
   description_fr?: string;
+  title_zh?: string;
+  description_zh?: string;
+  translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
 export default function ThankYouPage() {
@@ -51,6 +54,9 @@ export default function ThankYouPage() {
                 ...survey,
                 title_fr: tr?.title_fr,
                 description_fr: tr?.description_fr,
+                title_zh: tr?.title_zh,
+                description_zh: tr?.description_zh,
+                translations: tr?.translations,
               };
             } catch {
               return survey;
@@ -172,12 +178,15 @@ export default function ThankYouPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {surveys.map((survey, i) => {
               const displayTitle =
-                (language === 'fr' && survey.title_fr ? survey.title_fr : survey.title) ||
+                survey.translations?.[language]?.title ||
+                (language === 'fr' && survey.title_fr) ||
+                (language === 'zh' && survey.title_zh) ||
                 survey.title;
               const displayDescription =
-                (language === 'fr' && survey.description_fr
-                  ? survey.description_fr
-                  : survey.description) || survey.description;
+                survey.translations?.[language]?.description ||
+                (language === 'fr' && survey.description_fr) ||
+                (language === 'zh' && survey.description_zh) ||
+                survey.description;
               return (
                 <motion.div
                   key={survey.id}

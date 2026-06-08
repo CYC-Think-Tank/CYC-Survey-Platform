@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
 import type { FsaMapDot } from '@/components/FsaDotMap';
+import { getLanguageConfig } from '@/config/languages';
 
 const FsaDotMap = dynamic(() => import('@/components/FsaDotMap'), {
   ssr: false,
@@ -908,14 +909,7 @@ export default function ResultsPage() {
                     {Object.entries(data.language_breakdown as Record<string, number>)
                       .sort(([, a], [, b]) => b - a)
                       .map(([lang, count]) => {
-                        const label =
-                          lang === 'en'
-                            ? 'English'
-                            : lang === 'fr'
-                              ? 'Français'
-                              : lang === 'zh'
-                                ? '中文'
-                                : lang;
+                        const label = getLanguageConfig(lang)?.name || lang;
                         const pct =
                           total_responses > 0 ? Math.round((count / total_responses) * 100) : 0;
                         return (
@@ -1022,19 +1016,14 @@ export default function ResultsPage() {
                           ? 'bg-blue-100 text-blue-700'
                           : currentResp.language === 'fr'
                             ? 'bg-purple-100 text-purple-700'
-                            : currentResp.language === 'zh'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-gray-100 text-gray-700'
+                            : 'bg-gray-100 text-gray-700'
                       }`}
                     >
                       <Globe className="w-3 h-3 mr-1" />
-                      {currentResp.language === 'en'
-                        ? 'English'
-                        : currentResp.language === 'fr'
-                          ? 'Français'
-                          : currentResp.language === 'zh'
-                            ? '中文'
-                            : currentResp.language}
+                      {(() => {
+                        const cfg = getLanguageConfig(currentResp.language);
+                        return cfg?.name || currentResp.language;
+                      })()}
                     </div>
                   )}
                   {currentResp.attention_check_failures &&

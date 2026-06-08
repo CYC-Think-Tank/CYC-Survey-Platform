@@ -5,6 +5,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { ArrowRight, CheckCircle2, FileText, Download } from 'lucide-react';
 import parse, { type DOMNode, Text as TextNode } from 'html-react-parser';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SUPPORTED_LANGUAGES } from '@/config/languages';
 
 interface Attachment {
   url: string;
@@ -63,6 +64,8 @@ interface Survey {
   questions_fr?: Question[];
   questions_zh?: Question[];
   referral_source?: string;
+  translations?: Record<string, { title?: string; description?: string; questions?: Question[] }>;
+  enabled_languages?: string[];
 }
 
 const InteractiveDefinition = ({ part, definition }: { part: string; definition: string }) => {
@@ -157,7 +160,7 @@ export default function SurveyPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { language, t } = useLanguage();
+  const { language, t, setEnabledLanguages } = useLanguage();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -171,6 +174,7 @@ export default function SurveyPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [languageBanner, setLanguageBanner] = useState<string | null>(null);
 
   const [inactivityTriggered, setInactivityTriggered] = useState(false);
   const [inactivityChecksShown, setInactivityChecksShown] = useState(0);
@@ -262,6 +266,12 @@ export default function SurveyPage() {
   }, [email]);
 
   useEffect(() => {
+    return () => {
+      setEnabledLanguages(null);
+    };
+  }, [setEnabledLanguages]);
+
+  useEffect(() => {
     if (survey && profileData && Object.keys(profileData).length > 0) {
       setAnswers((prev) => {
         const newAnswers = { ...prev };
@@ -325,7 +335,23 @@ export default function SurveyPage() {
           data.description_zh = translationData.description_zh;
         }
 
+        if (translationData?.translations) {
+          data.translations = translationData.translations;
+        }
+
         setSurvey(data);
+
+        const enabled = data.enabled_languages;
+        if (enabled && enabled.length > 0) {
+          setEnabledLanguages(enabled);
+        }
+
+        if (enabled && enabled.length > 0) {
+          const currentLang = localStorage.getItem('cyc_language') || 'en';
+          if (!enabled.includes(currentLang)) {
+            setLanguageBanner(currentLang);
+          }
+        }
 
         // Handle attention check injections
         let finalQuestions = [...(data.questions || [])];
@@ -526,18 +552,13 @@ export default function SurveyPage() {
             : (dependencyQ.options as QuestionOptions | undefined)?.choices || [];
           const optIndex = enOptions.indexOf(gate.value);
           if (optIndex !== -1) {
-            if (language === 'fr' && survey.questions_fr) {
-              const frQ = survey.questions_fr.find((x: Question) => x.id === gate.question_id);
-              const frOpts = Array.isArray(frQ?.options)
-                ? frQ.options
-                : (frQ?.options as QuestionOptions | undefined)?.choices || [];
-              if (frOpts[optIndex]) targetValue = frOpts[optIndex];
-            } else if (language === 'zh' && survey.questions_zh) {
-              const zhQ = survey.questions_zh.find((x: Question) => x.id === gate.question_id);
-              const zhOpts = Array.isArray(zhQ?.options)
-                ? zhQ.options
-                : (zhQ?.options as QuestionOptions | undefined)?.choices || [];
-              if (zhOpts[optIndex]) targetValue = zhOpts[optIndex];
+            const transQuestions = survey.translations?.[language]?.questions;
+            if (transQuestions) {
+              const transQ = transQuestions.find((x: Question) => x.id === gate.question_id);
+              const transOpts = Array.isArray(transQ?.options)
+                ? transQ.options
+                : (transQ?.options as QuestionOptions | undefined)?.choices || [];
+              if (transOpts[optIndex]) targetValue = transOpts[optIndex];
             }
           }
         }
@@ -641,17 +662,13 @@ export default function SurveyPage() {
     if (!currentQuestionRaw) return null;
     const finalQ = { ...currentQuestionRaw };
 
-    if (language === 'fr' && survey?.questions_fr) {
-      const frQ = survey.questions_fr.find((q: Question) => q.id === finalQ.id);
-      if (frQ) {
-        if (frQ.question_text && frQ.question_text.trim()) finalQ.question_text = frQ.question_text;
-        finalQ.options = frQ.options;
-      }
-    } else if (language === 'zh' && survey?.questions_zh) {
-      const zhQ = survey.questions_zh.find((q: Question) => q.id === finalQ.id);
-      if (zhQ) {
-        if (zhQ.question_text && zhQ.question_text.trim()) finalQ.question_text = zhQ.question_text;
-        finalQ.options = zhQ.options;
+    const transQuestions = survey?.translations?.[language]?.questions;
+    if (transQuestions && language !== 'en') {
+      const transQ = transQuestions.find((q: Question) => q.id === finalQ.id);
+      if (transQ) {
+        if (transQ.question_text && transQ.question_text.trim())
+          finalQ.question_text = transQ.question_text;
+        if (transQ.options) finalQ.options = transQ.options;
       }
     }
 
@@ -690,18 +707,8 @@ export default function SurveyPage() {
     : survey && visibleCount > 0
       ? (safeVisiblePosition / Math.max(1, visibleCount - 1)) * 100
       : 0;
-  const displayTitle =
-    language === 'fr' && survey?.title_fr
-      ? survey.title_fr
-      : language === 'zh' && survey?.title_zh
-        ? survey.title_zh
-        : survey?.title;
-  const displayDescription =
-    language === 'fr' && survey?.description_fr
-      ? survey.description_fr
-      : language === 'zh' && survey?.description_zh
-        ? survey.description_zh
-        : survey?.description;
+  const displayTitle = survey?.translations?.[language]?.title || survey?.title;
+  const displayDescription = survey?.translations?.[language]?.description || survey?.description;
 
   // Helper to shuffle array (Fisher-Yates)
   const shuffleArray = (array: string[]) => {
@@ -716,7 +723,7 @@ export default function SurveyPage() {
   // Get the translated version of a question for a given language
   const getTranslatedQuestion = (q: Question, lang: string, surveyData: Survey) => {
     if (lang === 'en') return q;
-    const translatedList = lang === 'fr' ? surveyData.questions_fr : surveyData.questions_zh;
+    const translatedList = surveyData.translations?.[lang]?.questions;
     if (!translatedList) return q;
     return translatedList.find((tq: Question) => tq.id === q.id) || q;
   };
@@ -1113,7 +1120,7 @@ export default function SurveyPage() {
     }
 
     // For regular questions, map by option index using the translation data
-    const translatedList = language === 'fr' ? survey?.questions_fr : survey?.questions_zh;
+    const translatedList = survey?.translations?.[language]?.questions;
     if (!translatedList) return value;
     const transQ = translatedList.find((tq: Question) => tq.id === qId);
     if (!transQ) return value;
@@ -1309,6 +1316,24 @@ export default function SurveyPage() {
       </motion.div>
 
       <div className="flex-1 flex flex-col bg-white dark:bg-white/5 dark:backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl p-4 sm:p-8 shadow-xl relative h-auto min-h-[60vh]">
+        {languageBanner && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+            <span className="text-amber-800 text-sm">
+              This survey is not available in{' '}
+              {(() => {
+                const cfg = SUPPORTED_LANGUAGES.find((l) => l.code === languageBanner);
+                return cfg?.name || languageBanner;
+              })()}
+              . Showing English.
+            </span>
+            <button
+              onClick={() => setLanguageBanner(null)}
+              className="text-amber-600 hover:text-amber-800 text-lg leading-none ml-3"
+            >
+              &times;
+            </button>
+          </div>
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}

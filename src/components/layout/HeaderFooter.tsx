@@ -4,12 +4,13 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
+import { SUPPORTED_LANGUAGES } from '@/config/languages';
 
 export function Header() {
   const pathname = usePathname();
   const [show, setShow] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, enabledLanguages } = useLanguage();
 
   useEffect(() => {
     if (pathname === '/') {
@@ -19,6 +20,9 @@ export function Header() {
       setShow(true);
     }
   }, [pathname]);
+
+  const languageUnavailable =
+    enabledLanguages && enabledLanguages.length > 0 && !enabledLanguages.includes(language);
 
   return (
     <header
@@ -38,29 +42,34 @@ export function Header() {
             />
           </Link>
           <nav className="flex items-center space-x-2 sm:space-x-6 relative">
-            {language !== 'en' && (
-              <button
-                onClick={() => setLanguage('en')}
-                className="text-gray-700 hover:text-[var(--color-cyc-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors"
-              >
-                English
-              </button>
-            )}
-            {language !== 'fr' && (
-              <button
-                onClick={() => setLanguage('fr')}
-                className="text-gray-700 hover:text-[var(--color-cyc-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors"
-              >
-                Français
-              </button>
-            )}
-            {language !== 'zh' && (
-              <button
-                onClick={() => setLanguage('zh')}
-                className="text-gray-700 hover:text-[var(--color-cyc-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors"
-              >
-                中文
-              </button>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as Language)}
+              className="text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] cursor-pointer"
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option
+                  key={lang.code}
+                  value={lang.code}
+                  disabled={
+                    enabledLanguages != null &&
+                    enabledLanguages.length > 0 &&
+                    !enabledLanguages.includes(lang.code)
+                  }
+                >
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+            {languageUnavailable && (
+              <span className="text-amber-600 text-xs whitespace-nowrap">
+                &rarr;{' '}
+                {(() => {
+                  const cfg = SUPPORTED_LANGUAGES.find((l) => l.code === language);
+                  return cfg?.name || language;
+                })()}{' '}
+                unavailable &middot; showing English
+              </span>
             )}
           </nav>
         </div>
