@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
-
 export async function POST(request: NextRequest) {
   let body: unknown;
   try {
@@ -11,7 +9,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${BACKEND_URL}/api/surveys/translate-all`, {
+    const res = await fetch('http://localhost:8000/api/surveys/translate-all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
