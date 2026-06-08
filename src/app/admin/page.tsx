@@ -17,7 +17,13 @@ import {
   Check,
   X,
   Send,
+  Trophy,
 } from 'lucide-react';
+
+interface ReferralLeaderboardEntry {
+  email: string;
+  referral_count: number;
+}
 
 interface Survey {
   id: string;
@@ -47,6 +53,9 @@ export default function AdminDashboard() {
   const [raffleEmails, setRaffleEmails] = useState<string[] | null>(null);
   const [raffleError, setRaffleError] = useState<string | null>(null);
   const [raffleLoading, setRaffleLoading] = useState(false);
+  const [leaderboardModal, setLeaderboardModal] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const router = useRouter();
 
   const fetchSurveys = () => {
@@ -215,6 +224,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const openLeaderboard = async () => {
+    setLeaderboardModal(true);
+    setLoadingLeaderboard(true);
+    try {
+      const res = await fetch('/api/admin/referrals/leaderboard');
+      const data = await res.json();
+      setLeaderboard(data);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load leaderboard');
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
   const handleGenerateLink = async () => {
     if (!shareModal) return;
     setGeneratingLink(true);
@@ -285,6 +309,14 @@ export default function AdminDashboard() {
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
           </Link>
+
+          <button
+            onClick={openLeaderboard}
+            className="text-emerald-600 hover:text-emerald-800 flex items-center"
+          >
+            <Trophy className="w-4 h-4 mr-1" />
+            Leaderboard
+          </button>
 
           <button
             onClick={() => openShareModal(null)}
@@ -621,6 +653,60 @@ export default function AdminDashboard() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Referral Leaderboard Modal */}
+      {leaderboardModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[85vh] flex flex-col">
+            <button
+              onClick={() => setLeaderboardModal(false)}
+              className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-5 flex items-center">
+              <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+              Referrals Leaderboard
+            </h2>
+
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2">
+              {loadingLeaderboard ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-cyc-primary)]"></div>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">
+                  No referrals recorded yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {leaderboard.map((entry, idx) => (
+                    <div
+                      key={entry.email}
+                      className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span
+                          className={`font-bold w-6 text-center ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-600' : 'text-gray-500 dark:text-slate-400'}`}
+                        >
+                          #{idx + 1}
+                        </span>
+                        <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100 truncate max-w-[200px]">
+                          {entry.email}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                        {entry.referral_count}{' '}
+                        {entry.referral_count === 1 ? 'referral' : 'referrals'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
