@@ -8,10 +8,10 @@ import { Color } from '@tiptap/extension-color';
 import LinkExtension from '@tiptap/extension-link';
 import ImageExtension from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 
 import {
   Bold,
@@ -57,10 +57,6 @@ export const RichTextEditor = ({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
-        bulletList: true,
-        orderedList: true,
-        blockquote: true,
-        codeBlock: true,
       }),
       Underline,
       Highlight.configure({
