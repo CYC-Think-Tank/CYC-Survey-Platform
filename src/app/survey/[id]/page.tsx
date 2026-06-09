@@ -943,7 +943,7 @@ export default function SurveyPage() {
 
   async function handleNext() {
     if (isEmailStep) {
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (email.trim() !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         alert(t('Please enter a valid email address.'));
         return;
       }
@@ -1352,7 +1352,6 @@ export default function SurveyPage() {
                 </h2>
                 <input
                   type="email"
-                  required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full p-4 border-2 border-gray-200 dark:border-slate-600 bg-transparent dark:bg-slate-900 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-[var(--color-cyc-primary)]/20 dark:text-white focus:outline-none transition-all text-base sm:text-lg text-center"
@@ -1919,7 +1918,9 @@ export default function SurveyPage() {
                   {submitting
                     ? t('Submitting...')
                     : currentStep === totalSteps - 1
-                      ? t('Finish Survey')
+                      ? email.trim() === ''
+                        ? t('Skip')
+                        : t('Finish Survey')
                       : isEmailStep
                         ? t('Next')
                         : currentQuestion?.type === 'section_header'
