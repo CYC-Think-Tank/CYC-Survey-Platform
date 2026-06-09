@@ -49,16 +49,7 @@ dbDisconnect(con)
 # 3. CLEAN DUPLICATES (CRITICAL)
 # =========================
 raw <- raw %>%
-  group_by(session_id, question_id) %>%
-  summarise(
-    answer_numeric = first(answer_numeric),
-    answer_text = first(answer_text),
-    answer_options = first(answer_options),
-    question_type = first(question_type),
-    question_options = first(question_options),
-    question_text = first(question_text),
-    .groups = "drop"
-  )
+  distinct(session_id, question_id, .keep_all = TRUE)
 
 # =========================
 # 4. DEFINE LATENT TRAITS (SOURCE OF TRUTH)
@@ -147,78 +138,117 @@ make_checkbox_item_id <- function(question_id, option_index) {
 }
 
 build_analysis_rows <- function(raw_data) {
-  rows <- vector("list", 0)
+  session_ids <- raw_data$session_id
+  question_ids <- raw_data$question_id
+  question_types <- as.character(raw_data$question_type)
 
-  for (i in seq_len(nrow(raw_data))) {
-    row <- raw_data[i, ]
-    question_type <- as.character(row$question_type)
-    choices <- get_question_choices(row$question_options)
-    option_count <- length(choices)
+  choices_list <- lapply(raw_data$question_options, get_question_choices)
+  option_counts <- vapply(choices_list, length, integer(1))
+  selected_list <- lapply(raw_data$answer_options, get_answer_options)
 
-    if (question_type %in% c("checkboxes", "multiple_choice", "ranking") && option_count == 0) {
-      stop(
-        paste0(
-          "Question ", row$question_id,
-          " has type ", question_type,
-          " but no metadata choices in questions.options"
-        )
+  needs_choices <- question_types %in% c("checkboxes", "multiple_choice", "ranking")
+  missing_choices <- which(needs_choices & option_counts == 0)
+  if (length(missing_choices) > 0) {
+    bad_row <- missing_choices[[1]]
+    stop(
+      paste0(
+        "Question ", question_ids[[bad_row]],
+        " has type ", question_types[[bad_row]],
+        " but no metadata choices in questions.options"
       )
-    }
-
-    if (question_type == "checkboxes") {
-      selected <- get_answer_options(row$answer_options)
-
-      for (option_index in seq_along(choices)) {
-        rows[[length(rows) + 1]] <- tibble::tibble(
-          session_id = row$session_id,
-          question_id = row$question_id,
-          item_id = make_checkbox_item_id(row$question_id, option_index),
-          question_type = question_type,
-          option_count = option_count,
-          value = as.integer(choices[[option_index]] %in% selected)
-        )
-      }
-    } else if (question_type == "multiple_choice") {
-      value <- row$answer_numeric
-
-      if (is.na(value) && !is.na(row$answer_text)) {
-        value <- match(row$answer_text, choices)
-      }
-
-      if (!is.na(value) && option_count == 2 && value %in% c(1, 2)) {
-        value <- value - 1
-      }
-
-      rows[[length(rows) + 1]] <- tibble::tibble(
-        session_id = row$session_id,
-        question_id = row$question_id,
-        item_id = row$question_id,
-        question_type = question_type,
-        option_count = option_count,
-        value = as.numeric(value)
-      )
-    } else if (question_type == "ranking") {
-      rows[[length(rows) + 1]] <- tibble::tibble(
-        session_id = row$session_id,
-        question_id = row$question_id,
-        item_id = row$question_id,
-        question_type = question_type,
-        option_count = option_count,
-        value = NA_real_
-      )
-    } else {
-      rows[[length(rows) + 1]] <- tibble::tibble(
-        session_id = row$session_id,
-        question_id = row$question_id,
-        item_id = row$question_id,
-        question_type = question_type,
-        option_count = option_count,
-        value = as.numeric(row$answer_numeric)
-      )
-    }
+    )
   }
 
-  dplyr::bind_rows(rows)
+  is_checkboxes <- question_types == "checkboxes"
+  is_multiple_choice <- question_types == "multiple_choice"
+  is_ranking <- question_types == "ranking"
+  is_other <- !(is_checkboxes | is_multiple_choice | is_ranking)
+
+  parts <- vector("list", 4)
+  part_count <- 0L
+
+  if (any(is_checkboxes)) {
+    row_idx <- which(is_checkboxes)
+    counts <- option_counts[row_idx]
+    rep_idx <- rep.int(row_idx, counts)
+    option_index <- sequence(counts)
+    values <- mapply(
+      function(source_row, option_i) {
+        as.integer(choices_list[[source_row]][[option_i]] %in% selected_list[[source_row]])
+      },
+      rep_idx,
+      option_index,
+      USE.NAMES = FALSE
+    )
+
+    part_count <- part_count + 1L
+    parts[[part_count]] <- tibble::tibble(
+      session_id = session_ids[rep_idx],
+      question_id = question_ids[rep_idx],
+      item_id = make_checkbox_item_id(question_ids[rep_idx], option_index),
+      question_type = question_types[rep_idx],
+      option_count = option_counts[rep_idx],
+      value = as.numeric(values)
+    )
+  }
+
+  if (any(is_multiple_choice)) {
+    row_idx <- which(is_multiple_choice)
+    values <- raw_data$answer_numeric[row_idx]
+    needs_text_match <- is.na(values) & !is.na(raw_data$answer_text[row_idx])
+
+    if (any(needs_text_match)) {
+      text_match_rows <- row_idx[needs_text_match]
+      values[needs_text_match] <- vapply(
+        text_match_rows,
+        function(source_row) match(raw_data$answer_text[[source_row]], choices_list[[source_row]]),
+        numeric(1)
+      )
+    }
+
+    is_binary <- option_counts[row_idx] == 2 & !is.na(values) & values %in% c(1, 2)
+    values[is_binary] <- values[is_binary] - 1
+
+    part_count <- part_count + 1L
+    parts[[part_count]] <- tibble::tibble(
+      session_id = session_ids[row_idx],
+      question_id = question_ids[row_idx],
+      item_id = question_ids[row_idx],
+      question_type = question_types[row_idx],
+      option_count = option_counts[row_idx],
+      value = as.numeric(values)
+    )
+  }
+
+  if (any(is_ranking)) {
+    row_idx <- which(is_ranking)
+
+    part_count <- part_count + 1L
+    parts[[part_count]] <- tibble::tibble(
+      session_id = session_ids[row_idx],
+      question_id = question_ids[row_idx],
+      item_id = question_ids[row_idx],
+      question_type = question_types[row_idx],
+      option_count = option_counts[row_idx],
+      value = NA_real_
+    )
+  }
+
+  if (any(is_other)) {
+    row_idx <- which(is_other)
+
+    part_count <- part_count + 1L
+    parts[[part_count]] <- tibble::tibble(
+      session_id = session_ids[row_idx],
+      question_id = question_ids[row_idx],
+      item_id = question_ids[row_idx],
+      question_type = question_types[row_idx],
+      option_count = option_counts[row_idx],
+      value = as.numeric(raw_data$answer_numeric[row_idx])
+    )
+  }
+
+  dplyr::bind_rows(parts[seq_len(part_count)])
 }
 
 # =========================
@@ -264,7 +294,7 @@ analysis_data <- analysis_rows %>%
 # 7. CLEAN MATRIX
 # =========================
 analysis_data <- as.data.frame(
-  lapply(analysis_data, function(x) as.numeric(x)),
+  lapply(analysis_data, as.numeric),
   check.names = FALSE
 )
 
@@ -339,12 +369,23 @@ if (length(unsupported_question_types) > 0) {
 }
 
 all_item_metadata <- all_item_metadata %>%
-  rowwise() %>%
   mutate(
-    response_model = map_question_type_to_model(question_type, option_count),
-    mirt_itemtype = map_model_to_mirt_itemtype(response_model)
-  ) %>%
-  ungroup()
+    response_model = dplyr::case_when(
+      question_type == "checkboxes" ~ "multivariate_2pl_binary_options",
+      question_type == "likert_scale" ~ "grm",
+      question_type == "multiple_choice" & option_count == 2 ~ "2pl_binary",
+      question_type == "multiple_choice" & option_count > 2 ~ "nrm_softmax",
+      question_type == "ranking" ~ "plackett_luce_sequential_softmax",
+      TRUE ~ NA_character_
+    ),
+    mirt_itemtype = dplyr::case_when(
+      response_model %in% c("multivariate_2pl_binary_options", "2pl_binary") ~ "2PL",
+      response_model == "grm" ~ "graded",
+      response_model == "nrm_softmax" ~ "nominal",
+      response_model == "plackett_luce_sequential_softmax" ~ NA_character_,
+      TRUE ~ NA_character_
+    )
+  )
 
 ranking_items <- all_item_metadata %>%
   filter(response_model == "plackett_luce_sequential_softmax")
@@ -362,12 +403,23 @@ if (nrow(ranking_items) > 0) {
 }
 
 item_metadata <- item_metadata %>%
-  rowwise() %>%
   mutate(
-    response_model = map_question_type_to_model(question_type, option_count),
-    mirt_itemtype = map_model_to_mirt_itemtype(response_model)
-  ) %>%
-  ungroup()
+    response_model = dplyr::case_when(
+      question_type == "checkboxes" ~ "multivariate_2pl_binary_options",
+      question_type == "likert_scale" ~ "grm",
+      question_type == "multiple_choice" & option_count == 2 ~ "2pl_binary",
+      question_type == "multiple_choice" & option_count > 2 ~ "nrm_softmax",
+      question_type == "ranking" ~ "plackett_luce_sequential_softmax",
+      TRUE ~ NA_character_
+    ),
+    mirt_itemtype = dplyr::case_when(
+      response_model %in% c("multivariate_2pl_binary_options", "2pl_binary") ~ "2PL",
+      response_model == "grm" ~ "graded",
+      response_model == "nrm_softmax" ~ "nominal",
+      response_model == "plackett_luce_sequential_softmax" ~ NA_character_,
+      TRUE ~ NA_character_
+    )
+  )
 
 item_types <- item_metadata$mirt_itemtype
 

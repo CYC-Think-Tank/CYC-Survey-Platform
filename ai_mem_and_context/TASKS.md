@@ -11,39 +11,13 @@ This file tracks implementation tasks aligned with the decision log.
 
 ## 🔴 HIGH PRIORITY
 
-### TASK-001: Refactor item type assignment
+### TASK-001: Increase efficiency of current code by vectorization
 
-Replace cardinality-based logic with metadata-driven mapping.
+Investigate whether the current code can be made more efficient through vectorizing the bottlenecks analysis data or other slow parts
 
-- Remove: unique-value heuristic
-- Add: question_type → model mapping
-- Ensure schema validation at ingestion layer
-
----
-
-### TASK-002: Implement correct nominal item encoding
-
-Fix single-choice questions to preserve categorical structure.
-
-- Convert responses to categorical likelihood inputs
-- Avoid numeric collapse of options
-- Align with Bock NRM structure
-
----
-
-### TASK-003: Implement mixed-format IRT pipeline
-
-Enable simultaneous fitting of:
-
-- 2PL
-- GRM
-- Nominal Response Model
-
-Ensure unified latent trait space.
-
----
-
-## 🟡 MEDIUM PRIORITY
+- Check which parts of the code are causing slowness
+- Implement changes for efficiency by vectorization or other appropriate techniques
+- Ensure core functionality remains unchanged
 
 ### TASK-004: Stabilize EM convergence
 
@@ -64,6 +38,8 @@ Expose full log-likelihood for model diagnostics.
 - Store per-iteration likelihood trace
 
 ---
+
+## 🟡 MEDIUM PRIORITY
 
 ### TASK-006: Investigate separate ranking model pipeline
 
