@@ -7,7 +7,7 @@ import { ArrowLeft, User, Calendar } from 'lucide-react';
 interface BlogPost {
   id: string;
   title: string;
-  subject: string;
+  tags: string[];
   author: string | null;
   thumbnail_url: string | null;
   content: string;
@@ -68,7 +68,7 @@ export default function BlogPostDetail() {
   }
 
   return (
-    <article className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 w-full">
+    <article className="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8 w-full">
       <div className="mb-8">
         <Link
           href="/blog"
@@ -78,10 +78,15 @@ export default function BlogPostDetail() {
           Back to all posts
         </Link>
 
-        <div className="flex items-center gap-3 mb-6">
-          <span className="px-3 py-1 bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] text-xs font-bold uppercase tracking-wider rounded-full">
-            {post.subject}
-          </span>
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          {post.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="px-3 py-1 bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] text-xs font-bold uppercase tracking-wider rounded-full"
+            >
+              {tag}
+            </span>
+          ))}
           {!post.is_published && (
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold uppercase tracking-wider rounded-full">
               Draft
@@ -117,7 +122,7 @@ export default function BlogPostDetail() {
           <img
             src={post.thumbnail_url}
             alt={post.title}
-            className="w-full h-auto max-h-[500px] object-cover"
+            className="w-full h-auto max-h-96 object-contain bg-gray-100 dark:bg-slate-900"
           />
         </div>
       )}

@@ -6,7 +6,7 @@ import { PlusCircle, Edit3, Trash2, ArrowLeft, Check, X } from 'lucide-react';
 interface BlogPost {
   id: string;
   title: string;
-  subject: string;
+  tags: string[];
   author: string | null;
   is_published: boolean;
   created_at: string;
@@ -110,7 +110,7 @@ export default function AdminBlogDashboard() {
           <thead className="bg-gray-50 dark:bg-slate-900/50">
             <tr>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider">
-                Title & Subject
+                Title & Tags
               </th>
               <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider">
                 Author
@@ -133,8 +133,15 @@ export default function AdminBlogDashboard() {
                   <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
                     {post.title}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-slate-500 mt-1 uppercase tracking-wide">
-                    {post.subject}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {post.tags?.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-0.5 bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] text-[10px] font-bold uppercase tracking-wider rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

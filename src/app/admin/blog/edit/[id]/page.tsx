@@ -12,7 +12,8 @@ export default function EditBlogPost() {
 
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState('');
   const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
@@ -43,7 +44,7 @@ export default function EditBlogPost() {
       })
       .then((data) => {
         setTitle(data.title || '');
-        setSubject(data.subject || '');
+        setTags(data.tags || []);
         setAuthor(data.author || '');
         setContent(data.content || '');
         setThumbnailUrl(data.thumbnail_url || '');
@@ -79,10 +80,25 @@ export default function EditBlogPost() {
     setThumbnailUploading(false);
   };
 
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const newTag = currentTag.trim();
+      if (newTag && !tags.includes(newTag)) {
+        setTags([...tags, newTag]);
+      }
+      setCurrentTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !subject || !content) {
-      setError('Title, subject, and content are required.');
+    if (!title || tags.length === 0 || !content) {
+      setError('Title, at least one tag, and content are required.');
       return;
     }
 
@@ -95,7 +111,7 @@ export default function EditBlogPost() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
-          subject,
+          tags,
           content,
           author: author || null,
           thumbnail_url: thumbnailUrl || null,
@@ -157,18 +173,37 @@ export default function EditBlogPost() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                Subject Category <span className="text-red-500">*</span>
+                Tags <span className="text-red-500">*</span>
               </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)]"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--color-cyc-primary)]/20 focus:outline-none"
+                    >
+                      <span className="sr-only">Remove tag</span>
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
               <input
                 type="text"
-                list="subject-list"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g. Federal Policies"
+                list="tag-list"
+                value={currentTag}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                onKeyDown={handleAddTag}
+                placeholder="Type and press Enter to add..."
                 className="w-full p-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[var(--color-cyc-primary)] dark:bg-slate-800 dark:text-slate-100"
-                required
               />
-              <datalist id="subject-list">
+              <p className="text-xs text-gray-500 mt-1">Press Enter or comma to add a tag</p>
+              <datalist id="tag-list">
                 {existingSubjects.map((cat) => (
                   <option key={cat} value={cat} />
                 ))}

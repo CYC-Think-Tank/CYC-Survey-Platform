@@ -21,14 +21,21 @@ async def list_blog_posts(include_unpublished: bool = False) -> Any:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/subjects", response_model=list[str])
-async def list_blog_subjects() -> Any:
+@router.get("/tags", response_model=list[str])
+async def list_blog_tags() -> Any:
     try:
-        res = supabase.table("blog_posts").select("subject").execute()
+        res = supabase.table("blog_posts").select("tags").execute()
         if not res.data:
             return []
-        subjects = list(set([row["subject"] for row in res.data if row.get("subject")]))
-        return sorted(subjects)
+        
+        # tags are stored as JSON array of strings
+        all_tags = set()
+        for row in res.data:
+            tags = row.get("tags")
+            if isinstance(tags, list):
+                all_tags.update(tags)
+                
+        return sorted(list(all_tags))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

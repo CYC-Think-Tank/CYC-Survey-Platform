@@ -2,7 +2,7 @@
 CREATE TABLE blog_posts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
+    tags JSONB DEFAULT '[]'::jsonb,
     content TEXT NOT NULL,
     author VARCHAR(255),
     thumbnail_url TEXT,

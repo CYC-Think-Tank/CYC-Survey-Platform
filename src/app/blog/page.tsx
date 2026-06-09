@@ -5,7 +5,7 @@ import Link from 'next/link';
 interface BlogPost {
   id: string;
   title: string;
-  subject: string;
+  tags: string[];
   author: string | null;
   thumbnail_url: string | null;
   content: string; // Used for snippet if needed
@@ -15,8 +15,8 @@ interface BlogPost {
 export default function BlogList() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSubject, setSelectedSubject] = useState('All');
-  const [subjects, setSubjects] = useState<string[]>(['All']);
+  const [selectedTag, setSelectedTag] = useState('All');
+  const [tags, setTags] = useState<string[]>(['All']);
 
   useEffect(() => {
     fetch('/api/blog')
@@ -24,8 +24,9 @@ export default function BlogList() {
       .then((data) => {
         if (Array.isArray(data)) {
           setPosts(data);
-          const uniqueSubjects = Array.from(new Set(data.map((p) => p.subject).filter(Boolean)));
-          setSubjects(['All', ...uniqueSubjects].sort());
+          const allTags = data.flatMap((p) => p.tags || []);
+          const uniqueTags = Array.from(new Set(allTags.filter(Boolean)));
+          setTags(['All', ...uniqueTags].sort());
         } else {
           console.error('Invalid data format received from API', data);
           setPosts([]);
@@ -39,7 +40,7 @@ export default function BlogList() {
   }, []);
 
   const filteredPosts =
-    selectedSubject === 'All' ? posts : posts.filter((p) => p.subject === selectedSubject);
+    selectedTag === 'All' ? posts : posts.filter((p) => p.tags?.includes(selectedTag));
 
   const getExcerpt = (html: string) => {
     // Strip HTML tags and limit to 150 characters
@@ -51,10 +52,10 @@ export default function BlogList() {
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-5xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4">
-          Think Tank Blog
+          Publications
         </h1>
         <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Explore our latest insights, policy analysis, and updates on issues that matter.
+          Explore our latest insights, publications, and updates on issues that matter.
         </p>
       </div>
 
@@ -62,21 +63,19 @@ export default function BlogList() {
         {/* Sidebar filters */}
         <div className="w-full md:w-64 flex-shrink-0">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 sticky top-24">
-            <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-slate-100">
-              Categories
-            </h2>
+            <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-slate-100">Tags</h2>
             <ul className="space-y-2">
-              {subjects.map((cat) => (
-                <li key={cat}>
+              {tags.map((tag) => (
+                <li key={tag}>
                   <button
-                    onClick={() => setSelectedSubject(cat)}
+                    onClick={() => setSelectedTag(tag)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedSubject === cat
+                      selectedTag === tag
                         ? 'bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] font-semibold'
                         : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'
                     }`}
                   >
-                    {cat}
+                    {tag}
                   </button>
                 </li>
               ))}
@@ -116,10 +115,15 @@ export default function BlogList() {
                         No Image
                       </div>
                     )}
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-[var(--color-cyc-primary)] text-xs font-bold uppercase tracking-wider rounded-full shadow-sm">
-                        {post.subject}
-                      </span>
+                    <div className="absolute top-4 left-4 flex flex-wrap gap-1 max-w-full overflow-hidden">
+                      {post.tags?.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-3 py-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-[var(--color-cyc-primary)] text-xs font-bold uppercase tracking-wider rounded-full shadow-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                     </div>
                   </div>
                   <div className="p-6 flex flex-col flex-1">

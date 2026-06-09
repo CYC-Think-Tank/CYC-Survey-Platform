@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Question(BaseModel):
@@ -94,7 +94,7 @@ class AIAnalysisRequest(BaseModel):
 
 class BlogPostCreate(BaseModel):
     title: str
-    subject: str
+    tags: list[str] = Field(default_factory=list)
     content: str
     author: str | None = None
     thumbnail_url: str | None = None
@@ -102,9 +102,9 @@ class BlogPostCreate(BaseModel):
 
 
 class BlogPostUpdate(BaseModel):
-    title: str | None = None
-    subject: str | None = None
-    content: str | None = None
+    title: Optional[str] = None
+    tags: Optional[list[str]] = None
+    content: Optional[str] = None
     author: str | None = None
     thumbnail_url: str | None = None
     is_published: bool | None = None
@@ -113,7 +113,7 @@ class BlogPostUpdate(BaseModel):
 class BlogPost(BaseModel):
     id: str
     title: str
-    subject: str
+    tags: list[str]
     content: str
     author: str | None = None
     thumbnail_url: str | None = None
