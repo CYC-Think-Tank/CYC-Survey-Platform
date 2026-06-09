@@ -5,16 +5,6 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
 import { RichTextEditor } from '@/components/RichTextEditor';
 
-const SUBJECT_CATEGORIES = [
-  'Federal Policies',
-  'Economic Policies',
-  'Provincial Policies',
-  'Social Issues',
-  'Environment',
-  'Technology',
-  'Other',
-];
-
 export default function EditBlogPost() {
   const router = useRouter();
   const params = useParams();
@@ -30,6 +20,18 @@ export default function EditBlogPost() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [existingSubjects, setExistingSubjects] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/blog/subjects')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setExistingSubjects(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -41,7 +43,7 @@ export default function EditBlogPost() {
       })
       .then((data) => {
         setTitle(data.title || '');
-        setSubject(data.subject || SUBJECT_CATEGORIES[0]);
+        setSubject(data.subject || '');
         setAuthor(data.author || '');
         setContent(data.content || '');
         setThumbnailUrl(data.thumbnail_url || '');
@@ -157,18 +159,20 @@ export default function EditBlogPost() {
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                 Subject Category <span className="text-red-500">*</span>
               </label>
-              <select
+              <input
+                type="text"
+                list="subject-list"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g. Federal Policies"
                 className="w-full p-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[var(--color-cyc-primary)] dark:bg-slate-800 dark:text-slate-100"
                 required
-              >
-                {SUBJECT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
+              />
+              <datalist id="subject-list">
+                {existingSubjects.map((cat) => (
+                  <option key={cat} value={cat} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">

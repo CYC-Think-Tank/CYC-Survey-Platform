@@ -21,7 +21,12 @@ export default function AdminBlogDashboard() {
     fetch('/api/blog?include_unpublished=true')
       .then((res) => res.json())
       .then((data) => {
-        setPosts(data);
+        if (Array.isArray(data)) {
+          setPosts(data);
+        } else {
+          console.error('Invalid data format received from API', data);
+          setPosts([]);
+        }
         setLoading(false);
       })
       .catch((err) => {

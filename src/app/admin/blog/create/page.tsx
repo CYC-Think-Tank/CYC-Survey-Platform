@@ -5,20 +5,10 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
 import { RichTextEditor } from '@/components/RichTextEditor';
 
-const SUBJECT_CATEGORIES = [
-  'Federal Policies',
-  'Economic Policies',
-  'Provincial Policies',
-  'Social Issues',
-  'Environment',
-  'Technology',
-  'Other',
-];
-
 export default function CreateBlogPost() {
   const router = useRouter();
   const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState(SUBJECT_CATEGORIES[0]);
+  const [subject, setSubject] = useState('');
   const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
@@ -26,6 +16,18 @@ export default function CreateBlogPost() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [existingSubjects, setExistingSubjects] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/blog/subjects')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setExistingSubjects(data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const uploadFile = async (file: File) => {
     const formData = new FormData();
@@ -121,18 +123,20 @@ export default function CreateBlogPost() {
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
                 Subject Category <span className="text-red-500">*</span>
               </label>
-              <select
+              <input
+                type="text"
+                list="subject-list"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g. Federal Policies"
                 className="w-full p-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[var(--color-cyc-primary)] dark:bg-slate-800 dark:text-slate-100"
                 required
-              >
-                {SUBJECT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
+              />
+              <datalist id="subject-list">
+                {existingSubjects.map((cat) => (
+                  <option key={cat} value={cat} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">

@@ -21,6 +21,18 @@ async def list_blog_posts(include_unpublished: bool = False) -> Any:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/subjects", response_model=list[str])
+async def list_blog_subjects() -> Any:
+    try:
+        res = supabase.table("blog_posts").select("subject").execute()
+        if not res.data:
+            return []
+        subjects = list(set([row["subject"] for row in res.data if row.get("subject")]))
+        return sorted(subjects)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{post_id}", response_model=BlogPost)
 async def get_blog_post(post_id: str) -> Any:
     try:

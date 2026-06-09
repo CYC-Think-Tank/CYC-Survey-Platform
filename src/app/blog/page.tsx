@@ -12,27 +12,24 @@ interface BlogPost {
   created_at: string;
 }
 
-const SUBJECT_CATEGORIES = [
-  'All',
-  'Federal Policies',
-  'Economic Policies',
-  'Provincial Policies',
-  'Social Issues',
-  'Environment',
-  'Technology',
-  'Other',
-];
-
 export default function BlogList() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubject, setSelectedSubject] = useState('All');
+  const [subjects, setSubjects] = useState<string[]>(['All']);
 
   useEffect(() => {
     fetch('/api/blog')
       .then((res) => res.json())
       .then((data) => {
-        setPosts(data);
+        if (Array.isArray(data)) {
+          setPosts(data);
+          const uniqueSubjects = Array.from(new Set(data.map((p) => p.subject).filter(Boolean)));
+          setSubjects(['All', ...uniqueSubjects].sort());
+        } else {
+          console.error('Invalid data format received from API', data);
+          setPosts([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -69,7 +66,7 @@ export default function BlogList() {
               Categories
             </h2>
             <ul className="space-y-2">
-              {SUBJECT_CATEGORIES.map((cat) => (
+              {subjects.map((cat) => (
                 <li key={cat}>
                   <button
                     onClick={() => setSelectedSubject(cat)}
