@@ -26,10 +26,10 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
   },
   {
     code: 'zh',
-    name: 'Chinese',
-    nativeName: '中文',
+    name: 'Chinese Simplified',
+    nativeName: '简体中文',
     isRtl: false,
-    geminiPromptName: 'Chinese',
+    geminiPromptName: 'Chinese (Simplified)',
     translateTarget: false,
   },
   {
@@ -66,10 +66,10 @@ export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
   },
   {
     code: 'yue',
-    name: 'Cantonese',
-    nativeName: '粵語',
+    name: 'Chinese Traditional',
+    nativeName: '繁體中文',
     isRtl: false,
-    geminiPromptName: 'Cantonese',
+    geminiPromptName: 'Chinese (Traditional)',
     translateTarget: true,
   },
   {

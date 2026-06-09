@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { Globe, ChevronDown } from 'lucide-react';
 
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { SUPPORTED_LANGUAGES } from '@/config/languages';
@@ -10,6 +11,7 @@ import { SUPPORTED_LANGUAGES } from '@/config/languages';
 export function Header() {
   const pathname = usePathname();
   const [show, setShow] = useState(false);
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const { language, setLanguage, enabledLanguages } = useLanguage();
 
   useEffect(() => {
@@ -46,27 +48,57 @@ export function Header() {
               href="/blog"
               className="text-gray-700 hover:text-[var(--color-cyc-primary)] text-sm sm:text-base font-semibold transition-colors"
             >
-              Blog
+              Publications
             </Link>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as Language)}
-              className="text-gray-700 bg-white border border-gray-300 rounded px-2 py-1 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] cursor-pointer"
-            >
-              {SUPPORTED_LANGUAGES.map((lang) => (
-                <option
-                  key={lang.code}
-                  value={lang.code}
-                  disabled={
-                    enabledLanguages != null &&
-                    enabledLanguages.length > 0 &&
-                    !enabledLanguages.includes(lang.code)
-                  }
-                >
-                  {lang.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <button
+                onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                className="flex items-center space-x-1.5 text-gray-700 hover:text-[var(--color-cyc-primary)] dark:text-slate-300 dark:hover:text-white text-sm font-medium transition-colors bg-white hover:bg-gray-50 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-full border border-gray-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
+              >
+                <Globe className="w-4 h-4" />
+                <span>
+                  {SUPPORTED_LANGUAGES.find((l) => l.code === language)?.nativeName || language}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${langDropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {langDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setLangDropdownOpen(false)}
+                  ></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 py-1 z-50 overflow-hidden">
+                    {SUPPORTED_LANGUAGES.map((lang) => {
+                      const disabled =
+                        enabledLanguages != null &&
+                        enabledLanguages.length > 0 &&
+                        !enabledLanguages.includes(lang.code);
+                      return (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            setLanguage(lang.code as Language);
+                            setLangDropdownOpen(false);
+                          }}
+                          disabled={disabled}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50 dark:bg-slate-900 text-gray-400' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200'} ${language === lang.code ? 'font-bold text-[var(--color-cyc-primary)] bg-[var(--color-cyc-primary)]/10' : ''}`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span>{lang.nativeName}</span>
+                            <span className="text-[10px] text-gray-400 dark:text-slate-500 text-right">
+                              {lang.name}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
             {languageUnavailable && (
               <span className="text-amber-600 text-xs whitespace-nowrap">
                 &rarr;{' '}
