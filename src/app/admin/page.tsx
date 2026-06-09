@@ -18,6 +18,7 @@ import {
   X,
   Send,
   Trophy,
+  FileText,
 } from 'lucide-react';
 
 interface ReferralLeaderboardEntry {
@@ -314,6 +315,14 @@ export default function AdminDashboard() {
           <Link href="/admin/create" className="btn-primary flex items-center">
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
+          </Link>
+
+          <Link
+            href="/admin/blog"
+            className="px-4 py-2 bg-[var(--color-cyc-secondary)] text-white hover:bg-slate-700 rounded-lg flex items-center font-semibold transition-colors"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Manage Blog
           </Link>
 
           <button

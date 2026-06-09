@@ -90,3 +90,34 @@ class ShareLinkCreate(BaseModel):
 
 class AIAnalysisRequest(BaseModel):
     force_refresh: bool = False
+
+
+class BlogPostCreate(BaseModel):
+    title: str
+    subject: str
+    content: str
+    author: str | None = None
+    thumbnail_url: str | None = None
+    is_published: bool = False
+
+
+class BlogPostUpdate(BaseModel):
+    title: str | None = None
+    subject: str | None = None
+    content: str | None = None
+    author: str | None = None
+    thumbnail_url: str | None = None
+    is_published: bool | None = None
+
+
+class BlogPost(BaseModel):
+    id: str
+    title: str
+    subject: str
+    content: str
+    author: str | None = None
+    thumbnail_url: str | None = None
+    is_published: bool
+    created_at: str
+    updated_at: str
+

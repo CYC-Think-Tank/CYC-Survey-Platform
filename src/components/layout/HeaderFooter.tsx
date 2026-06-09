@@ -41,7 +41,13 @@ export function Header() {
               priority
             />
           </Link>
-          <nav className="flex items-center space-x-2 sm:space-x-6 relative">
+          <nav className="flex items-center space-x-4 sm:space-x-6 relative">
+            <Link
+              href="/blog"
+              className="text-gray-700 hover:text-[var(--color-cyc-primary)] text-sm sm:text-base font-semibold transition-colors"
+            >
+              Blog
+            </Link>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as Language)}
