@@ -5,6 +5,7 @@ import Link from 'next/link';
 interface BlogPost {
   id: string;
   title: string;
+  description: string | null;
   tags: string[];
   author: string | null;
   thumbnail_url: string | null;
@@ -164,7 +165,7 @@ export default function BlogList() {
                       {post.title}
                     </h3>
                     <p className="text-gray-600 dark:text-slate-400 text-sm line-clamp-3 mb-4 flex-1">
-                      {getExcerpt(post.content)}
+                      {post.description || getExcerpt(post.content)}
                     </p>
                     <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-700">
                       <span className="text-[var(--color-cyc-primary)] font-semibold text-sm flex items-center group-hover:underline">

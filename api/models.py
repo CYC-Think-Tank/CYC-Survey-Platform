@@ -94,6 +94,7 @@ class AIAnalysisRequest(BaseModel):
 
 class BlogPostCreate(BaseModel):
     title: str
+    description: str | None = None
     tags: list[str] = Field(default_factory=list)
     content: str
     author: str | None = None
@@ -103,6 +104,7 @@ class BlogPostCreate(BaseModel):
 
 class BlogPostUpdate(BaseModel):
     title: Optional[str] = None
+    description: Optional[str] = None
     tags: Optional[list[str]] = None
     content: Optional[str] = None
     author: str | None = None
@@ -113,6 +115,7 @@ class BlogPostUpdate(BaseModel):
 class BlogPost(BaseModel):
     id: str
     title: str
+    description: str | None = None
     tags: list[str]
     content: str
     author: str | None = None

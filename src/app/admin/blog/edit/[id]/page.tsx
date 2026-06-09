@@ -12,6 +12,7 @@ export default function EditBlogPost() {
 
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState('');
   const [author, setAuthor] = useState('');
@@ -44,6 +45,7 @@ export default function EditBlogPost() {
       })
       .then((data) => {
         setTitle(data.title || '');
+        setDescription(data.description || '');
         setTags(data.tags || []);
         setAuthor(data.author || '');
         setContent(data.content || '');
@@ -111,6 +113,7 @@ export default function EditBlogPost() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
+          description: description || null,
           tags,
           content,
           author: author || null,
@@ -167,6 +170,19 @@ export default function EditBlogPost() {
               placeholder="e.g. Impact of Recent Federal Policies"
               className="w-full p-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[var(--color-cyc-primary)] dark:bg-slate-800 dark:text-slate-100"
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+              Short Description (Preview snippet)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="A brief summary that appears on the publications list page..."
+              rows={3}
+              className="w-full p-2.5 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[var(--color-cyc-primary)] dark:bg-slate-800 dark:text-slate-100 resize-y"
             />
           </div>
 
