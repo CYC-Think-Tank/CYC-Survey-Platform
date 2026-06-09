@@ -5,7 +5,16 @@ import { Underline } from '@tiptap/extension-underline';
 import { Highlight } from '@tiptap/extension-highlight';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
-import { Bold, Italic, Underline as UnderlineIcon, Highlighter, Palette } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Highlighter,
+  Palette,
+  Heading1,
+  Heading2,
+  Heading3,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface RichTextEditorProps {
@@ -28,7 +37,7 @@ export const RichTextEditor = ({
     editable: !readOnly,
     extensions: [
       StarterKit.configure({
-        heading: false,
+        heading: { levels: [1, 2, 3] },
         bulletList: false,
         orderedList: false,
         blockquote: false,
@@ -94,6 +103,33 @@ export const RichTextEditor = ({
             title="Underline"
           >
             <UnderlineIcon className="w-4 h-4" />
+          </button>
+
+          <div className="w-px h-5 bg-gray-300 mx-1"></div>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            className={`p-1.5 rounded hover:bg-gray-200 dark:bg-slate-600 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400'}`}
+            title="Heading 1"
+          >
+            <Heading1 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            className={`p-1.5 rounded hover:bg-gray-200 dark:bg-slate-600 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400'}`}
+            title="Heading 2"
+          >
+            <Heading2 className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            className={`p-1.5 rounded hover:bg-gray-200 dark:bg-slate-600 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-gray-200 dark:bg-slate-600 text-gray-900 dark:text-slate-100' : 'text-gray-600 dark:text-slate-400'}`}
+            title="Heading 3"
+          >
+            <Heading3 className="w-4 h-4" />
           </button>
 
           <div className="w-px h-5 bg-gray-300 mx-1"></div>

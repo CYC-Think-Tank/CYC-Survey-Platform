@@ -15,8 +15,8 @@ interface BlogPost {
 export default function BlogList() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTag, setSelectedTag] = useState('All');
-  const [tags, setTags] = useState<string[]>(['All']);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
 
   useEffect(() => {
     fetch('/api/blog')
@@ -26,7 +26,7 @@ export default function BlogList() {
           setPosts(data);
           const allTags = data.flatMap((p) => p.tags || []);
           const uniqueTags = Array.from(new Set(allTags.filter(Boolean)));
-          setTags(['All', ...uniqueTags].sort());
+          setTags(uniqueTags.sort());
         } else {
           console.error('Invalid data format received from API', data);
           setPosts([]);
@@ -39,8 +39,16 @@ export default function BlogList() {
       });
   }, []);
 
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
   const filteredPosts =
-    selectedTag === 'All' ? posts : posts.filter((p) => p.tags?.includes(selectedTag));
+    selectedTags.length === 0
+      ? posts
+      : posts.filter((p) => selectedTags.every((tag) => p.tags?.includes(tag)));
 
   const getExcerpt = (html: string) => {
     // Strip HTML tags and limit to 150 characters
@@ -65,21 +73,35 @@ export default function BlogList() {
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 sticky top-24">
             <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-slate-100">Tags</h2>
             <ul className="space-y-2">
-              {tags.map((tag) => (
-                <li key={tag}>
-                  <button
-                    onClick={() => setSelectedTag(tag)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                      selectedTag === tag
-                        ? 'bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] font-semibold'
-                        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                </li>
-              ))}
+              {tags.map((tag) => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <li key={tag}>
+                    <button
+                      onClick={() => toggleTag(tag)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] font-semibold'
+                          : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>{tag}</span>
+                      {isSelected && (
+                        <span className="w-2 h-2 rounded-full bg-[var(--color-cyc-primary)]"></span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
+            {selectedTags.length > 0 && (
+              <button
+                onClick={() => setSelectedTags([])}
+                className="w-full mt-4 text-xs font-medium text-gray-500 hover:text-[var(--color-cyc-primary)] transition-colors"
+              >
+                Clear all filters
+              </button>
+            )}
           </div>
         </div>
 
