@@ -28,7 +28,7 @@ export function Header() {
 
   return (
     <header
-      className={`flex-shrink-0 z-50 bg-white h-16 sm:h-20 border-b border-gray-200/50 transition-opacity duration-[1200ms] ease-in-out ${pathname === '/' && !show ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
+      className={`relative flex-shrink-0 z-[100] bg-white h-16 sm:h-20 border-b border-gray-200/50 transition-opacity duration-[1200ms] ease-in-out ${pathname === '/' && !show ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
     >
       <div className="h-1 w-full bg-[var(--color-cyc-primary)]" />
       <div className="w-full h-[calc(100%-0.375rem)] px-4 sm:px-8">
