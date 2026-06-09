@@ -2,6 +2,7 @@
 @import 'leaflet.markercluster/dist/MarkerCluster.css';
 @import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 @import 'tailwindcss';
+@plugin "@tailwindcss/typography";
 
 /* Force light mode everywhere by mapping the dark variant to a non-existent class */
 @variant dark (&:where(.never-use-dark-mode));
