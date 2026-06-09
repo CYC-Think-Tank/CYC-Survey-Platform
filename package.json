@@ -18,7 +18,7 @@
     "docker:build": "docker-compose up --build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.106.0",
+    "@supabase/supabase-js": "^2.108.1",
     "@tailwindcss/typography": "^0.5.20",
     "@tiptap/extension-color": "^3.23.6",
     "@tiptap/extension-highlight": "^3.23.6",
