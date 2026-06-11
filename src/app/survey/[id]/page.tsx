@@ -362,7 +362,7 @@ export default function SurveyPage() {
         if (savedSession) {
           try {
             const parsed = JSON.parse(savedSession);
-            if (parsed.sessionId) {
+            if (parsed) {
               const savedLang = parsed.answerLanguage || 'en';
               let restoredAnswers = parsed.answers || {};
               // If the survey was saved in a different language, remap choice answers
@@ -370,7 +370,9 @@ export default function SurveyPage() {
               if (savedLang !== language) {
                 restoredAnswers = remapAnswers(restoredAnswers, savedLang, language, data);
               }
-              setSessionId(parsed.sessionId);
+              if (parsed.sessionId) {
+                setSessionId(parsed.sessionId);
+              }
               setEmail(parsed.email || '');
               setAnswers(restoredAnswers);
               setOtherTexts(parsed.otherTexts || {});
@@ -431,7 +433,7 @@ export default function SurveyPage() {
 
   // Sync state changes to localStorage for robust resume support
   useEffect(() => {
-    if (survey && sessionId) {
+    if (survey && hasStarted) {
       localStorage.setItem(
         `cyc_session_${survey.id}`,
         JSON.stringify({
@@ -447,7 +449,17 @@ export default function SurveyPage() {
         })
       );
     }
-  }, [survey, sessionId, email, answers, otherTexts, refNumbers, currentStep, language]);
+  }, [
+    survey,
+    sessionId,
+    email,
+    answers,
+    otherTexts,
+    refNumbers,
+    currentStep,
+    language,
+    hasStarted,
+  ]);
 
   // Auto-save the active question's answer to the database in the background on change
   useEffect(() => {
