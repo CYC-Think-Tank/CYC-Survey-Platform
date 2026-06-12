@@ -15,7 +15,7 @@ from api.utils.survey_utils import (
 router = APIRouter()
 
 
-async def _get_random_email_position(num_emails: int = 5) -> list:
+async def _get_random_email_position(num_emails: int = 9) -> list:
     """
     Returns a randomly generated list of integers `x` such that 0 <= x <= length of collection of emails
     without replacement.

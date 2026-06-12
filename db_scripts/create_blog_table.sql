@@ -2,7 +2,7 @@
 CREATE TABLE blog_posts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(255) NOT NULL,
-    tags JSONB DEFAULT '[]'::jsonb,
+    subject VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     author VARCHAR(255),
     thumbnail_url TEXT,
@@ -12,7 +12,6 @@ CREATE TABLE blog_posts (
 );
 
 -- Create RLS Policies
-ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 
 -- Allow public read access to published blog posts
 CREATE POLICY "Allow public read of published blog posts" ON blog_posts FOR SELECT USING (is_published = true);
