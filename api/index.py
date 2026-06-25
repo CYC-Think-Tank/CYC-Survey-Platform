@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import (
     ai_insights,
+    latent_trait_insights,
     results,
     sessions,
     share_links,
@@ -32,6 +33,7 @@ app.include_router(sessions.router)
 app.include_router(results.router)
 app.include_router(share_links.router)
 app.include_router(ai_insights.router)
+app.include_router(latent_trait_insights.router)
 
 
 if __name__ == "__main__":
