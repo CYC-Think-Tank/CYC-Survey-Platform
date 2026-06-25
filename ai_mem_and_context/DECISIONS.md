@@ -298,6 +298,29 @@ Implementation:
 
 ---
 
+## [06.25.2026]
+
+## Decision #17
+
+**STATUS: ACTIVE**
+
+Visualize latent trait distributions as histograms of respondent theta values rather than mean-position sliders.
+
+**Reason:**
+
+- A slider overemphasizes the mean and hides distribution shape
+- Theta estimates are respondent-level outputs, so the frontend should show their spread directly
+- Histograms make skew, clustering, and dispersion easier to inspect
+- The API should pass per-dimension theta values alongside summary statistics
+
+Implementation:
+
+- Include theta values for each fitted latent trait in the latent trait API response
+- Render compact per-trait histograms in the Results Traits tab
+- Keep summary metrics such as mean, median, standard deviation, standard error, reliability, and N
+
+---
+
 ## System-Level Concept
 
 ```text

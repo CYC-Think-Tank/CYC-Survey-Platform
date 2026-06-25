@@ -231,6 +231,7 @@ def _build_status_response(
                 "max": 3,
                 "reliability": None,
                 "respondents": valid_responses,
+                "thetaValues": [],
             }
             for dimension, question_ids in selected_dimensions.items()
         ],

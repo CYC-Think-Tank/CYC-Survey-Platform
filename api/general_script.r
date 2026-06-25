@@ -724,7 +724,8 @@ summarize_dimension <- function(dimension) {
     min = safe_numeric(min(theta_values)),
     max = safe_numeric(max(theta_values)),
     reliability = safe_numeric(reliability),
-    respondents = length(theta_values)
+    respondents = length(theta_values),
+    thetaValues = I(as.numeric(round(theta_values, 4)))
   )
 }
 
@@ -756,6 +757,7 @@ jsonlite::write_json(
   latent_trait_output_path,
   pretty = TRUE,
   auto_unbox = TRUE,
+  digits = 8,
   na = "null"
 )
 message(paste0("Wrote latent trait summary to ", latent_trait_output_path))

@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Globe,
   Activity,
+  RefreshCw,
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
 
@@ -104,6 +105,7 @@ interface LatentTraitDimensionStats {
   max: number;
   reliability: number | null;
   respondents: number;
+  thetaValues?: number[];
 }
 
 interface LatentTraitFitStats {
@@ -687,6 +689,80 @@ export default function ResultsPage() {
     return value === null ? 'Pending' : value.toFixed(digits);
   }
 
+  function formatThetaNumber(value: number | null) {
+    if (value === null) {
+      return 'Pending';
+    }
+
+    const absoluteValue = Math.abs(value);
+    if (absoluteValue > 0 && absoluteValue < 0.001) {
+      return value.toFixed(5);
+    }
+    if (absoluteValue > 0 && absoluteValue < 0.01) {
+      return value.toFixed(4);
+    }
+
+    return value.toFixed(2);
+  }
+
+  function summarizeThetaValues(values: number[] = []) {
+    const finiteValues = values.filter((value) => Number.isFinite(value));
+
+    if (finiteValues.length === 0) {
+      return null;
+    }
+
+    const sortedValues = [...finiteValues].sort((a, b) => a - b);
+    const midpoint = Math.floor(sortedValues.length / 2);
+    const median =
+      sortedValues.length % 2 === 0
+        ? (sortedValues[midpoint - 1] + sortedValues[midpoint]) / 2
+        : sortedValues[midpoint];
+    const mean = finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length;
+    const variance =
+      finiteValues.length > 1
+        ? finiteValues.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+          (finiteValues.length - 1)
+        : 0;
+
+    return {
+      mean,
+      median,
+      standardDeviation: Math.sqrt(variance),
+      respondents: finiteValues.length,
+    };
+  }
+
+  function buildThetaHistogram(values: number[] = [], binCount = 16) {
+    const finiteValues = values.filter((value) => Number.isFinite(value));
+
+    if (finiteValues.length === 0) {
+      return null;
+    }
+
+    const min = Math.min(...finiteValues);
+    const max = Math.max(...finiteValues);
+    const span = max - min || 1;
+    const bins = Array.from({ length: binCount }, (_, index) => ({
+      start: min + (index * span) / binCount,
+      end: min + ((index + 1) * span) / binCount,
+      count: 0,
+    }));
+
+    finiteValues.forEach((value) => {
+      const index = Math.min(binCount - 1, Math.floor(((value - min) / span) * binCount));
+      bins[index].count += 1;
+    });
+
+    return {
+      bins,
+      min,
+      max,
+      maxCount: Math.max(...bins.map((bin) => bin.count), 1),
+      total: finiteValues.length,
+    };
+  }
+
   function renderMetric(label: string, value: string | number | null, helper?: string) {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -695,6 +771,51 @@ export default function ResultsPage() {
           {value === null ? 'Pending' : value}
         </div>
         {helper && <div className="mt-1 text-xs text-gray-500">{helper}</div>}
+      </div>
+    );
+  }
+
+  function renderThetaHistogram(dimension: LatentTraitDimensionStats) {
+    const histogram = buildThetaHistogram(dimension.thetaValues);
+
+    if (!histogram) {
+      return (
+        <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Theta distribution
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Waiting for respondent theta values from the latent trait fit.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-6">
+        <div className="flex justify-between text-xs text-gray-500 mb-2">
+          <span>{histogram.min.toFixed(1)}</span>
+          <span>Theta distribution</span>
+          <span>{histogram.max.toFixed(1)}</span>
+        </div>
+        <div className="h-28 flex items-end gap-1 border-b border-gray-200">
+          {histogram.bins.map((bin, index) => {
+            const height = Math.max(4, (bin.count / histogram.maxCount) * 100);
+
+            return (
+              <div
+                key={`${dimension.id}-${index}`}
+                className="flex-1 bg-[var(--color-cyc-primary)] rounded-t-sm min-h-[2px]"
+                style={{ height: `${height}%` }}
+                title={`${bin.count} respondents from ${bin.start.toFixed(2)} to ${bin.end.toFixed(2)}`}
+              />
+            );
+          })}
+        </div>
+        <div className="mt-2 flex justify-between text-xs text-gray-400">
+          <span>{histogram.total} theta estimates</span>
+          <span>Bin height = respondents</span>
+        </div>
       </div>
     );
   }
@@ -741,9 +862,20 @@ export default function ResultsPage() {
                   : 'Latest fitted R pipeline output'}
               </p>
             </div>
-            <span className="inline-flex items-center self-start px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold uppercase tracking-wide">
-              {fit.status}
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fetchLatentTraits(true, true)}
+                disabled={fit.status === 'running'}
+                className="inline-flex items-center px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 hover:text-[var(--color-cyc-secondary)] hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Regenerate Fit
+              </button>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold uppercase tracking-wide">
+                {fit.status}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
@@ -774,11 +906,13 @@ export default function ResultsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {dimensions.map((dimension) => {
-            const hasFittedMean = dimension.mean !== null;
-            const range = dimension.max - dimension.min || 1;
-            const meanPosition = hasFittedMean
-              ? Math.min(100, Math.max(0, ((dimension.mean! - dimension.min) / range) * 100))
-              : 50;
+            const thetaSummary = summarizeThetaValues(dimension.thetaValues);
+            const displayStats = {
+              mean: thetaSummary?.mean ?? dimension.mean,
+              median: thetaSummary?.median ?? dimension.median,
+              standardDeviation: thetaSummary?.standardDeviation ?? dimension.standardDeviation,
+              respondents: thetaSummary?.respondents ?? dimension.respondents,
+            };
 
             return (
               <div
@@ -797,26 +931,12 @@ export default function ResultsPage() {
                   </span>
                 </div>
 
-                <div className="mt-6">
-                  <div className="flex justify-between text-xs text-gray-500 mb-2">
-                    <span>{dimension.min.toFixed(1)}</span>
-                    <span>Mean theta</span>
-                    <span>{dimension.max.toFixed(1)}</span>
-                  </div>
-                  <div className="relative h-3 bg-gray-100 rounded-full">
-                    {hasFittedMean && (
-                      <div
-                        className="absolute top-1/2 -translate-y-1/2 h-6 w-1.5 rounded-full bg-[var(--color-cyc-primary)]"
-                        style={{ left: `${meanPosition}%` }}
-                      />
-                    )}
-                  </div>
-                </div>
+                {renderThetaHistogram(dimension)}
 
                 <div className="grid grid-cols-2 gap-3 mt-6">
-                  {renderMetric('Mean', formatNumber(dimension.mean))}
-                  {renderMetric('Median', formatNumber(dimension.median))}
-                  {renderMetric('Std. Dev.', formatNumber(dimension.standardDeviation))}
+                  {renderMetric('Mean', formatThetaNumber(displayStats.mean))}
+                  {renderMetric('Median', formatThetaNumber(displayStats.median))}
+                  {renderMetric('Std. Dev.', formatThetaNumber(displayStats.standardDeviation))}
                   {renderMetric('Std. Error', formatNumber(dimension.standardError, 3))}
                   {renderMetric(
                     'Reliability',
@@ -824,7 +944,7 @@ export default function ResultsPage() {
                       ? 'Pending'
                       : `${Math.round(dimension.reliability * 100)}%`
                   )}
-                  {renderMetric('N', dimension.respondents)}
+                  {renderMetric('N', displayStats.respondents)}
                 </div>
               </div>
             );
