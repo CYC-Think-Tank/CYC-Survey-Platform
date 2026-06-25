@@ -1,0 +1,85 @@
+{
+  "survey_id": "05486d0e-e4a7-4c49-9585-da94d1c46f78",
+  "status": "fit_complete",
+  "source_file": "/Users/sylviazhang/CYC-Survey-Platform/api/question_topic_configs/mpo_config.json",
+  "generated_at": "2026-06-25T17:43:39Z",
+  "dimensions": [
+    {
+      "id": "engagement with government projects",
+      "label": "engagement with government projects",
+      "description": "Estimated latent trait: engagement with government projects",
+      "question_ids": [
+        "e75a9dd1-b09e-4c2a-9a47-ec1b9e351369",
+        "e45d0acd-8eff-4293-869b-25899d88938d",
+        "9d43084e-a228-4cea-8e3f-22fb93ad2ba2"
+      ],
+      "mean": -0.0001,
+      "median": -0.0933,
+      "standardDeviation": 0.5637,
+      "standardError": 0.826,
+      "min": -1.2052,
+      "max": 1.3451,
+      "reliability": 0.3176,
+      "respondents": 1000
+    },
+    {
+      "id": "attitude towards energy and resource projects",
+      "label": "attitude towards energy and resource projects",
+      "description": "Estimated latent trait: attitude towards energy and resource projects",
+      "question_ids": [
+        "63e2c572-00aa-457a-b193-85da4d773f82",
+        "2903ed84-aadb-4860-88fb-2f8780cf3fdf",
+        "7d8913a3-efae-4e92-957d-8a47907dc0b2",
+        "12d3541f-82b9-4b86-b287-b526298845df",
+        "bf4afbdf-6a68-4225-8222-7bf5019ca195",
+        "2911e94b-6cf6-4527-87ac-c8521968b087",
+        "bcf8d8e6-5bbb-4f1d-8f45-8ee233f83de6",
+        "6b678a0a-bd71-4c42-bf2a-ce2ce17ae9e4",
+        "791a6db5-857e-4ee3-b8b8-4945d2d4fccc",
+        "879684d9-c6b7-4be3-a9d8-301ea6028ec3",
+        "d0938a2e-8bed-4452-bfac-c57a01019db9"
+      ],
+      "mean": -0.0004,
+      "median": -0.0005,
+      "standardDeviation": 0.5107,
+      "standardError": 0.8601,
+      "min": -1.4021,
+      "max": 1.5318,
+      "reliability": 0.2607,
+      "respondents": 1000
+    },
+    {
+      "id": "attitude indigenous relations and northern canada",
+      "label": "attitude indigenous relations and northern canada",
+      "description": "Estimated latent trait: attitude indigenous relations and northern canada",
+      "question_ids": [
+        "1c04442d-8bb4-4a41-bbe0-ab3acdb20ac0",
+        "82b78d5e-bdee-481a-b5af-5dc67b2b574f",
+        "96ab794c-e42d-4236-af04-52fe474f0afa",
+        "2ae52c95-35e4-4b21-a5ea-9e420006cef3",
+        "c14f0323-713c-4ad5-b548-6e6d5ef8d29e",
+        "ac753cf3-2a80-4c7e-a1bf-d144bce85ba4",
+        "d81ae7a6-f727-40e3-8b91-2861541cc6df"
+      ],
+      "mean": -0.0001,
+      "median": -0.0012,
+      "standardDeviation": 0.4709,
+      "standardError": 0.8825,
+      "min": -1.2304,
+      "max": 1.5055,
+      "reliability": 0.2216,
+      "respondents": 1000
+    }
+  ],
+  "fit": {
+    "status": "complete",
+    "model": "Config-driven mixed-format MIRT",
+    "itemTypes": ["graded", "nominal"],
+    "estimatedItems": 20,
+    "excludedQuestionTypes": "ranking",
+    "logLikelihood": -31102.5187,
+    "aic": 62447.0374,
+    "bic": 63040.8758,
+    "lastRun": "2026-06-25T17:43:39Z"
+  }
+}

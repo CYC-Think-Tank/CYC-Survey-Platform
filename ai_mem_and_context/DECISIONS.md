@@ -245,6 +245,59 @@ Implementation:
 
 ---
 
+## [06.25.2026]
+
+## Decision #15
+
+**STATUS: ACTIVE**
+
+Run latent trait model fitting as an asynchronous backend job rather than a blocking HTTP request.
+
+**Reason:**
+
+- Mixed-format MIRT fitting can take longer than a normal proxied request should remain open
+- Prevents frontend proxy socket resets and long-running page spinners
+- Allows the UI to show explicit running, complete, and error states
+- Keeps the frontend unaware of R implementation details
+
+Implementation:
+
+- User opens the Traits tab
+- Frontend calls the latent trait API endpoint
+- API matches the survey to its config by `survey_id`
+- If fitted output exists, return it
+- If no fitted output exists, start `general_script.r` in a background job
+- Return `running` status immediately
+- Frontend polls the same endpoint until fitted JSON is available or the job fails
+
+---
+
+## [06.25.2026]
+
+## Decision #16
+
+**STATUS: ACTIVE**
+
+Cap each survey's fitted latent trait model at three traits and compile config-derived simple-structure `mirt` syntax.
+
+**Reason:**
+
+- Four or more latent dimensions substantially increases MIRT runtime and convergence risk
+- The config already defines the intended question-to-trait assignment
+- Passing only `model <- num_thetas` discards that assignment and can fit a broader model than intended
+- Compiled model syntax preserves config-driven architecture while avoiding manual hardcoding in the R script
+- The same compiler can later consume learned or reinforcement-learning-derived question-to-trait mappings
+
+Implementation:
+
+- Preserve the config JSON files as the current source of truth for trait assignments
+- Use at most the first three configured traits for the current mirt fit
+- Compile the selected config mapping into simple-structure `mirt` syntax
+- Allow each modeled item to load only on its assigned latent trait
+- Continue excluding ranking items from the mirt fit
+
+---
+
 ## System-Level Concept
 
 ```text

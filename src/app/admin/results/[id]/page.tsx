@@ -118,6 +118,8 @@ interface LatentTraitFitStats {
 }
 
 interface LatentTraitData {
+  status?: 'preview' | 'running' | 'complete' | 'error' | 'fit_complete' | 'config_ready';
+  message?: string | null;
   dimensions: LatentTraitDimensionStats[];
   fit: LatentTraitFitStats;
 }
@@ -194,26 +196,36 @@ export default function ResultsPage() {
     [params.id]
   );
 
-  const fetchLatentTraits = useCallback(() => {
-    setLatentTraitLoading(true);
-    setLatentTraitError(null);
+  const fetchLatentTraits = useCallback(
+    (showLoading = true, retry = false) => {
+      if (showLoading) {
+        setLatentTraitLoading(true);
+      }
+      setLatentTraitError(null);
 
-    fetch(latentTraitsEndpoint)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('Failed to load latent trait statistics.');
-        }
-        return res.json();
-      })
-      .then((d: LatentTraitData) => {
-        setLatentTraitStats(d);
-        setLatentTraitLoading(false);
-      })
-      .catch((err: Error) => {
-        setLatentTraitError(err.message);
-        setLatentTraitLoading(false);
-      });
-  }, [latentTraitsEndpoint]);
+      const endpoint = retry ? `${latentTraitsEndpoint}?retry=true` : latentTraitsEndpoint;
+
+      fetch(endpoint)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Failed to load latent trait statistics.');
+          }
+          return res.json();
+        })
+        .then((d: LatentTraitData) => {
+          if (d.fit.status === 'error') {
+            setLatentTraitError(d.message || 'Latent trait fitting failed.');
+          }
+          setLatentTraitStats(d);
+          setLatentTraitLoading(false);
+        })
+        .catch((err: Error) => {
+          setLatentTraitError(err.message);
+          setLatentTraitLoading(false);
+        });
+    },
+    [latentTraitsEndpoint]
+  );
 
   useEffect(() => {
     fetchResults();
@@ -236,6 +248,18 @@ export default function ResultsPage() {
       fetchLatentTraits();
     }
   }, [tab, latentTraitStats, latentTraitLoading, fetchLatentTraits]);
+
+  useEffect(() => {
+    if (tab !== 'latent' || latentTraitStats?.fit.status !== 'running') {
+      return;
+    }
+
+    const poll = window.setTimeout(() => {
+      fetchLatentTraits(false);
+    }, 3000);
+
+    return () => window.clearTimeout(poll);
+  }, [tab, latentTraitStats?.fit.status, fetchLatentTraits]);
 
   const handleDeleteAll = async () => {
     const input = window.prompt(
@@ -681,6 +705,12 @@ export default function ResultsPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-6">
           <p className="font-semibold">Latent trait statistics unavailable</p>
           <p className="text-sm mt-1">{latentTraitError}</p>
+          <button
+            onClick={() => fetchLatentTraits(true, true)}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+          >
+            Retry Fit
+          </button>
         </div>
       );
     }
@@ -689,7 +719,7 @@ export default function ResultsPage() {
       return (
         <div className="flex justify-center items-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-cyc-primary)]"></div>
-          <span className="ml-3 text-gray-500 font-medium">Preparing latent trait view...</span>
+          <span className="ml-3 text-gray-500 font-medium">Checking latent trait model...</span>
         </div>
       );
     }
@@ -731,6 +761,16 @@ export default function ResultsPage() {
             </code>
           </div>
         </div>
+
+        {fit.status === 'running' && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4">
+            <p className="font-semibold">Fitting latent trait model...</p>
+            <p className="text-sm mt-1">
+              {latentTraitStats.message ||
+                'The backend is running the R pipeline. This page will refresh automatically.'}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {dimensions.map((dimension) => {

@@ -8,15 +8,22 @@ library(jsonlite) # JSON parser library
 library(stringr) # Library for easier string manipulation
 library(ggplot2) # Library for R visualizations 
 
-# Connect to Supabase (Effective Jun 11 - local Supabase clone)
+# Connect to Supabase. Defaults target the local Supabase clone, but the API can
+# override these values via environment variables when it runs this script.
+db_name <- Sys.getenv("LATENT_TRAIT_DB_NAME", "postgres")
+db_host <- Sys.getenv("LATENT_TRAIT_DB_HOST", "127.0.0.1")
+db_port <- as.integer(Sys.getenv("LATENT_TRAIT_DB_PORT", "54322"))
+db_user <- Sys.getenv("LATENT_TRAIT_DB_USER", "postgres")
+db_password <- Sys.getenv("LATENT_TRAIT_DB_PASSWORD", "postgres")
+api_mode <- tolower(Sys.getenv("LATENT_TRAIT_API_MODE", "false")) %in% c("1", "true", "yes")
 
 con <- dbConnect( # Creates the connection object 
     RPostgres::Postgres(),
-    dbname = "postgres",
-    host = "127.0.0.1", 
-    port = 54322,
-    user = "postgres",
-    password = "postgres"
+    dbname = db_name,
+    host = db_host,
+    port = db_port,
+    user = db_user,
+    password = db_password
 )
 
 # =========================
@@ -158,17 +165,34 @@ config <- load_latent_trait_config(
 raw <- raw %>%
   filter(as.character(survey_id) == config$survey_id)
 
+max_latent_traits <- as.integer(Sys.getenv("LATENT_TRAIT_MAX_DIMENSIONS", "3"))
+if (is.na(max_latent_traits) || max_latent_traits < 1) {
+  stop("LATENT_TRAIT_MAX_DIMENSIONS must be a positive integer")
+}
+
 # make a list of all of the latent traits being optimized for
-dimensions <- names(config$dimensions)
+all_dimensions <- names(config$dimensions)
+dimensions <- head(all_dimensions, max_latent_traits)
+if (length(all_dimensions) > length(dimensions)) {
+  message(
+    paste0(
+      "Capping latent traits at ", max_latent_traits,
+      ". Excluded dimensions from this fit: ",
+      paste(setdiff(all_dimensions, dimensions), collapse = ", ")
+    )
+  )
+}
+
+selected_config_dimensions <- config$dimensions[dimensions]
 
 # construct the question map 
 question_map <- tibble::tibble(
   dimension = rep(
     dimensions,
-    lengths(config$dimensions)
+    lengths(selected_config_dimensions)
   ),
   question_id = unlist(
-    config$dimensions,
+    selected_config_dimensions,
     use.names = FALSE
   )
 )
@@ -566,10 +590,67 @@ item_types <- as.character(item_types)
 
 stopifnot(length(item_types) == ncol(analysis_data))
 
+sanitize_factor_name <- function(x) {
+  cleaned <- gsub("[^A-Za-z0-9_]+", "_", x)
+  cleaned <- gsub("^_+|_+$", "", cleaned)
+  cleaned <- ifelse(grepl("^[A-Za-z]", cleaned), cleaned, paste0("trait_", cleaned))
+  make.unique(cleaned, sep = "_")
+}
+
+compile_mirt_model <- function(item_metadata, dimensions, question_map) {
+  metadata_with_dimensions <- item_metadata %>%
+    left_join(question_map, by = "question_id") %>%
+    mutate(item_index = dplyr::row_number()) %>%
+    filter(!is.na(dimension), dimension %in% dimensions)
+
+  modeled_dimensions <- dimensions[dimensions %in% metadata_with_dimensions$dimension]
+  if (length(modeled_dimensions) == 0) {
+    stop("No configured latent traits have modeled items after filtering")
+  }
+
+  factor_names <- sanitize_factor_name(modeled_dimensions)
+  names(factor_names) <- modeled_dimensions
+
+  factor_lines <- vapply(
+    modeled_dimensions,
+    function(dimension) {
+      item_indices <- metadata_with_dimensions %>%
+        filter(.data$dimension == .env$dimension) %>%
+        pull(item_index)
+
+      paste0(factor_names[[dimension]], " = ", paste(item_indices, collapse = ", "))
+    },
+    character(1)
+  )
+
+  cov_lines <- character(0)
+  if (length(factor_names) > 1) {
+    cov_pairs <- utils::combn(unname(factor_names), 2, simplify = FALSE)
+    cov_lines <- paste0(
+      "COV = ",
+      paste(vapply(cov_pairs, paste, character(1), collapse = "*"), collapse = ", ")
+    )
+  }
+
+  list(
+    syntax = paste(c(factor_lines, cov_lines), collapse = "\n"),
+    dimensions = modeled_dimensions,
+    factor_names = unname(factor_names)
+  )
+}
+
 # =========================
-# 9. DEFINE 2D MIRT MODEL
+# 9. DEFINE CONFIG-CONSTRAINED MIRT MODEL
 # =========================
-model <- num_thetas
+compiled_model <- compile_mirt_model(
+  item_metadata = item_metadata,
+  dimensions = dimensions,
+  question_map = question_map
+)
+
+model <- mirt.model(compiled_model$syntax)
+modeled_dimensions <- compiled_model$dimensions
+num_thetas <- length(modeled_dimensions)
 
 # =========================
 # 10. FIT MODEL
@@ -578,7 +659,7 @@ fit <- mirt(
   data = analysis_data,
   model = model,
   itemtype = item_types,
-  verbose = TRUE
+  verbose = !api_mode
 )
 
 # [REFACTOR] 
@@ -596,8 +677,8 @@ theta_df <- as.data.frame(theta)
 # )
 
 colnames(theta_df) <- c(
-    dimensions,
-    paste0("se_", dimensions)
+    modeled_dimensions,
+    paste0("se_", modeled_dimensions)
 )
 
 # Write a compact JSON artifact that the API can serve to the frontend.
@@ -647,13 +728,15 @@ summarize_dimension <- function(dimension) {
   )
 }
 
-fit_log_likelihood <- as.numeric(stats::logLik(fit))
+fit_log_likelihood <- extract.mirt(fit, "logLik")
+fit_aic <- extract.mirt(fit, "AIC")
+fit_bic <- extract.mirt(fit, "BIC")
 fit_summary <- list(
   survey_id = config$survey_id,
   status = "fit_complete",
   source_file = config$source_file,
   generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-  dimensions = lapply(dimensions, summarize_dimension),
+  dimensions = lapply(modeled_dimensions, summarize_dimension),
   fit = list(
     status = "complete",
     model = "Config-driven mixed-format MIRT",
@@ -661,8 +744,8 @@ fit_summary <- list(
     estimatedItems = ncol(analysis_data),
     excludedQuestionTypes = c("ranking"),
     logLikelihood = safe_numeric(fit_log_likelihood),
-    aic = safe_numeric(stats::AIC(fit)),
-    bic = safe_numeric(stats::BIC(fit)),
+    aic = safe_numeric(fit_aic),
+    bic = safe_numeric(fit_bic),
     lastRun = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
   )
 )
@@ -681,37 +764,39 @@ message(paste0("Wrote latent trait summary to ", latent_trait_output_path))
 # =========================
 # 12. VISUALISATIONS
 # =========================
-first_dimension <- dimensions[[1]]
+if (!api_mode) {
+  first_dimension <- modeled_dimensions[[1]]
 
-ggplot(theta_df, aes(x = .data[[first_dimension]])) +
-  geom_histogram(bins = 30, fill = "steelblue") +
-  theme_minimal() +
-  labs(title = paste0(first_dimension, " (Theta Distribution)"))
+  ggplot(theta_df, aes(x = .data[[first_dimension]])) +
+    geom_histogram(bins = 30, fill = "steelblue") +
+    theme_minimal() +
+    labs(title = paste0(first_dimension, " (Theta Distribution)"))
 
-if (length(dimensions) >= 2) {
-  # Pairwise structure
-  pairs(theta_df[, dimensions, drop = FALSE],
-        main = "Latent Trait Space")
+  if (length(modeled_dimensions) >= 2) {
+    # Pairwise structure
+    pairs(theta_df[, modeled_dimensions, drop = FALSE],
+          main = "Latent Trait Space")
 
-  # Correlation structure
-  print(cor(theta_df[, dimensions, drop = FALSE]))
+    # Correlation structure
+    print(cor(theta_df[, modeled_dimensions, drop = FALSE]))
+  }
+
+  theta_long <- theta_df %>%
+    select(all_of(modeled_dimensions)) %>%
+    pivot_longer(cols = everything(),
+                 names_to = "trait",
+                 values_to = "theta")
+
+  p <- ggplot(theta_long, aes(x = theta)) +
+    geom_histogram(bins = 30, fill = "steelblue") +
+    facet_wrap(~trait, scales = "free") +
+    theme_minimal() +
+    labs(title = "Latent Trait Distributions (MIRT)",
+         x = "Theta",
+         y = "Count")
+
+  print(p)
 }
-
-theta_long <- theta_df %>%
-  select(all_of(dimensions)) %>%
-  pivot_longer(cols = everything(),
-               names_to = "trait",
-               values_to = "theta")
-
-p <- ggplot(theta_long, aes(x = theta)) +
-  geom_histogram(bins = 30, fill = "steelblue") +
-  facet_wrap(~trait, scales = "free") +
-  theme_minimal() +
-  labs(title = "Latent Trait Distributions (MIRT)",
-       x = "Theta",
-       y = "Count")
-
-print(p)
 
 # =========================
 # 13. MODEL SUMMARY
