@@ -1,5 +1,5 @@
 'use client';
-import { CheckCircle2, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, ArrowRight, Copy, Gift } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -13,12 +13,29 @@ interface Survey {
   thumbnail_url?: string;
   title_fr?: string;
   description_fr?: string;
+  title_zh?: string;
+  description_zh?: string;
+  translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
 export default function ThankYouPage() {
   const { language, t } = useLanguage();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const email = localStorage.getItem('cyc_global_email');
+    if (email) {
+      fetch(`/api/user/referral-link?email=${encodeURIComponent(email)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.code) setReferralCode(data.code);
+        })
+        .catch((err) => console.error('Failed to get referral link', err));
+    }
+  }, []);
 
   useEffect(() => {
     fetch('/api/surveys?include_inactive=false')
@@ -26,7 +43,7 @@ export default function ThankYouPage() {
       .then(async (data: Survey[]) => {
         const completedSurveys = JSON.parse(localStorage.getItem('cyc_completed_surveys') || '[]');
         const filteredData = data.filter((survey: Survey) => !completedSurveys.includes(survey.id));
-        
+
         const withTranslations = await Promise.all(
           filteredData.map(async (survey: Survey) => {
             try {
@@ -37,6 +54,9 @@ export default function ThankYouPage() {
                 ...survey,
                 title_fr: tr?.title_fr,
                 description_fr: tr?.description_fr,
+                title_zh: tr?.title_zh,
+                description_zh: tr?.description_zh,
+                translations: tr?.translations,
               };
             } catch {
               return survey;
@@ -51,6 +71,14 @@ export default function ThankYouPage() {
         setLoading(false);
       });
   }, []);
+
+  const handleCopy = () => {
+    if (!referralCode) return;
+    const url = `${window.location.origin}?ref=${referralCode}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-slate-900/50 py-12 px-4">
@@ -79,6 +107,58 @@ export default function ThankYouPage() {
         </p>
       </motion.div>
 
+      {/* Referral Link Section */}
+      {referralCode && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="w-full max-w-4xl mx-auto bg-gradient-to-r from-teal-500 to-[#0CA7A1] p-8 md:p-10 rounded-2xl shadow-xl text-center mb-12 text-white relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+            <Gift className="w-48 h-48" />
+          </div>
+          <div className="relative z-10">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 flex justify-center items-center drop-shadow-md">
+              <Gift className="w-10 h-10 mr-4" />
+              {t('Boost Your Chances to Win $100!')}
+            </h2>
+
+            <div className="bg-white/20 backdrop-blur-sm border border-white/30 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-inner">
+              <div className="text-2xl md:text-3xl font-black text-white mb-2 tracking-wide drop-shadow-sm">
+                {t('1 Referral = +1 Extra Raffle Entry')}
+              </div>
+              <p className="text-base md:text-lg text-teal-50 leading-relaxed font-medium mt-3">
+                {t(
+                  'Share your personal link below. There is no limit to how many entries you can earn. The more friends who complete the survey, the higher your chances of winning the $100 prize!'
+                )}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <code className="bg-white/10 px-4 py-3 rounded-xl text-base sm:text-lg font-mono tracking-wide backdrop-blur-md border border-white/20 select-all">
+                {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
+              </code>
+              <button
+                onClick={handleCopy}
+                className="flex items-center px-6 py-3 bg-white text-[#0CA7A1] font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all w-full sm:w-auto justify-center"
+              >
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 mr-2" />
+                    {t('Copied!')}
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-5 h-5 mr-2" />
+                    {t('Copy Link')}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Cross-Promotion Section */}
       <div className="w-full max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -98,12 +178,15 @@ export default function ThankYouPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {surveys.map((survey, i) => {
               const displayTitle =
-                (language === 'fr' && survey.title_fr ? survey.title_fr : survey.title) ||
+                survey.translations?.[language]?.title ||
+                (language === 'fr' && survey.title_fr) ||
+                (language === 'zh' && survey.title_zh) ||
                 survey.title;
               const displayDescription =
-                (language === 'fr' && survey.description_fr
-                  ? survey.description_fr
-                  : survey.description) || survey.description;
+                survey.translations?.[language]?.description ||
+                (language === 'fr' && survey.description_fr) ||
+                (language === 'zh' && survey.description_zh) ||
+                survey.description;
               return (
                 <motion.div
                   key={survey.id}

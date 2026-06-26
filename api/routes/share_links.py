@@ -122,4 +122,67 @@ async def delete_share_link(link_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/api/user/referral-link")
+async def get_or_create_referral_link(email: str):
+    """Get or generate a unique global share link code for a user email."""
+    try:
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Check if one already exists
+        existing = (
+            supabase.table("share_links")
+            .select("*")
+            .eq("email", email)
+            .is_("survey_id", "null")
+            .execute()
+        )
+        if existing.data:
+            return existing.data[0]
+
+        # Generate new one
+        code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
+        row = {
+            "survey_id": None,
+            "code": code,
+            "label": "User Referral",
+            "email": email,
+        }
+        res = supabase.table("share_links").insert(row).execute()
+        return res.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/admin/referrals/leaderboard")
+async def get_referral_leaderboard():
+    """Get a leaderboard of users who referred the most people."""
+    try:
+        # Fetch raffle entries that are referrals
+        res = (
+            supabase.table("raffle_entries")
+            .select("email")
+            .eq("is_referral", True)
+            .execute()
+        )
+
+        counts = {}
+        for entry in res.data:
+            email = entry.get("email")
+            if email:
+                counts[email] = counts.get(email, 0) + 1
+
+        # Format and sort
+        leaderboard = [
+            {"email": email, "referral_count": count} for email, count in counts.items()
+        ]
+        leaderboard.sort(key=lambda x: x["referral_count"], reverse=True)
+
+        return leaderboard
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- AI ANALYSIS SUITE ---

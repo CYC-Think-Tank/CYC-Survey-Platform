@@ -16,7 +16,15 @@ import {
   Copy,
   Check,
   X,
+  Send,
+  Trophy,
+  FileText,
 } from 'lucide-react';
+
+interface ReferralLeaderboardEntry {
+  email: string;
+  referral_count: number;
+}
 
 interface Survey {
   id: string;
@@ -46,6 +54,10 @@ export default function AdminDashboard() {
   const [raffleEmails, setRaffleEmails] = useState<string[] | null>(null);
   const [raffleError, setRaffleError] = useState<string | null>(null);
   const [raffleLoading, setRaffleLoading] = useState(false);
+  const [leaderboardModal, setLeaderboardModal] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [hideZeroResponses, setHideZeroResponses] = useState(false);
   const router = useRouter();
 
   const fetchSurveys = () => {
@@ -153,6 +165,39 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleNotifyUsers = async () => {
+    const confirm = window.confirm(
+      `Send a reminder email blast to all users who still have active surveys remaining?`
+    );
+    if (!confirm) return;
+
+    const pwd = window.prompt('Please enter the admin password to authorize this email blast:');
+    if (!pwd) return;
+
+    try {
+      const res = await fetch('/api/admin/notify-new-survey', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          password: pwd,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Success! ${data.message || 'Notification sent.'}`);
+      } else {
+        const data = await res.json();
+        alert(`Failed to notify users: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while trying to send notifications.');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('cyc_admin_auth');
     router.push('/admin/login');
@@ -179,13 +224,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const openLeaderboard = async () => {
+    setLeaderboardModal(true);
+    setLoadingLeaderboard(true);
+    try {
+      const res = await fetch('/api/admin/referrals/leaderboard');
+      const data = await res.json();
+      setLeaderboard(data);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load leaderboard');
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
   const handleGenerateLink = async () => {
     if (!shareModal) return;
     setGeneratingLink(true);
     try {
       const isGlobal = shareModal.id === 'global';
-      const apiUrl = isGlobal ? `/api/global-share-links` : `/api/surveys/${shareModal.id}/share-links`;
-      
+      const apiUrl = isGlobal
+        ? `/api/global-share-links`
+        : `/api/surveys/${shareModal.id}/share-links`;
+
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -196,7 +258,9 @@ export default function AdminDashboard() {
       setShareLinks((prev) => [newLink, ...prev]);
       setShareLabel('');
       // Auto-copy the new link
-      const url = isGlobal ? `${baseUrl}?ref=${newLink.code}` : `${baseUrl}/survey/${shareModal.id}?ref=${newLink.code}`;
+      const url = isGlobal
+        ? `${baseUrl}?ref=${newLink.code}`
+        : `${baseUrl}/survey/${shareModal.id}?ref=${newLink.code}`;
       await navigator.clipboard.writeText(url);
       setCopiedLink(newLink.code);
       setTimeout(() => setCopiedLink(null), 2000);
@@ -221,6 +285,10 @@ export default function AdminDashboard() {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
+  const totalActiveResponses = surveys
+    .filter((s) => s.is_active)
+    .reduce((sum, s) => sum + (s.response_count || 0), 0);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -233,18 +301,45 @@ export default function AdminDashboard() {
     <div className="max-w-6xl mx-auto py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center">
             Dashboard Overview
+            <span className="ml-4 text-sm font-medium bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-3 py-1 rounded-full border border-[var(--color-cyc-primary)]/20">
+              {totalActiveResponses} total active responses
+            </span>
           </h1>
           <p className="text-gray-500 dark:text-slate-500 mt-1">
             Manage your surveys and view engagement metrics.
           </p>
         </div>
-        <div className="flex space-x-4">
+        <div className="flex space-x-4 flex-wrap gap-y-2">
           <Link href="/admin/create" className="btn-primary flex items-center">
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
           </Link>
+
+          <Link
+            href="/admin/blog"
+            className="px-4 py-2 bg-[var(--color-cyc-secondary)] text-white hover:bg-slate-700 rounded-lg flex items-center font-semibold transition-colors"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Manage Blog
+          </Link>
+
+          <button
+            onClick={() => handleNotifyUsers()}
+            className="text-blue-600 hover:text-blue-800 flex items-center font-semibold"
+          >
+            <Send className="w-4 h-4 mr-1" />
+            Remind Users
+          </button>
+
+          <button
+            onClick={openLeaderboard}
+            className="text-emerald-600 hover:text-emerald-800 flex items-center"
+          >
+            <Trophy className="w-4 h-4 mr-1" />
+            Leaderboard
+          </button>
 
           <button
             onClick={() => openShareModal(null)}
@@ -478,9 +573,20 @@ export default function AdminDashboard() {
               <Share2 className="w-5 h-5 mr-2" />
               Share Links
             </h2>
-            <p className="text-sm text-gray-500 dark:text-slate-500 mb-5">
-              Generate unique tracked links for <strong>{shareModal.title}</strong>
-            </p>
+            <div className="flex justify-between items-center mb-5">
+              <p className="text-sm text-gray-500 dark:text-slate-500">
+                Generate unique tracked links for <strong>{shareModal.title}</strong>
+              </p>
+              <label className="flex items-center text-sm text-gray-600 dark:text-slate-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideZeroResponses}
+                  onChange={(e) => setHideZeroResponses(e.target.checked)}
+                  className="mr-2 rounded border-gray-300 text-[var(--color-cyc-primary)] focus:ring-[var(--color-cyc-primary)]"
+                />
+                Hide 0 responses
+              </label>
+            </div>
 
             {/* Generate new link */}
             <div className="flex space-x-2 mb-5">
@@ -510,64 +616,124 @@ export default function AdminDashboard() {
                   No links generated yet. Click &quot;Generate&quot; to create one.
                 </p>
               )}
-              {shareLinks.map((link) => {
-                const isGlobal = shareModal.id === 'global';
-                const url = isGlobal ? `${baseUrl}?ref=${link.code}` : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
-                const isCopied = copiedLink === link.code;
-                return (
-                  <div
-                    key={link.id}
-                    className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3 group"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
-                          {link.label || (
-                            <span className="text-gray-400 dark:text-slate-500 italic">
-                              Unlabeled
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">
-                          {link.code}
-                        </span>
+              {shareLinks
+                .filter(
+                  (link) => !hideZeroResponses || (link.response_count && link.response_count > 0)
+                )
+                .map((link) => {
+                  const isGlobal = shareModal.id === 'global';
+                  const url = isGlobal
+                    ? `${baseUrl}?ref=${link.code}`
+                    : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
+                  const isCopied = copiedLink === link.code;
+                  return (
+                    <div
+                      key={link.id}
+                      className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3 group"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                            {link.label || (
+                              <span className="text-gray-400 dark:text-slate-500 italic">
+                                Unlabeled
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">
+                            {link.code}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs text-gray-500 dark:text-slate-500 font-medium">
+                            {link.response_count} response{link.response_count !== 1 ? 's' : ''}
+                          </span>
+                          <button
+                            onClick={() => handleDeleteLink(link.id)}
+                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500 dark:text-slate-500 font-medium">
-                          {link.response_count} response{link.response_count !== 1 ? 's' : ''}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <code className="text-xs text-gray-500 dark:text-slate-500 truncate mr-2 flex-1">
+                          {url}
+                        </code>
                         <button
-                          onClick={() => handleDeleteLink(link.id)}
-                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={() => copyToClipboard(url, link.code)}
+                          className={`flex items-center text-xs font-medium px-2 py-1 rounded transition-all ${isCopied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:border-teal-300'}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {isCopied ? (
+                            <>
+                              <Check className="w-3 h-3 mr-1" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 mr-1" />
+                              Copy
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <code className="text-xs text-gray-500 dark:text-slate-500 truncate mr-2 flex-1">
-                        {url}
-                      </code>
-                      <button
-                        onClick={() => copyToClipboard(url, link.code)}
-                        className={`flex items-center text-xs font-medium px-2 py-1 rounded transition-all ${isCopied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:border-teal-300'}`}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-3 h-3 mr-1" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy
-                          </>
-                        )}
-                      </button>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Referral Leaderboard Modal */}
+      {leaderboardModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[85vh] flex flex-col">
+            <button
+              onClick={() => setLeaderboardModal(false)}
+              className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-5 flex items-center">
+              <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
+              Referrals Leaderboard
+            </h2>
+
+            <div className="flex-1 overflow-y-auto min-h-0 pr-2">
+              {loadingLeaderboard ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-cyc-primary)]"></div>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">
+                  No referrals recorded yet.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {leaderboard.map((entry, idx) => (
+                    <div
+                      key={entry.email}
+                      className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span
+                          className={`font-bold w-6 text-center ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-600' : 'text-gray-500 dark:text-slate-400'}`}
+                        >
+                          #{idx + 1}
+                        </span>
+                        <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100 truncate max-w-[200px]">
+                          {entry.email}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                        {entry.referral_count}{' '}
+                        {entry.referral_count === 1 ? 'referral' : 'referrals'}
+                      </span>
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

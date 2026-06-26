@@ -26,6 +26,7 @@ interface Survey {
   displayTitle?: string;
   displayDescription?: string;
   isComingSoon?: boolean;
+  translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
 function TiltCard({
@@ -80,6 +81,7 @@ function TiltCard({
   );
 }
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ReferralSection } from '@/components/ReferralSection';
 
 export default function Home() {
   const { t, language } = useLanguage();
@@ -166,6 +168,7 @@ export default function Home() {
                 description_fr: tr?.description_fr,
                 title_zh: tr?.title_zh,
                 description_zh: tr?.description_zh,
+                translations: tr?.translations,
               };
             } catch {
               return survey;
@@ -224,17 +227,15 @@ export default function Home() {
 
   const baseItems = surveys.slice(0, 3).map((item) => {
     const displayTitle =
-      (language === 'zh' && item.title_zh
-        ? item.title_zh
-        : language === 'fr' && item.title_fr
-          ? item.title_fr
-          : item.title) || item.title;
+      item.translations?.[language]?.title ||
+      (language === 'fr' && item.title_fr) ||
+      (language === 'zh' && item.title_zh) ||
+      item.title;
     const displayDescription =
-      (language === 'zh' && item.description_zh
-        ? item.description_zh
-        : language === 'fr' && item.description_fr
-          ? item.description_fr
-          : item.description) || item.description;
+      item.translations?.[language]?.description ||
+      (language === 'fr' && item.description_fr) ||
+      (language === 'zh' && item.description_zh) ||
+      item.description;
     return { ...item, displayTitle, displayDescription };
   });
   const items = [...baseItems];
@@ -346,31 +347,22 @@ export default function Home() {
 
       {/* Raffle Info Floating Box */}
       <motion.div
-        className="group absolute top-[38%] right-[5%] lg:right-[8%] z-30 hidden md:flex flex-col items-center bg-white border border-gray-100 shadow-[0_15px_40px_rgba(4,55,126,0.12)] rounded-2xl py-3 px-5 rotate-[4deg] cursor-help"
+        className="absolute top-[18%] lg:top-[22%] right-[-200px] md:right-[-160px] lg:right-[-120px] xl:right-[-80px] 2xl:right-[-40px] z-50 hidden md:flex flex-col items-center rotate-[3deg] cursor-pointer origin-right scale-50 md:scale-75 lg:scale-90"
         initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: showIntro ? 0 : 1, scale: showIntro ? 0 : 1, y: [0, -8, 0] }}
+        animate={{ opacity: showIntro ? 0 : 1, scale: showIntro ? 0 : 1, y: [0, -10, 0] }}
         transition={{
           opacity: { duration: 1.0, delay: 0.9 },
           scale: { duration: 1.0, delay: 0.9, ease: 'easeOut' },
-          y: { duration: 4, repeat: Infinity, delay: 0, ease: 'easeInOut' },
+          y: { duration: 5, repeat: Infinity, delay: 0, ease: 'easeInOut' },
         }}
       >
-        <div className="flex items-center justify-center bg-[#e6f8f9] rounded-full px-3 py-1 mb-1 border border-[#0CB7C4]/20">
-          <span className="text-[10px] font-black uppercase text-[#0CB7C4] tracking-widest">
-            {t('1 Survey = 1 Entry')}
-          </span>
-        </div>
-        <span className="text-sm font-extrabold text-[#04377E]">{t('Win $100 (5 Winners!)')}</span>
-
-        {/* Tooltip */}
-        <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-xl rounded-xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50">
-          <ul className="text-xs text-gray-600 font-medium space-y-2 list-disc pl-4 text-left">
-            <li>{t('Each survey completed is one entry.')}</li>
-            <li>{t('One person can complete up to 3 surveys.')}</li>
-            <li>{t('Winners will be contacted by June 29th.')}</li>
-          </ul>
-        </div>
+        <ReferralSection variant="heroCard" />
       </motion.div>
+
+      {/* Mobile Raffle Info */}
+      <div className="md:hidden block">
+        <ReferralSection variant="floating" />
+      </div>
 
       {/* Hero Section */}
       <motion.div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center z-40 mt-3 sm:mt-6 md:mt-10">
@@ -419,7 +411,7 @@ export default function Home() {
       {/* 3D Spinning Carousel */}
       {items.length > 0 && (
         <motion.div
-          className="w-full max-w-5xl mx-auto z-10 mt-4 sm:mt-8 md:mt-12 relative flex-1 min-h-0 flex items-start justify-center pt-2 md:pt-4"
+          className="w-full max-w-5xl mx-auto z-10 mt-2 sm:mt-6 md:mt-8 relative flex-1 min-h-[350px] md:min-h-[400px] lg:min-h-[450px] flex items-start justify-center pt-2 md:pt-4"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: showIntro ? 0 : 1, y: showIntro ? 40 : 0 }}
           transition={{ duration: 1.2, delay: 0.6, ease: 'easeOut' }}

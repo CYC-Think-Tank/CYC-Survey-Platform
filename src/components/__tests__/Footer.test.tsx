@@ -37,10 +37,7 @@ describe('Footer', () => {
   it('renders Instagram link with correct href', () => {
     render(<Footer />);
     const instagramLink = screen.getByLabelText('Follow The Canadian Youth Champions on Instagram');
-    expect(instagramLink).toHaveAttribute(
-      'href',
-      'https://www.instagram.com/youth.champions/?hl=en'
-    );
+    expect(instagramLink).toHaveAttribute('href', 'https://www.instagram.com/thinktank.cyc/');
     expect(instagramLink).toHaveAttribute('target', '_blank');
   });
 

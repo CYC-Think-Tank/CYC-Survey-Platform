@@ -10,7 +10,8 @@ CREATE TABLE surveys (
     is_active BOOLEAN DEFAULT true,
     has_been_published BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
+    enabled_languages JSONB
 );
 
 -- Question Types Enum

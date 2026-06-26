@@ -9,6 +9,7 @@ from api.routes import (
     share_links,
     surveys,
     translations,
+    blog,
 )
 
 app = FastAPI(title="CYC Survey Platform API")
@@ -34,6 +35,7 @@ app.include_router(results.router)
 app.include_router(share_links.router)
 app.include_router(ai_insights.router)
 app.include_router(latent_trait_insights.router)
+app.include_router(blog.router)
 
 
 if __name__ == "__main__":

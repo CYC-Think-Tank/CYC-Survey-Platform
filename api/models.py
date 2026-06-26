@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Question(BaseModel):
@@ -23,6 +23,7 @@ class SurveyList(BaseModel):
     has_been_published: bool = False
     thumbnail_url: str | None = None
     response_count: int | None = 0
+    enabled_languages: list[str] | None = None
 
 
 class SurveyDetail(SurveyList):
@@ -62,6 +63,7 @@ class SurveyCreate(BaseModel):
     is_active: bool = True
     has_been_published: bool = False
     thumbnail_url: str | None = None
+    enabled_languages: list[str] | None = None
     questions: list[QuestionCreate]
 
 
@@ -88,3 +90,37 @@ class ShareLinkCreate(BaseModel):
 
 class AIAnalysisRequest(BaseModel):
     force_refresh: bool = False
+
+
+class BlogPostCreate(BaseModel):
+    title: str
+    description: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    content: str
+    author: str | None = None
+    thumbnail_url: str | None = None
+    is_published: bool = False
+
+
+class BlogPostUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    tags: Optional[list[str]] = None
+    content: Optional[str] = None
+    author: str | None = None
+    thumbnail_url: str | None = None
+    is_published: bool | None = None
+
+
+class BlogPost(BaseModel):
+    id: str
+    title: str
+    description: str | None = None
+    tags: list[str]
+    content: str
+    author: str | None = None
+    thumbnail_url: str | None = None
+    is_published: bool
+    created_at: str
+    updated_at: str
+
