@@ -16,6 +16,8 @@ import {
   Sparkles,
   Copy,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface Survey {
@@ -687,6 +689,22 @@ export default function AdminRafflePage() {
           >
             <X className="w-8 h-8" />
           </button>
+
+          {/* Slide to the QR code */}
+          <button
+            onClick={() => {
+              setFullscreenWheel(false);
+              setFullscreenQr(true);
+            }}
+            className="group absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 text-gray-400 hover:text-[var(--color-cyc-primary)] transition-colors"
+            title="Show the QR code"
+          >
+            <span className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-[var(--color-cyc-primary)]/10 shadow-md">
+              <ChevronLeft className="w-8 h-8" />
+            </span>
+            <span className="text-xs font-semibold">QR code</span>
+          </button>
+
           <h2 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4 flex items-center">
             <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
             Raffle
@@ -740,6 +758,23 @@ export default function AdminRafflePage() {
           >
             <X className="w-8 h-8" />
           </button>
+
+          {/* Slide to the spinner */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setFullscreenQr(false);
+              setFullscreenWheel(true);
+            }}
+            className="group absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 text-gray-400 hover:text-[var(--color-cyc-primary)] transition-colors"
+            title="Show the spinner"
+          >
+            <span className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 group-hover:bg-[var(--color-cyc-primary)]/10 shadow-md">
+              <ChevronRight className="w-8 h-8" />
+            </span>
+            <span className="text-xs font-semibold">Spinner</span>
+          </button>
+
           <h2 className="text-4xl font-extrabold text-[var(--color-cyc-secondary)] mb-2 text-center">
             {selectedTitle}
           </h2>
