@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -110,10 +110,10 @@ class BlogPostCreate(BaseModel):
 
 
 class BlogPostUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[list[str]] = None
-    content: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+    content: str | None = None
     author: str | None = None
     thumbnail_url: str | None = None
     is_published: bool | None = None
@@ -130,4 +130,3 @@ class BlogPost(BaseModel):
     is_published: bool
     created_at: str
     updated_at: str
-

@@ -30,9 +30,7 @@ def _sync_event_raffle_entries(event_code: str, email: str) -> int:
         .eq("is_completed", True)
         .execute()
     )
-    survey_ids = {
-        s["survey_id"] for s in (sessions.data or []) if s.get("survey_id")
-    }
+    survey_ids = {s["survey_id"] for s in (sessions.data or []) if s.get("survey_id")}
     if not survey_ids:
         return 0
     rows = [
