@@ -62,7 +62,7 @@ export function EventRaffleBanner() {
 
   return (
     <div className="w-full max-w-3xl mx-auto z-50 mt-3 mb-1 px-2">
-      <div className="bg-gradient-to-r from-[#04377E] to-[#0CB7C4] rounded-2xl shadow-lg p-4 sm:p-5 text-white">
+      <div className="bg-[#04377E] rounded-2xl shadow-lg p-4 sm:p-5 text-white">
         {status === 'entered' ? (
           <div className="flex items-center justify-center gap-2 py-1">
             <CheckCircle2 className="w-6 h-6 text-[#F5C518]" />
@@ -93,7 +93,7 @@ export function EventRaffleBanner() {
                   if (e.key === 'Enter') handleEnter();
                 }}
                 placeholder={t('Your email')}
-                className="flex-grow min-w-0 px-3 py-2 rounded-lg text-[#1a1a1a] text-sm focus:outline-none"
+                className="flex-grow min-w-0 px-3 py-2 rounded-lg bg-white border-2 border-gray-300 text-[#1a1a1a] placeholder-gray-400 text-sm focus:outline-none focus:border-[#F5C518]"
               />
               <button
                 onClick={handleEnter}

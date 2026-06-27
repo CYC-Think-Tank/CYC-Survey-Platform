@@ -93,6 +93,7 @@ export default function AdminRafflePage() {
   const [maskEmails, setMaskEmails] = useState(false);
   const [displaySegments, setDisplaySegments] = useState<string[]>([]);
   const [fullscreenQr, setFullscreenQr] = useState(false);
+  const [fullscreenWheel, setFullscreenWheel] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -274,7 +275,7 @@ export default function AdminRafflePage() {
 
   useEffect(() => {
     drawWheel(displaySegments, rotationRef.current, highlightRef.current);
-  }, [displaySegments, drawWheel]);
+  }, [displaySegments, drawWheel, fullscreenWheel]);
 
   // ---- Spin logic ------------------------------------------------------
   const spin = () => {
@@ -376,6 +377,44 @@ export default function AdminRafflePage() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // The wheel + pointer + spin button. Rendered in EITHER the normal panel or
+  // the fullscreen overlay (never both at once, so the single canvasRef is
+  // always attached to exactly one canvas).
+  const wheelStage = (fullscreen: boolean) => (
+    <>
+      <div
+        className="relative"
+        style={{ width: fullscreen ? 'min(78vh, 720px)' : 520, maxWidth: '100%' }}
+      >
+        <div
+          className="absolute left-1/2 -translate-x-1/2 z-10"
+          style={{ top: fullscreen ? -10 : -6 }}
+        >
+          <div
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: `${fullscreen ? 22 : 16}px solid transparent`,
+              borderRight: `${fullscreen ? 22 : 16}px solid transparent`,
+              borderTop: `${fullscreen ? 38 : 28}px solid #ef4444`,
+              filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))',
+            }}
+          />
+        </div>
+        <canvas ref={canvasRef} style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1' }} />
+      </div>
+
+      <button
+        onClick={spin}
+        disabled={spinning || remainingPool.length === 0}
+        className="mt-6 btn-primary flex items-center text-lg px-8 py-3 disabled:opacity-40"
+      >
+        <RotateCw className={`w-5 h-5 mr-2 ${spinning ? 'animate-spin' : ''}`} />
+        {spinning ? 'Spinning…' : 'SPIN'}
+      </button>
+    </>
+  );
 
   // ---- Render ----------------------------------------------------------
   return (
@@ -550,52 +589,45 @@ export default function AdminRafflePage() {
 
         {/* Wheel Panel */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center">
-          <div className="relative" style={{ width: 520, maxWidth: '100%' }}>
-            <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ top: -6 }}>
-              <div
-                style={{
-                  width: 0,
-                  height: 0,
-                  borderLeft: '16px solid transparent',
-                  borderRight: '16px solid transparent',
-                  borderTop: '28px solid #ef4444',
-                  filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.3))',
-                }}
-              />
-            </div>
-            <canvas
-              ref={canvasRef}
-              style={{ width: '100%', height: 'auto', aspectRatio: '1 / 1' }}
-            />
-          </div>
-
           <button
-            onClick={spin}
-            disabled={spinning || remainingPool.length === 0}
-            className="mt-6 btn-primary flex items-center text-lg px-8 py-3 disabled:opacity-40"
+            onClick={() => setFullscreenWheel(true)}
+            className="self-end btn-secondary flex items-center text-sm mb-2"
           >
-            <RotateCw className={`w-5 h-5 mr-2 ${spinning ? 'animate-spin' : ''}`} />
-            {spinning ? 'Spinning…' : 'SPIN'}
+            <Maximize2 className="w-4 h-4 mr-1.5" />
+            Fullscreen
           </button>
 
-          {entries.length > 0 && (
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-3 text-center">
-              {uniqueRemaining.length > MAX_WHEEL_SEGMENTS
-                ? `Showing ${MAX_WHEEL_SEGMENTS} of ${uniqueRemaining.length} remaining people on the wheel. `
-                : ''}
-              Each completed survey = 1 ticket, so the winner is drawn weighted by how many surveys
-              each person did.
-            </p>
-          )}
-          {remainingPool.length === 0 && entries.length > 0 && (
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-3">
-              All entries have been drawn.
-            </p>
-          )}
-          {entries.length === 0 && !loadingEntries && (
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-3 text-center">
-              No entries yet. Display the QR code so attendees can complete the survey.
-            </p>
+          {fullscreenWheel ? (
+            <div className="py-20 text-center text-gray-400 dark:text-slate-500">
+              <p>Spinner is displayed in fullscreen.</p>
+              <button onClick={() => setFullscreenWheel(false)} className="btn-secondary mt-4">
+                Exit fullscreen
+              </button>
+            </div>
+          ) : (
+            <>
+              {wheelStage(false)}
+
+              {entries.length > 0 && (
+                <p className="text-xs text-gray-400 dark:text-slate-500 mt-3 text-center">
+                  {uniqueRemaining.length > MAX_WHEEL_SEGMENTS
+                    ? `Showing ${MAX_WHEEL_SEGMENTS} of ${uniqueRemaining.length} remaining people on the wheel. `
+                    : ''}
+                  Each completed survey = 1 ticket, so the winner is drawn weighted by how many
+                  surveys each person did.
+                </p>
+              )}
+              {remainingPool.length === 0 && entries.length > 0 && (
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-3">
+                  All entries have been drawn.
+                </p>
+              )}
+              {entries.length === 0 && !loadingEntries && (
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-3 text-center">
+                  No entries yet. Display the QR code so attendees can complete the survey.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -643,6 +675,35 @@ export default function AdminRafflePage() {
               </li>
             ))}
           </ol>
+        </div>
+      )}
+
+      {/* Fullscreen spinner */}
+      {fullscreenWheel && (
+        <div className="fixed inset-0 bg-white dark:bg-slate-900 z-50 flex flex-col items-center justify-center p-6">
+          <button
+            onClick={() => setFullscreenWheel(false)}
+            className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200"
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <h2 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4 flex items-center">
+            <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
+            Raffle
+          </h2>
+
+          {wheelStage(true)}
+
+          {currentWinner && !spinning && (
+            <div className="mt-6 border-2 border-[var(--color-cyc-accent)] bg-[var(--color-cyc-accent)]/10 rounded-2xl px-8 py-4 text-center max-w-2xl">
+              <p className="text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+                🎉 Winner 🎉
+              </p>
+              <p className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 break-all">
+                {currentWinner}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
