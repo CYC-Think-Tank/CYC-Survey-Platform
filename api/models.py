@@ -43,6 +43,7 @@ class ResponseSubmission(BaseModel):
     answers: list[AnswerCreate]
     language: str | None = None
     referral_source: str | None = None
+    event_code: str | None = None
 
 
 class QuestionCreate(BaseModel):
@@ -82,6 +83,12 @@ class AnswerUpsert(BaseModel):
 
 class CheckStatusRequest(BaseModel):
     email: str
+
+
+class EventRaffleEnter(BaseModel):
+    email: str
+    event_code: str
+    survey_id: str | None = None
 
 
 class ShareLinkCreate(BaseModel):

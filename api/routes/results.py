@@ -72,6 +72,83 @@ async def get_raffle_email():
         raise Exception(f"Failed to select raffle email: {e}")
 
 
+def _fetch_all_event_rows(columns: str, event_code: str | None = None) -> list[dict]:
+    """Page through event_raffle_entries so we are not capped by the row limit."""
+    page_size = 1000
+    offset = 0
+    rows: list[dict] = []
+    while True:
+        query = supabase.table("event_raffle_entries").select(columns)
+        if event_code:
+            query = query.eq("event_code", event_code)
+        res = query.range(offset, offset + page_size - 1).execute()
+        data = res.data or []
+        rows.extend(data)
+        if len(data) < page_size:
+            break
+        offset += page_size
+    return rows
+
+
+@router.get("/api/admin/event-raffle-entries")
+async def get_event_raffle_entries(event_code: str):
+    """
+    Return the tickets for a single in-person event raffle.
+
+    This pool is fed ONLY by survey completions that came through an event QR
+    code (carrying ?event=<code>), and is completely separate from the general
+    `raffle_entries` table. Each person gets one ticket per survey completed, so
+    `entries` contains one item per ticket (emails repeat) and the wheel can
+    draw a winner weighted by how many surveys each person did.
+    """
+    try:
+        rows = _fetch_all_event_rows("email", event_code=event_code)
+        emails = [r["email"] for r in rows if r.get("email")]
+        return {
+            "entries": emails,
+            "count": len(emails),
+            "participants": len(set(emails)),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/admin/event-codes")
+async def get_event_codes():
+    """List existing event codes with their participant counts (newest first)."""
+    try:
+        rows = _fetch_all_event_rows("event_code, email, created_at")
+        events: dict[str, dict] = {}
+        for r in rows:
+            code = r.get("event_code")
+            if not code:
+                continue
+            entry = events.setdefault(
+                code, {"event_code": code, "emails": set(), "latest": None}
+            )
+            if r.get("email"):
+                entry["emails"].add(r["email"])
+            created = r.get("created_at")
+            if created and (entry["latest"] is None or created > entry["latest"]):
+                entry["latest"] = created
+
+        result = sorted(
+            (
+                {
+                    "event_code": e["event_code"],
+                    "count": len(e["emails"]),
+                    "latest": e["latest"],
+                }
+                for e in events.values()
+            ),
+            key=lambda e: e["latest"] or "",
+            reverse=True,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/api/surveys/{survey_id}/results")
 async def get_survey_results(survey_id: str):
     """Get survey metadata and basic stats (no raw answers)."""

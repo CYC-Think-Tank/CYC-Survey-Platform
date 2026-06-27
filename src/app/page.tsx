@@ -82,6 +82,7 @@ function TiltCard({
 }
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ReferralSection } from '@/components/ReferralSection';
+import { EventRaffleBanner } from '@/components/EventRaffleBanner';
 
 export default function Home() {
   const { t, language } = useLanguage();
@@ -308,6 +309,9 @@ export default function Home() {
     <div
       className={`flex-1 w-full flex flex-col items-center px-6 relative bg-slate-50 pb-10 ${showIntro ? 'overflow-hidden' : ''}`}
     >
+      {/* Event raffle banner (only shows when arriving via an event QR code) */}
+      <EventRaffleBanner />
+
       {/* Background decorations */}
       {decos.map((d, i) => (
         <motion.div

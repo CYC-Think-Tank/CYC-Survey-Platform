@@ -8,11 +8,71 @@ from api.dependencies import supabase
 from api.models import (
     AnswerUpsert,
     CheckStatusRequest,
+    EventRaffleEnter,
     ResponseSubmission,
     SessionCreate,
 )
 
 router = APIRouter()
+
+
+def _sync_event_raffle_entries(event_code: str, email: str) -> int:
+    """
+    Give `email` one event raffle ticket per DISTINCT survey they have
+    completed. Idempotent: re-running never creates duplicate tickets (the
+    table is unique on event_code,email,survey_id). Returns the number of
+    surveys (tickets) the person has.
+    """
+    sessions = (
+        supabase.table("response_sessions")
+        .select("survey_id")
+        .eq("email", email)
+        .eq("is_completed", True)
+        .execute()
+    )
+    survey_ids = {
+        s["survey_id"] for s in (sessions.data or []) if s.get("survey_id")
+    }
+    if not survey_ids:
+        return 0
+    rows = [
+        {"event_code": event_code, "email": email, "survey_id": sid}
+        for sid in survey_ids
+    ]
+    supabase.table("event_raffle_entries").upsert(
+        rows, on_conflict="event_code,email,survey_id"
+    ).execute()
+    return len(rows)
+
+
+@router.post("/api/event-raffle/enter")
+async def enter_event_raffle(body: EventRaffleEnter):
+    """
+    Add an email to an event raffle pool, with one ticket per survey completed.
+
+    Used when a respondent who has ALREADY completed a survey scans the event
+    QR code: they cannot re-submit, but they should still be entered into the
+    in-person draw. Gated by the event_code, which only lives inside the QR.
+    """
+    try:
+        if not body.event_code or not body.email:
+            raise HTTPException(
+                status_code=400, detail="email and event_code are required"
+            )
+
+        # The raffle is only for people who actually completed a survey, so the
+        # public entry path cannot be used to add random emails.
+        tickets = _sync_event_raffle_entries(body.event_code, body.email)
+        if tickets == 0:
+            raise HTTPException(
+                status_code=403,
+                detail="Complete a survey before entering the raffle.",
+            )
+        return {"status": "entered", "tickets": tickets}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/api/surveys/{survey_id}/check-status")
@@ -395,6 +455,17 @@ async def submit_response(survey_id: str, submission: ResponseSubmission):
                         ).execute()
         except Exception as e:
             print(f"[submit_response] Failed to add raffle entries: {e}")
+        # ----------------------------
+
+        # --- EVENT RAFFLE (separate from raffle_entries) ---
+        # Only completions that came in through an event QR code (carrying an
+        # ?event=<code> param) are entered into the in-person spinning wheel.
+        # They get one ticket per survey they have completed.
+        if submission.event_code:
+            try:
+                _sync_event_raffle_entries(submission.event_code, submission.email)
+            except Exception as e:
+                print(f"[submit_response] Failed to add event raffle entries: {e}")
         # ----------------------------
 
         return {"status": "success", "session_id": session_id}
