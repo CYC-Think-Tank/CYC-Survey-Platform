@@ -106,7 +106,9 @@ def _load_all_configs() -> list[dict[str, Any]]:
 
 
 def _get_config_for_survey(survey_id: str) -> dict[str, Any]:
-    matches = [config for config in _load_all_configs() if config["survey_id"] == survey_id]
+    matches = [
+        config for config in _load_all_configs() if config["survey_id"] == survey_id
+    ]
     if not matches:
         raise HTTPException(
             status_code=404,
@@ -275,7 +277,9 @@ def _build_status_response(
 
 def _run_latent_trait_script(survey_id: str, config: dict[str, Any]) -> None:
     if not GENERAL_SCRIPT_PATH.exists():
-        raise FileNotFoundError(f"Latent trait script does not exist: {GENERAL_SCRIPT_PATH}")
+        raise FileNotFoundError(
+            f"Latent trait script does not exist: {GENERAL_SCRIPT_PATH}"
+        )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     env = {
@@ -297,7 +301,9 @@ def _run_latent_trait_script(survey_id: str, config: dict[str, Any]) -> None:
             check=False,
         )
     except FileNotFoundError as e:
-        raise RuntimeError("Rscript was not found. Install R or ensure Rscript is available on PATH.") from e
+        raise RuntimeError(
+            "Rscript was not found. Install R or ensure Rscript is available on PATH."
+        ) from e
     except subprocess.TimeoutExpired as e:
         raise TimeoutError(
             f"Latent trait fitting timed out after {R_SCRIPT_TIMEOUT_SECONDS} seconds."
@@ -396,7 +402,9 @@ async def get_latent_trait_config(survey_id: UUID):
 @router.get("/api/surveys/{survey_id}/latent-traits")
 async def get_latent_trait_preview(
     survey_id: UUID,
-    retry: bool = Query(False, description="Clear a failed job status and start a new fit."),
+    retry: bool = Query(
+        False, description="Clear a failed job status and start a new fit."
+    ),
 ):
     survey_id = str(survey_id)
     try:
