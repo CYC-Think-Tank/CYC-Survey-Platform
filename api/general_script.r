@@ -455,6 +455,31 @@ analysis_data <- as.data.frame(
 
 # remove empty columns (important for real survey data)
 analysis_data <- analysis_data[, colSums(!is.na(analysis_data)) > 0, drop = FALSE]
+
+observed_category_counts <- vapply(
+  analysis_data,
+  function(x) length(unique(x[!is.na(x)])),
+  integer(1)
+)
+
+estimable_items <- names(observed_category_counts)[observed_category_counts >= 2]
+non_estimable_items <- names(observed_category_counts)[observed_category_counts < 2]
+
+if (length(non_estimable_items) > 0) {
+  message(
+    paste0(
+      "Excluding items with fewer than two observed response categories: ",
+      paste(non_estimable_items, collapse = ", ")
+    )
+  )
+}
+
+analysis_data <- analysis_data[, estimable_items, drop = FALSE]
+
+if (ncol(analysis_data) == 0) {
+  stop("No estimable items remain after removing items with fewer than two response categories")
+}
+
 item_metadata <- item_metadata %>%
   filter(item_id %in% colnames(analysis_data)) %>%
   arrange(match(item_id, colnames(analysis_data)))

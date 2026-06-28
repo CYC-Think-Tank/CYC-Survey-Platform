@@ -2,7 +2,7 @@
   "survey_id": "33b6cce7-c0b5-4c1c-93f5-daa439e37bf8",
   "status": "fit_complete",
   "source_file": "/Users/sylviazhang/CYC-Survey-Platform/api/question_topic_configs/mpo_config.json",
-  "generated_at": "2026-06-26T16:23:10Z",
+  "generated_at": "2026-06-28T06:36:25Z",
   "dimensions": [
     {
       "id": "engagement with government projects",
@@ -119,6 +119,6 @@
     "logLikelihood": -2776.05230815,
     "aic": 5794.10461629,
     "bic": 6123.04297972,
-    "lastRun": "2026-06-26T16:23:10Z"
+    "lastRun": "2026-06-28T06:36:25Z"
   }
 }

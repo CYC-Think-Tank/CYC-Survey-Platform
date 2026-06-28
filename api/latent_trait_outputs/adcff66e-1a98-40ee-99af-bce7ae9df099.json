@@ -1,0 +1,86 @@
+{
+  "survey_id": "adcff66e-1a98-40ee-99af-bce7ae9df099",
+  "status": "fit_complete",
+  "source_file": "/Users/sylviazhang/CYC-Survey-Platform/api/question_topic_configs/secure_and_sovereign_config.json",
+  "generated_at": "2026-06-28T05:50:02Z",
+  "dimensions": [
+    {
+      "id": "engagement with arctic sovereignty and defense",
+      "label": "engagement with arctic sovereignty and defense",
+      "description": "Estimated latent trait: engagement with arctic sovereignty and defense",
+      "question_ids": [
+        "e0739fbb-f7c3-4760-95e3-90ae1ba4acf0",
+        "c7ba60ad-e814-41dd-aec2-6cd9f00ba5bc",
+        "33212703-8798-46d6-9ca4-34347a7f8bd3",
+        "651fbd79-9e01-4044-9e09-9c30e623e661",
+        "d513b6f7-8ed4-4333-ab1c-ec9acb029c16",
+        "5e2df44d-9844-48e0-a91b-8226afeb819d",
+        "34302ee1-e4d0-4114-a156-c5d07719cd88",
+        "442e9f0b-94ce-4d2a-9246-40e0278b6f91",
+        "8bea8fdf-289f-46fb-be50-1c4eeb96c74b"
+      ],
+      "mean": -0.0518667,
+      "median": 0.00038576,
+      "standardDeviation": 1.1168517,
+      "standardError": 0.1830954,
+      "min": -2.0449199,
+      "max": 1.69854133,
+      "reliability": 0.96629034,
+      "respondents": 9,
+      "thetaValues": [-0.1653, -2.0449, -0.7784, 0.0266, -0.9153, 0.0004, 0.8506, 0.8609, 1.6985]
+    },
+    {
+      "id": "attitude towards cybersecurity and AI",
+      "label": "attitude towards cybersecurity and AI",
+      "description": "Estimated latent trait: attitude towards cybersecurity and AI",
+      "question_ids": [
+        "a786dd18-1b42-427c-bb95-927e28545790",
+        "5ba14232-f316-4924-b22c-b8921b15c8e7",
+        "b3a2f608-a216-469c-bfef-de3c115a4098",
+        "cf20edc3-9cf6-4599-a882-3b2f83bc98d9",
+        "5d67fe2d-b644-4429-8167-062704e355bb",
+        "14ae1557-953c-4b78-b3a4-aba5cc6fe89c"
+      ],
+      "mean": -0.06260529,
+      "median": -0.00146721,
+      "standardDeviation": 0.98100134,
+      "standardError": 0.1551153,
+      "min": -1.54132882,
+      "max": 1.8092798,
+      "reliability": 0.96898007,
+      "respondents": 9,
+      "thetaValues": [-0.6749, 1.8093, 0.0077, 0.0095, -1.5413, -0.0015, -0.0303, 0.8286, -0.9705]
+    },
+    {
+      "id": "engagement with foreign relations and sovereignty",
+      "label": "engagement with foreign relations and sovereignty",
+      "description": "Estimated latent trait: engagement with foreign relations and sovereignty",
+      "question_ids": [
+        "64f73396-2208-486d-b5bd-22830e194bab",
+        "2105823b-73a4-4160-8dbd-b96083cf1736",
+        "2d927fb8-e293-419e-bd6a-7f54f4d230a0",
+        "7961b2e1-e0fb-4414-b481-42a5bd028b4d"
+      ],
+      "mean": -0.11447199,
+      "median": -0.00108145,
+      "standardDeviation": 1.19011832,
+      "standardError": 0.20134155,
+      "min": -2.45658014,
+      "max": 1.68947797,
+      "reliability": 0.96516761,
+      "respondents": 9,
+      "thetaValues": [-0.8402, -0.2356, -0.7708, 0.0361, -2.4566, -0.0011, 0.8204, 1.6895, 0.728]
+    }
+  ],
+  "fit": {
+    "status": "complete",
+    "model": "Config-driven mixed-format MIRT",
+    "itemTypes": ["2PL", "graded", "nominal"],
+    "estimatedItems": 37,
+    "excludedQuestionTypes": "ranking",
+    "logLikelihood": -205.59635751,
+    "aic": 643.19271502,
+    "bic": 666.07076599,
+    "lastRun": "2026-06-28T05:50:02Z"
+  }
+}

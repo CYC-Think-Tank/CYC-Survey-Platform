@@ -1,5 +1,5 @@
 {
-  "status": "error",
-  "message": "{\"message\": \"Latent trait fitting failed.\", \"returncode\": 1, \"stdout\": \"\", \"stderr\": \"Loading required package: stats4\\nLoading required package: lattice\\n\\nAttaching package: \\u2018dplyr\\u2019\\n\\nThe following objects are masked from \\u2018package:stats\\u2019:\\n\\n    filter, lag\\n\\nThe following objects are masked from \\u2018package:base\\u2019:\\n\\n    intersect, setdiff, setequal, union\\n\\n\\\"33212703-8798-46d6-9ca4-34347a7f8bd3\\\" re-mapped to ensure all categories have a distance of 1\\n\\\"5ba14232-f316-4924-b22c-b8921b15c8e7\\\" re-mapped to ensure all categories have a distance of 1\\n\\\"2105823b-73a4-4160-8dbd-b96083cf1736\\\" re-mapped to ensure all categories have a distance of 1\\n\\\"34302ee1-e4d0-4114-a156-c5d07719cd88\\\" re-mapped to ensure all categories have a distance of 1\\n\\\"5d67fe2d-b644-4429-8167-062704e355bb\\\" re-mapped to ensure all categories have a distance of 1\\nError: The following items have only one response category and cannot be estimated: 14ae1557-953c-4b78-b3a4-aba5cc6fe89c__option_6 2d927fb8-e293-419e-bd6a-7f54f4d230a0__option_8 442e9f0b-94ce-4d2a-9246-40e0278b6f91__option_6 \\nExecution halted\\n\"}",
-  "completed_at": "2026-06-26T15:26:45.402008Z"
+  "status": "complete",
+  "message": "Latent trait fitting completed.",
+  "completed_at": "2026-06-28T05:50:02.357117Z"
 }

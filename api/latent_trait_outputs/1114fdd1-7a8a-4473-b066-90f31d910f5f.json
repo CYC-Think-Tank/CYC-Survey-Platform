@@ -2,7 +2,7 @@
   "survey_id": "1114fdd1-7a8a-4473-b066-90f31d910f5f",
   "status": "fit_complete",
   "source_file": "/Users/sylviazhang/CYC-Survey-Platform/api/question_topic_configs/build_canada_strong_config.json",
-  "generated_at": "2026-06-26T15:10:30Z",
+  "generated_at": "2026-06-28T06:54:57Z",
   "dimensions": [
     {
       "id": "government performance",
@@ -143,6 +143,6 @@
     "logLikelihood": -3918.78749218,
     "aic": 8041.57498435,
     "bic": 8382.00386848,
-    "lastRun": "2026-06-26T15:10:30Z"
+    "lastRun": "2026-06-28T06:54:57Z"
   }
 }
