@@ -16,6 +16,8 @@ import {
   Sparkles,
   AlertTriangle,
   Globe,
+  Activity,
+  RefreshCw,
   MapPinned,
 } from 'lucide-react';
 import AiInsightsTab from '@/components/AiInsightsTab';
@@ -127,11 +129,44 @@ interface PostalGeoListRow {
   percentage: number;
 }
 
+interface LatentTraitDimensionStats {
+  id: string;
+  label: string;
+  description: string;
+  mean: number | null;
+  median: number | null;
+  standardDeviation: number | null;
+  standardError: number | null;
+  min: number;
+  max: number;
+  reliability: number | null;
+  respondents: number;
+  thetaValues?: number[];
+}
+
+interface LatentTraitFitStats {
+  status: 'preview' | 'ready' | 'running' | 'complete' | 'error';
+  model: string;
+  itemTypes: string[];
+  estimatedItems: number;
+  logLikelihood: number | null;
+  aic: number | null;
+  bic: number | null;
+  lastRun: string | null;
+}
+
+interface LatentTraitData {
+  status?: 'preview' | 'running' | 'complete' | 'error' | 'fit_complete' | 'config_ready';
+  message?: string | null;
+  dimensions: LatentTraitDimensionStats[];
+  fit: LatentTraitFitStats;
+}
+
 export default function ResultsPage() {
   const params = useParams();
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'summary' | 'individual' | 'ai'>('summary');
+  const [tab, setTab] = useState<'summary' | 'individual' | 'latent' | 'ai'>('summary');
   const [showAdvanced, setShowAdvanced] = useState<Record<string, boolean>>({});
   const [postalGeoGroupBy, setPostalGeoGroupBy] = useState<PostalGeoGroupBy>('fsa');
 
@@ -147,6 +182,13 @@ export default function ResultsPage() {
   const [filterFailed, setFilterFailed] = useState(false);
   const [paginatedTotal, setPaginatedTotal] = useState(0);
   const [respLoading, setRespLoading] = useState(false);
+
+  // Latent trait tab state. This endpoint currently returns config-backed
+  // preview data and can later return full R pipeline output in the same shape.
+  const latentTraitsEndpoint = `/api/surveys/${params.id}/latent-traits`;
+  const [latentTraitStats, setLatentTraitStats] = useState<LatentTraitData | null>(null);
+  const [latentTraitLoading, setLatentTraitLoading] = useState(false);
+  const [latentTraitError, setLatentTraitError] = useState<string | null>(null);
 
   const toggleAdvanced = (qId: string) =>
     setShowAdvanced((prev) => ({ ...prev, [qId]: !prev[qId] }));
@@ -193,6 +235,37 @@ export default function ResultsPage() {
     [params.id]
   );
 
+  const fetchLatentTraits = useCallback(
+    (showLoading = true, retry = false) => {
+      if (showLoading) {
+        setLatentTraitLoading(true);
+      }
+      setLatentTraitError(null);
+
+      const endpoint = retry ? `${latentTraitsEndpoint}?retry=true` : latentTraitsEndpoint;
+
+      fetch(endpoint)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Failed to load latent trait statistics.');
+          }
+          return res.json();
+        })
+        .then((d: LatentTraitData) => {
+          if (d.fit.status === 'error') {
+            setLatentTraitError(d.message || 'Latent trait fitting failed.');
+          }
+          setLatentTraitStats(d);
+          setLatentTraitLoading(false);
+        })
+        .catch((err: Error) => {
+          setLatentTraitError(err.message);
+          setLatentTraitLoading(false);
+        });
+    },
+    [latentTraitsEndpoint]
+  );
+
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
@@ -208,6 +281,24 @@ export default function ResultsPage() {
       fetchIndividualResponse(currentResponseIndex, filterFailed);
     }
   }, [tab, currentResponseIndex, filterFailed, fetchIndividualResponse]);
+
+  useEffect(() => {
+    if (tab === 'latent' && !latentTraitStats && !latentTraitLoading) {
+      fetchLatentTraits();
+    }
+  }, [tab, latentTraitStats, latentTraitLoading, fetchLatentTraits]);
+
+  useEffect(() => {
+    if (tab !== 'latent' || latentTraitStats?.fit.status !== 'running') {
+      return;
+    }
+
+    const poll = window.setTimeout(() => {
+      fetchLatentTraits(false);
+    }, 3000);
+
+    return () => window.clearTimeout(poll);
+  }, [tab, latentTraitStats?.fit.status, fetchLatentTraits]);
 
   const handleDeleteAll = async () => {
     const input = window.prompt(
@@ -788,6 +879,286 @@ export default function ResultsPage() {
     return null;
   }
 
+  function formatNumber(value: number | null, digits = 2) {
+    return value === null ? 'Pending' : value.toFixed(digits);
+  }
+
+  function formatThetaNumber(value: number | null) {
+    if (value === null) {
+      return 'Pending';
+    }
+
+    const absoluteValue = Math.abs(value);
+    if (absoluteValue > 0 && absoluteValue < 0.001) {
+      return value.toFixed(5);
+    }
+    if (absoluteValue > 0 && absoluteValue < 0.01) {
+      return value.toFixed(4);
+    }
+
+    return value.toFixed(2);
+  }
+
+  function summarizeThetaValues(values: number[] = []) {
+    const finiteValues = values.filter((value) => Number.isFinite(value));
+
+    if (finiteValues.length === 0) {
+      return null;
+    }
+
+    const sortedValues = [...finiteValues].sort((a, b) => a - b);
+    const midpoint = Math.floor(sortedValues.length / 2);
+    const median =
+      sortedValues.length % 2 === 0
+        ? (sortedValues[midpoint - 1] + sortedValues[midpoint]) / 2
+        : sortedValues[midpoint];
+    const mean = finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length;
+    const variance =
+      finiteValues.length > 1
+        ? finiteValues.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+          (finiteValues.length - 1)
+        : 0;
+
+    return {
+      mean,
+      median,
+      standardDeviation: Math.sqrt(variance),
+      respondents: finiteValues.length,
+    };
+  }
+
+  function buildThetaHistogram(values: number[] = [], binCount = 16) {
+    const finiteValues = values.filter((value) => Number.isFinite(value));
+
+    if (finiteValues.length === 0) {
+      return null;
+    }
+
+    const min = Math.min(...finiteValues);
+    const max = Math.max(...finiteValues);
+    const span = max - min || 1;
+    const bins = Array.from({ length: binCount }, (_, index) => ({
+      start: min + (index * span) / binCount,
+      end: min + ((index + 1) * span) / binCount,
+      count: 0,
+    }));
+
+    finiteValues.forEach((value) => {
+      const index = Math.min(binCount - 1, Math.floor(((value - min) / span) * binCount));
+      bins[index].count += 1;
+    });
+
+    return {
+      bins,
+      min,
+      max,
+      maxCount: Math.max(...bins.map((bin) => bin.count), 1),
+      total: finiteValues.length,
+    };
+  }
+
+  function renderMetric(label: string, value: string | number | null, helper?: string) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</div>
+        <div className="mt-1 text-xl font-bold text-[var(--color-cyc-secondary)]">
+          {value === null ? 'Pending' : value}
+        </div>
+        {helper && <div className="mt-1 text-xs text-gray-500">{helper}</div>}
+      </div>
+    );
+  }
+
+  function renderThetaHistogram(dimension: LatentTraitDimensionStats) {
+    const histogram = buildThetaHistogram(dimension.thetaValues);
+
+    if (!histogram) {
+      return (
+        <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Theta distribution
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Waiting for respondent theta values from the latent trait fit.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-6">
+        <div className="flex justify-between text-xs text-gray-500 mb-2">
+          <span>{histogram.min.toFixed(1)}</span>
+          <span>Theta distribution</span>
+          <span>{histogram.max.toFixed(1)}</span>
+        </div>
+        <div className="h-28 flex items-end gap-1 border-b border-gray-200">
+          {histogram.bins.map((bin, index) => {
+            const height = Math.max(4, (bin.count / histogram.maxCount) * 100);
+
+            return (
+              <div
+                key={`${dimension.id}-${index}`}
+                className="flex-1 bg-[var(--color-cyc-primary)] rounded-t-sm min-h-[2px]"
+                style={{ height: `${height}%` }}
+                title={`${bin.count} respondents from ${bin.start.toFixed(2)} to ${bin.end.toFixed(2)}`}
+              />
+            );
+          })}
+        </div>
+        <div className="mt-2 flex justify-between text-xs text-gray-400">
+          <span>{histogram.total} theta estimates</span>
+          <span>Bin height = respondents</span>
+        </div>
+      </div>
+    );
+  }
+
+  function renderLatentTraitTab() {
+    if (latentTraitError) {
+      return (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-6">
+          <p className="font-semibold">Latent trait statistics unavailable</p>
+          <p className="text-sm mt-1">{latentTraitError}</p>
+          <button
+            onClick={() => fetchLatentTraits(true, true)}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+          >
+            Retry Fit
+          </button>
+        </div>
+      );
+    }
+
+    if (latentTraitLoading || !latentTraitStats) {
+      return (
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-cyc-primary)]"></div>
+          <span className="ml-3 text-gray-500 font-medium">Checking latent trait model...</span>
+        </div>
+      );
+    }
+
+    const { dimensions, fit } = latentTraitStats;
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] flex items-center">
+                <Activity className="w-4 h-4 mr-2" />
+                Latent Trait Model
+              </h3>
+              <p className="text-xs text-gray-400 mt-1">
+                {fit.status === 'preview'
+                  ? 'Frontend preview for future R pipeline output'
+                  : 'Latest fitted R pipeline output'}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fetchLatentTraits(true, true)}
+                disabled={fit.status === 'running'}
+                className="inline-flex items-center px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-bold text-gray-600 hover:text-[var(--color-cyc-secondary)] hover:border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                Regenerate Fit
+              </button>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-bold uppercase tracking-wide">
+                {fit.status}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+            {renderMetric('Model', fit.model)}
+            {renderMetric('Estimated Items', fit.estimatedItems, fit.itemTypes.join(', '))}
+            {renderMetric('Last Run', fit.lastRun || 'Not connected')}
+          </div>
+
+          <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Data route
+            </div>
+            <code className="block mt-2 text-xs text-gray-700 break-all">
+              {latentTraitsEndpoint}
+            </code>
+          </div>
+        </div>
+
+        {fit.status === 'running' && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4">
+            <p className="font-semibold">Fitting latent trait model...</p>
+            <p className="text-sm mt-1">
+              {latentTraitStats.message ||
+                'The backend is running the R pipeline. This page will refresh automatically.'}
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {dimensions.map((dimension) => {
+            const thetaSummary = summarizeThetaValues(dimension.thetaValues);
+            const displayStats = {
+              mean: thetaSummary?.mean ?? dimension.mean,
+              median: thetaSummary?.median ?? dimension.median,
+              standardDeviation: thetaSummary?.standardDeviation ?? dimension.standardDeviation,
+              respondents: thetaSummary?.respondents ?? dimension.respondents,
+            };
+
+            return (
+              <div
+                key={dimension.id}
+                className="bg-white rounded-xl shadow border border-gray-200 p-6"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-base font-bold text-[var(--color-cyc-secondary)]">
+                      {dimension.label}
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">{dimension.description}</p>
+                  </div>
+                  <span className="px-2.5 py-1 bg-teal-50 text-[var(--color-cyc-primary)] rounded-full text-xs font-bold">
+                    {dimension.id}
+                  </span>
+                </div>
+
+                {renderThetaHistogram(dimension)}
+
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  {renderMetric('Mean', formatThetaNumber(displayStats.mean))}
+                  {renderMetric('Median', formatThetaNumber(displayStats.median))}
+                  {renderMetric('Std. Dev.', formatThetaNumber(displayStats.standardDeviation))}
+                  {renderMetric('Std. Error', formatNumber(dimension.standardError, 3))}
+                  {renderMetric(
+                    'Reliability',
+                    dimension.reliability === null
+                      ? 'Pending'
+                      : `${Math.round(dimension.reliability * 100)}%`
+                  )}
+                  {renderMetric('N', displayStats.respondents)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+          <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4">
+            Fit Diagnostics
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {renderMetric('Log Likelihood', fit.logLikelihood ?? 'Pending')}
+            {renderMetric('AIC', fit.aic ?? 'Pending')}
+            {renderMetric('BIC', fit.bic ?? 'Pending')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       {/* Header */}
@@ -817,7 +1188,7 @@ export default function ResultsPage() {
         </div>
       </div>
 
-      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-8 max-w-md">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-gray-100 rounded-lg p-1 mb-8 max-w-3xl">
         <button
           onClick={() => setTab('summary')}
           className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'summary' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
@@ -829,6 +1200,12 @@ export default function ResultsPage() {
           className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'individual' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <User className="w-4 h-4 mr-2" /> Individual
+        </button>
+        <button
+          onClick={() => setTab('latent')}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'latent' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Activity className="w-4 h-4 mr-2" /> Traits
         </button>
         <button
           onClick={() => setTab('ai')}
@@ -1132,6 +1509,9 @@ export default function ResultsPage() {
           )}
         </div>
       )}
+
+      {/* LATENT TRAITS TAB */}
+      {tab === 'latent' && renderLatentTraitTab()}
 
       {/* AI INSIGHTS TAB */}
       {tab === 'ai' && (

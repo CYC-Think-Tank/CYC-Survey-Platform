@@ -1,0 +1,29 @@
+{
+  "survey_id": "1114fdd1-7a8a-4473-b066-90f31d910f5f",
+  "dimensions": {
+    "government performance": [
+      "db72e9fc-99d6-4134-be5e-6fcae4c2514a",
+      "1dd9da11-e964-49f5-9921-2a9c97bedd4c",
+      "a3304b30-1b59-45b7-a65a-9ea2ade40e1a"
+    ],
+    "likeliness to invest": [
+      "806b7f16-3e6e-45b7-b0d5-39afabed2e91",
+      "5195e665-6001-4f90-b212-8b87936d61dd",
+      "470879cc-fcdc-4223-bd08-7a805be60086",
+      "a93a09cf-9433-495b-a677-7543a32e4ec6",
+      "bbe8b492-3e91-4b05-8efd-0c763809e55e",
+      "da8fcaf9-8bd0-4eb6-81c1-c66f1a55cbd5",
+      "66e03a23-8c06-450a-b8c6-cbced2c09d60",
+      "2d8a6cc2-7071-4b67-9b5f-d8dfa50273c5"
+    ],
+    "engagement with housing": [
+      "469f203b-0da9-457e-924a-03ba73cded0e",
+      "adf6f254-2888-4299-97e3-33f48c76aac7",
+      "f494e309-2f3b-482e-b990-3c1f14bfc631",
+      "bfa7f9f7-a561-444c-8abd-425bdab67e3e",
+      "1a1efa84-6aea-4bbf-b7f4-c10876a74e19",
+      "6e7deb6d-7abb-4d25-8868-e0ba72f9f046",
+      "54b7ad11-1a90-4f66-8cb4-14b86a56b92c"
+    ]
+  }
+}

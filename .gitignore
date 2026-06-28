@@ -54,3 +54,13 @@ docs/superpowers/
 # graphify
 graphify-out/
 .opencode/plugins/graphify.js
+
+# database
+supabase/seed.sql
+seed_50.py
+seed_1000_mpo.py
+seed_1000_sns.py
+backups/
+
+# ai
+ai_mem_and_context/

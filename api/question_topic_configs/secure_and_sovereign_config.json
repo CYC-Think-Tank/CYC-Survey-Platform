@@ -1,0 +1,30 @@
+{
+  "survey_id": "adcff66e-1a98-40ee-99af-bce7ae9df099",
+  "dimensions": {
+    "engagement with arctic sovereignty and defense": [
+      "e0739fbb-f7c3-4760-95e3-90ae1ba4acf0",
+      "c7ba60ad-e814-41dd-aec2-6cd9f00ba5bc",
+      "33212703-8798-46d6-9ca4-34347a7f8bd3",
+      "651fbd79-9e01-4044-9e09-9c30e623e661",
+      "d513b6f7-8ed4-4333-ab1c-ec9acb029c16",
+      "5e2df44d-9844-48e0-a91b-8226afeb819d",
+      "34302ee1-e4d0-4114-a156-c5d07719cd88",
+      "442e9f0b-94ce-4d2a-9246-40e0278b6f91",
+      "8bea8fdf-289f-46fb-be50-1c4eeb96c74b"
+    ],
+    "attitude towards cybersecurity and AI": [
+      "a786dd18-1b42-427c-bb95-927e28545790",
+      "5ba14232-f316-4924-b22c-b8921b15c8e7",
+      "b3a2f608-a216-469c-bfef-de3c115a4098",
+      "cf20edc3-9cf6-4599-a882-3b2f83bc98d9",
+      "5d67fe2d-b644-4429-8167-062704e355bb",
+      "14ae1557-953c-4b78-b3a4-aba5cc6fe89c"
+    ],
+    "engagement with foreign relations and sovereignty": [
+      "64f73396-2208-486d-b5bd-22830e194bab",
+      "2105823b-73a4-4160-8dbd-b96083cf1736",
+      "2d927fb8-e293-419e-bd6a-7f54f4d230a0",
+      "7961b2e1-e0fb-4414-b481-42a5bd028b4d"
+    ]
+  }
+}

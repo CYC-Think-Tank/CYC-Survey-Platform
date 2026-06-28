@@ -1,0 +1,32 @@
+{
+  "survey_id": "33b6cce7-c0b5-4c1c-93f5-daa439e37bf8",
+  "dimensions": {
+    "engagement with government projects": [
+      "cc68642b-77e3-4334-8d67-5139a44d3c82",
+      "8e9ac97c-13b8-42c2-95d4-24a02cfe4e22",
+      "ecc1a814-fc7b-469f-be63-2b9335e380c6"
+    ],
+    "attitude towards energy and resource projects": [
+      "bca9c10c-9637-4489-b3f4-09db0f871c58",
+      "cdb31175-ceba-4943-88ed-59850f790e9d",
+      "69941e15-4616-4e05-bae0-4f070749c2b1",
+      "0b94d3ac-2f39-448d-af0c-36fc251a25e0",
+      "ea6b4c65-6d9b-4a08-b9f4-92e0352788d2",
+      "7702b1c4-cd00-4d3c-b733-120e1ac48a84",
+      "380e0521-25f7-4cc1-b7f6-3b5e9367067b",
+      "fe98a0f4-0bf9-4516-838b-971b84a1439f",
+      "19d7f04d-f252-4bf2-9faf-94ae2f4c18ff",
+      "d722032f-30f2-4c7d-816e-c5699f008888",
+      "4877ba2d-4653-4d93-ae8e-ddd097b4bded"
+    ],
+    "attitude indigenous relations and northern canada": [
+      "e11ae294-fd93-4c06-9229-e43783a6ac27",
+      "945c97ad-b8ef-4a55-b520-63cbea0896eb",
+      "fe74e35d-c800-4008-9d01-c9f18d0ea8f2",
+      "98ab05b6-de41-49f0-bde2-60f1fe5e1298",
+      "fc15f906-a5a0-47ce-9914-a1484f93a066",
+      "9db66126-cf94-458a-a914-c1ec2b892eeb",
+      "504d63a9-8589-4ee7-a91d-cac9a91219bc"
+    ]
+  }
+}
