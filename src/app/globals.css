@@ -30,6 +30,18 @@
 .card {
   @apply bg-white rounded-xl shadow-md border border-[var(--color-cyc-divider)] p-6 hover:shadow-lg transition-shadow;
 }
+/* Raffle confetti falling animation */
+@keyframes raffle-confetti-fall {
+  0% {
+    transform: translateY(-10vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
 /* Custom static squiggly underline for interactive definitions */
 .wavy-underline {
   text-decoration: none;

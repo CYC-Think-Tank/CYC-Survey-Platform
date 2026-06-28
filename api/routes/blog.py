@@ -14,7 +14,7 @@ async def list_blog_posts(include_unpublished: bool = False) -> Any:
         query = supabase.table("blog_posts").select("*").order("created_at", desc=True)
         if not include_unpublished:
             query = query.eq("is_published", True)
-            
+
         res = query.execute()
         return res.data
     except Exception as e:
@@ -27,14 +27,14 @@ async def list_blog_tags() -> Any:
         res = supabase.table("blog_posts").select("tags").execute()
         if not res.data:
             return []
-        
+
         # tags are stored as JSON array of strings
         all_tags = set()
         for row in res.data:
             tags = row.get("tags")
             if isinstance(tags, list):
                 all_tags.update(tags)
-                
+
         return sorted(list(all_tags))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -68,10 +68,14 @@ async def update_blog_post(post_id: str, post: BlogPostUpdate) -> Any:
         update_data = post.model_dump(exclude_unset=True)
         if not update_data:
             return await get_blog_post(post_id)
-            
-        res = supabase.table("blog_posts").update(update_data).eq("id", post_id).execute()
+
+        res = (
+            supabase.table("blog_posts").update(update_data).eq("id", post_id).execute()
+        )
         if not res.data:
-            raise HTTPException(status_code=404, detail="Blog post not found or update failed")
+            raise HTTPException(
+                status_code=404, detail="Blog post not found or update failed"
+            )
         return res.data[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -80,7 +84,7 @@ async def update_blog_post(post_id: str, post: BlogPostUpdate) -> Any:
 @router.delete("/{post_id}")
 async def delete_blog_post(post_id: str) -> Any:
     try:
-        res = supabase.table("blog_posts").delete().eq("id", post_id).execute()
+        supabase.table("blog_posts").delete().eq("id", post_id).execute()
         return {"status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

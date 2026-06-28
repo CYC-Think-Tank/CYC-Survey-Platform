@@ -4,12 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import (
     ai_insights,
     latent_trait_insights,
+    blog,
     results,
     sessions,
     share_links,
     surveys,
     translations,
-    blog,
 )
 
 app = FastAPI(title="CYC Survey Platform API")

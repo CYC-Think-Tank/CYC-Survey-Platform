@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -43,6 +43,7 @@ class ResponseSubmission(BaseModel):
     answers: list[AnswerCreate]
     language: str | None = None
     referral_source: str | None = None
+    event_code: str | None = None
 
 
 class QuestionCreate(BaseModel):
@@ -84,6 +85,12 @@ class CheckStatusRequest(BaseModel):
     email: str
 
 
+class EventRaffleEnter(BaseModel):
+    email: str
+    event_code: str
+    survey_id: str | None = None
+
+
 class ShareLinkCreate(BaseModel):
     label: str | None = None
 
@@ -103,10 +110,10 @@ class BlogPostCreate(BaseModel):
 
 
 class BlogPostUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[list[str]] = None
-    content: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+    content: str | None = None
     author: str | None = None
     thumbnail_url: str | None = None
     is_published: bool | None = None
@@ -123,4 +130,3 @@ class BlogPost(BaseModel):
     is_published: bool
     created_at: str
     updated_at: str
-

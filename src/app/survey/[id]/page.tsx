@@ -163,6 +163,9 @@ export default function SurveyPage() {
   const { language, t, setEnabledLanguages } = useLanguage();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
+  const [eventCode, setEventCode] = useState<string | null>(null);
+  const [raffleEntered, setRaffleEntered] = useState(false);
+  const [raffleEmailInput, setRaffleEmailInput] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 0 = email, 1+ = questions
   const [email, setEmail] = useState('');
@@ -264,6 +267,53 @@ export default function SurveyPage() {
         .catch((err) => console.error('Failed to fetch profile data', err));
     }
   }, [email]);
+
+  // Capture the event-raffle code from the scanned QR (or stored value).
+  useEffect(() => {
+    setEventCode(
+      searchParams.get('event') ||
+        (typeof window !== 'undefined' ? localStorage.getItem('cyc_event_code') : null)
+    );
+  }, [searchParams]);
+
+  // If a returning respondent has already completed the survey but arrived via
+  // an event QR code, still enter them into the in-person raffle automatically.
+  useEffect(() => {
+    if (!alreadyCompleted || !eventCode || !email || raffleEntered) return;
+    fetch('/api/event-raffle/enter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, event_code: eventCode, survey_id: survey?.id }),
+    })
+      .then((r) => {
+        if (r.ok) setRaffleEntered(true);
+      })
+      .catch((err) => console.error('Failed to enter event raffle', err));
+  }, [alreadyCompleted, eventCode, email, raffleEntered, survey]);
+
+  const submitRaffleEmail = async () => {
+    const value = raffleEmailInput.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      alert(t('Please enter a valid email address.'));
+      return;
+    }
+    if (!eventCode) return;
+    try {
+      const res = await fetch('/api/event-raffle/enter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: value, event_code: eventCode, survey_id: survey?.id }),
+      });
+      if (res.ok) {
+        localStorage.setItem('cyc_global_email', value);
+        setRaffleEntered(true);
+      } else {
+        alert(t('Failed to enter the raffle. Please try again.'));
+      }
+    } catch {
+      alert(t('Failed to enter the raffle. Please try again.'));
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -948,6 +998,44 @@ export default function SurveyPage() {
             {t('You have already submitted your response for')} <strong>{displayTitle}</strong>.{' '}
             {t('Thank you for participating!')}
           </p>
+
+          {eventCode && (
+            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-white/10">
+              {raffleEntered ? (
+                <div className="flex flex-col items-center">
+                  <div className="text-4xl mb-2">🎟️</div>
+                  <p className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                    {t("You're entered into the raffle — good luck!")}
+                  </p>
+                </div>
+              ) : email ? (
+                <p className="text-gray-500 dark:text-slate-400">
+                  {t('Entering you into the raffle…')}
+                </p>
+              ) : (
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-gray-600 dark:text-slate-300">
+                    {t('Enter your email to join the event raffle:')}
+                  </p>
+                  <div className="flex w-full max-w-sm gap-2">
+                    <input
+                      type="email"
+                      value={raffleEmailInput}
+                      onChange={(e) => setRaffleEmailInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitRaffleEmail();
+                      }}
+                      placeholder="you@example.com"
+                      className="flex-grow p-3 border-2 border-gray-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                    />
+                    <button onClick={submitRaffleEmail} className="btn-primary whitespace-nowrap">
+                      {t('Join raffle')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1210,6 +1298,12 @@ export default function SurveyPage() {
         finalReferralSource = localStorage.getItem('global_ref');
       }
 
+      // Event raffle code from the scanned QR (falls back to stored value)
+      let eventCode = searchParams.get('event');
+      if (!eventCode && typeof window !== 'undefined') {
+        eventCode = localStorage.getItem('cyc_event_code');
+      }
+
       // Submit all at once via the legacy responses endpoint
       const res = await fetch(`/api/surveys/${survey.id}/responses`, {
         method: 'POST',
@@ -1219,6 +1313,7 @@ export default function SurveyPage() {
           answers: submissionAnswers,
           language,
           referral_source: finalReferralSource || survey?.referral_source || null,
+          event_code: eventCode || null,
         }),
       });
 
@@ -1238,6 +1333,8 @@ export default function SurveyPage() {
 
       // Clear the saved session cache upon successful completion
       localStorage.removeItem(`cyc_session_${survey.id}`);
+      // Clear the event code so it cannot leak into a later, unrelated submission
+      localStorage.removeItem('cyc_event_code');
 
       router.push('/thank-you');
     } catch (err) {
