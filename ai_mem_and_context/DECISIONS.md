@@ -321,6 +321,55 @@ Implementation:
 
 ---
 
+## [06.28.2026]
+
+## Decision #18
+
+**STATUS: ACTIVE**
+
+Drop latent trait model items with fewer than two observed response categories before fitting with `mirt`.
+
+**Reason:**
+
+- `mirt` cannot estimate items that are constant across observed responses
+- Checkbox options are expanded into binary items, and rare options can become all-zero or all-one columns
+- Keeping those columns causes the full latent trait fit to fail even when the rest of the survey is estimable
+- Filtering non-estimable items is an in-memory modeling cleanup and does not modify survey responses or database records
+
+Implementation:
+
+- Count distinct non-missing response categories for each modeled item after pivoting to the analysis matrix
+- Exclude items with fewer than two observed categories
+- Log the excluded item ids for auditability
+- Re-align `item_metadata`, `item_types`, and compiled `mirt` syntax to the retained columns
+- Stop with a clear error only if no estimable items remain
+
+---
+
+## [06.28.2026]
+
+## Decision #19
+
+**STATUS: ACTIVE**
+
+Harden latent trait result and job-status file paths against path traversal using UUID validation and path containment checks.
+
+**Reason:**
+
+- CodeQL flagged user-controlled `survey_id` values flowing into local JSON file paths
+- The latent trait API reads, writes, and deletes local cache artifacts under `api/latent_trait_outputs`
+- Survey ids are UUIDs in the current data model and config files
+- Path hardening should be scoped to the latent trait cache route and should not alter the `ai_analyses` pipeline
+
+Implementation:
+
+- Normalize latent trait route survey ids as UUID strings before lookup or path construction
+- Validate config `survey_id` values as UUIDs
+- Build fitted-result and job-status paths through a helper that resolves the target path and confirms it remains directly inside the intended cache directory
+- Leave AI Insights routes and the `ai_analyses` database cache unchanged
+
+---
+
 ## System-Level Concept
 
 ```text

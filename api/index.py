@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import (
     ai_insights,
-    latent_trait_insights,
     blog,
+    latent_trait_insights,
     results,
     sessions,
     share_links,

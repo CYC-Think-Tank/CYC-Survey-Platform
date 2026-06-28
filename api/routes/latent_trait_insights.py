@@ -2,9 +2,10 @@ import json
 import os
 import subprocess
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -31,12 +32,35 @@ _running_jobs: set[str] = set()
 _running_jobs_lock = threading.Lock()
 
 
+def _normalize_survey_id(survey_id: str | UUID) -> str:
+    try:
+        return str(UUID(str(survey_id)))
+    except (TypeError, ValueError) as e:
+        raise ValueError("Invalid survey_id") from e
+
+
+def _safe_json_path(base_dir: Path, survey_id: str | UUID) -> Path:
+    safe_survey_id = _normalize_survey_id(survey_id)
+    base_path = base_dir.resolve()
+    target_path = (base_path / f"{safe_survey_id}.json").resolve()
+
+    if target_path.parent != base_path:
+        raise ValueError("Invalid survey_id path")
+
+    return target_path
+
+
 def _validate_config(config: dict[str, Any], source_file: Path) -> dict[str, Any]:
     survey_id = config.get("survey_id")
     dimensions = config.get("dimensions")
 
     if not isinstance(survey_id, str) or not survey_id:
         raise ValueError(f"{source_file.name} is missing survey_id")
+
+    try:
+        survey_id = _normalize_survey_id(survey_id)
+    except ValueError as e:
+        raise ValueError(f"{source_file.name} has invalid survey_id") from e
 
     if not isinstance(dimensions, dict) or not dimensions:
         raise ValueError(f"{source_file.name} must define at least one dimension")
@@ -124,7 +148,7 @@ def _count_modeled_questions(survey_id: str, configured_question_ids: set[str]) 
 
 
 def _get_fitted_result_path(survey_id: str) -> Path:
-    return OUTPUT_DIR / f"{survey_id}.json"
+    return _safe_json_path(OUTPUT_DIR, survey_id)
 
 
 def _clear_fitted_result(survey_id: str) -> None:
@@ -134,11 +158,11 @@ def _clear_fitted_result(survey_id: str) -> None:
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _get_job_status_path(survey_id: str) -> Path:
-    return JOB_STATUS_DIR / f"{survey_id}.json"
+    return _safe_json_path(JOB_STATUS_DIR, survey_id)
 
 
 def _write_job_status(survey_id: str, status: dict[str, Any]) -> None:
@@ -148,7 +172,7 @@ def _write_job_status(survey_id: str, status: dict[str, Any]) -> None:
         json.dump(status, f, indent=2)
 
 
-def _load_job_status(survey_id: str) -> Optional[dict[str, Any]]:
+def _load_job_status(survey_id: str) -> dict[str, Any] | None:
     status_path = _get_job_status_path(survey_id)
     if not status_path.exists():
         return None
@@ -169,7 +193,7 @@ def _clear_job_status(survey_id: str) -> None:
         status_path.unlink()
 
 
-def _load_fitted_result(survey_id: str) -> Optional[dict[str, Any]]:
+def _load_fitted_result(survey_id: str) -> dict[str, Any] | None:
     path = _get_fitted_result_path(survey_id)
     if not path.exists():
         return None
@@ -201,7 +225,7 @@ def _build_status_response(
     survey_id: str,
     config: dict[str, Any],
     status: str,
-    message: Optional[str] = None,
+    message: str | None = None,
 ) -> dict[str, Any]:
     selected_dimensions = dict(list(config["dimensions"].items())[:MAX_LATENT_TRAITS])
     configured_question_ids = {
@@ -359,7 +383,8 @@ async def list_latent_trait_configs():
 
 
 @router.get("/api/surveys/{survey_id}/latent-traits/config")
-async def get_latent_trait_config(survey_id: str):
+async def get_latent_trait_config(survey_id: UUID):
+    survey_id = str(survey_id)
     try:
         return _get_config_for_survey(survey_id)
     except HTTPException:
@@ -370,9 +395,10 @@ async def get_latent_trait_config(survey_id: str):
 
 @router.get("/api/surveys/{survey_id}/latent-traits")
 async def get_latent_trait_preview(
-    survey_id: str,
+    survey_id: UUID,
     retry: bool = Query(False, description="Clear a failed job status and start a new fit."),
 ):
+    survey_id = str(survey_id)
     try:
         config = _get_config_for_survey(survey_id)
         if retry:
