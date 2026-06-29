@@ -1624,6 +1624,19 @@ export default function EditSurvey() {
                               : 'Type your question here...'
                             : `Translation in ${getLanguageConfig(language)?.name || language}`
                         }
+                        collab={
+                          language === 'en' && collab.active && collab.doc && collab.provider
+                            ? {
+                                doc: collab.doc,
+                                field: `question_text_${q.id}`,
+                                provider: collab.provider,
+                                user: collab.user,
+                                isSeeder: collab.isSeeder,
+                                ready: collab.isSeeded,
+                                onActivity: collab.notifyTyping,
+                              }
+                            : undefined
+                        }
                       />
                     </div>
                   </div>
