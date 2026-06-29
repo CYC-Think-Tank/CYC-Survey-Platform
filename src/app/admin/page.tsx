@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { UNCATEGORIZED_LABEL } from '@/config/categories';
 import {
   PlusCircle,
   Users,
@@ -32,6 +33,7 @@ interface Survey {
   is_active: boolean;
   has_been_published?: boolean;
   description?: string;
+  category?: string | null;
   response_count?: number;
   estimated_minutes?: number;
 }
@@ -55,7 +57,29 @@ export default function AdminDashboard() {
   const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [hideZeroResponses, setHideZeroResponses] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const router = useRouter();
+
+  // Distinct categories actually in use, so new labels appear in the filter
+  // automatically without touching this code. `__uncategorized__` is a sentinel
+  // for surveys with no category set.
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    let hasUncategorized = false;
+    for (const s of surveys) {
+      if (s.category && s.category.trim()) set.add(s.category.trim());
+      else hasUncategorized = true;
+    }
+    const sorted = [...set].sort((a, b) => a.localeCompare(b));
+    return hasUncategorized ? [...sorted, '__uncategorized__'] : sorted;
+  }, [surveys]);
+
+  const filteredSurveys = useMemo(() => {
+    if (categoryFilter === 'all') return surveys;
+    if (categoryFilter === '__uncategorized__')
+      return surveys.filter((s) => !s.category || !s.category.trim());
+    return surveys.filter((s) => s.category?.trim() === categoryFilter);
+  }, [surveys, categoryFilter]);
 
   const fetchSurveys = () => {
     fetch('/api/surveys?include_inactive=true')
@@ -344,6 +368,41 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
+      {availableCategories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 mr-1">
+            Category
+          </span>
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+              categoryFilter === 'all'
+                ? 'bg-[var(--color-cyc-primary)] text-white border-transparent'
+                : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-[var(--color-cyc-primary)]'
+            }`}
+          >
+            All
+          </button>
+          {availableCategories.map((cat) => {
+            const isUncat = cat === '__uncategorized__';
+            const label = isUncat ? UNCATEGORIZED_LABEL : cat;
+            const active = categoryFilter === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                  active
+                    ? 'bg-[var(--color-cyc-primary)] text-white border-transparent'
+                    : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-[var(--color-cyc-primary)]'
+                } ${isUncat ? 'italic' : ''}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow border border-gray-200 dark:border-slate-700 overflow-x-auto overflow-y-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 dark:bg-slate-900/50">
@@ -381,14 +440,19 @@ export default function AdminDashboard() {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
-            {surveys.map((survey) => (
+            {filteredSurveys.map((survey) => (
               <tr
                 key={survey.id}
                 className="hover:bg-gray-50 dark:bg-slate-900/50 transition-colors"
               >
                 <td className="px-6 py-4">
-                  <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                  <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center gap-2">
                     {survey.title}
+                    {survey.category?.trim() && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-2 py-0.5 rounded-full border border-[var(--color-cyc-primary)]/20">
+                        {survey.category}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-gray-500 dark:text-slate-500 line-clamp-1">
                     {survey.description?.replace(/<[^>]*>?/gm, '')}
@@ -480,13 +544,15 @@ export default function AdminDashboard() {
                 </td>
               </tr>
             ))}
-            {surveys.length === 0 && (
+            {filteredSurveys.length === 0 && (
               <tr>
                 <td
                   colSpan={5}
                   className="px-6 py-12 text-center text-gray-500 dark:text-slate-500"
                 >
-                  No surveys found. Create one to get started!
+                  {surveys.length === 0
+                    ? 'No surveys found. Create one to get started!'
+                    : 'No surveys in this category.'}
                 </td>
               </tr>
             )}

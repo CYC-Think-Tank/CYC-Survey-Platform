@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ interface Survey {
   description_fr?: string;
   description_zh?: string;
   estimated_minutes?: number;
+  category?: string | null;
   translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
@@ -22,6 +23,20 @@ export default function SurveysPage() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of surveys) {
+      if (s.category && s.category.trim()) set.add(s.category.trim());
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [surveys]);
+
+  const visibleSurveys = useMemo(() => {
+    if (categoryFilter === 'all') return surveys;
+    return surveys.filter((s) => s.category?.trim() === categoryFilter);
+  }, [surveys, categoryFilter]);
 
   useEffect(() => {
     const c = JSON.parse(localStorage.getItem('cyc_completed_surveys') || '[]');
@@ -75,8 +90,36 @@ export default function SurveysPage() {
         </p>
       </motion.div>
 
+      {availableCategories.length > 0 && (
+        <div className="flex flex-wrap justify-center items-center gap-2 mb-8">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
+              categoryFilter === 'all'
+                ? 'bg-[#04377E] text-white border-[#04377E]'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-[#04377E]'
+            }`}
+          >
+            {t('All')}
+          </button>
+          {availableCategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
+                categoryFilter === cat
+                  ? 'bg-[#04377E] text-white border-[#04377E]'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-[#04377E]'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
-        {surveys.map((item, idx) => {
+        {visibleSurveys.map((item, idx) => {
           const isCompleted = completedIds.includes(item.id);
           const displayTitle =
             item.translations?.[language]?.title ||

@@ -18,6 +18,10 @@ import {
   getLanguageConfig,
   TRANSLATE_TARGET_LANGUAGES,
 } from '@/config/languages';
+import { SURVEY_CATEGORIES } from '@/config/categories';
+import { useCollaborativeSurvey } from '@/hooks/useCollaborativeSurvey';
+import type { QuestionRecord } from '@/lib/collab/surveyDoc';
+import { PresenceBar } from '@/components/collab/PresenceBar';
 
 type QuestionType =
   | 'multiple_choice'
@@ -131,6 +135,7 @@ export default function EditSurvey() {
   >({});
   const [descriptionAlignment, setDescriptionAlignment] = useState('left');
   const [estimatedMinutes, setEstimatedMinutes] = useState(5);
+  const [category, setCategory] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [questions, setQuestions] = useState<QuestionDraft[]>([]);
 
@@ -152,6 +157,25 @@ export default function EditSurvey() {
   const [translateProvider, setTranslateProvider] = useState<'opencode' | 'openrouter' | 'gemini'>(
     'opencode'
   );
+
+  // Phase 5: real-time collaboration. Enabled only for editable (unlocked)
+  // surveys; mirrors the English title/description/category/time and the
+  // questions list into a shared Yjs document synced over Supabase Realtime.
+  const collab = useCollaborativeSurvey({
+    surveyId: typeof params.id === 'string' ? params.id : undefined,
+    enabled: !loading && !isLocked,
+    ready: !loading,
+    title,
+    setTitle,
+    category,
+    setCategory,
+    estimatedMinutes,
+    setEstimatedMinutes,
+    descriptionAlignment,
+    setDescriptionAlignment,
+    questions: questions as unknown as QuestionRecord[],
+    setQuestions: (qs) => setQuestions(qs as unknown as QuestionDraft[]),
+  });
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -286,6 +310,7 @@ export default function EditSurvey() {
         setDescription(data.description || '');
         setDescriptionAlignment(data.description_alignment || 'left');
         setEstimatedMinutes(data.estimated_minutes);
+        setCategory(data.category || '');
         setIsActive(data.is_active);
         setThumbnailUrl(data.thumbnail_url || '');
         const loaded = data.enabled_languages;
@@ -808,6 +833,7 @@ export default function EditSurvey() {
         description_alignment: descriptionAlignment,
         thumbnail_url: thumbnailUrl || undefined,
         estimated_minutes: estimatedMinutes,
+        category: category.trim() || null,
         is_active: isActive,
         enabled_languages: [...enabledLangs],
         questions: questions.map((q, idx) => {
@@ -1165,6 +1191,7 @@ export default function EditSurvey() {
             Edit Survey
           </h1>
         </div>
+        {collab.active && <PresenceBar peers={collab.peers} connected={collab.connected} />}
       </div>
 
       {error && <div className="bg-red-50 text-red-600 p-4 rounded mb-6">{error}</div>}
@@ -1244,6 +1271,18 @@ export default function EditSurvey() {
                     ? 'What is this survey about?'
                     : `Description in ${getLanguageConfig(language)?.name || language}`
                 }
+                collab={
+                  language === 'en' && collab.active && collab.doc && collab.provider
+                    ? {
+                        doc: collab.doc,
+                        field: 'description',
+                        provider: collab.provider,
+                        user: collab.user,
+                        isSeeder: collab.isSeeder,
+                        ready: collab.isSeeded,
+                      }
+                    : undefined
+                }
               />
             </div>
             {/* Thumbnail Upload */}
@@ -1298,6 +1337,25 @@ export default function EditSurvey() {
                   disabled={isLocked}
                   className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
+              </div>
+              <div className="w-1/3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  list="survey-category-options"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  disabled={isLocked}
+                  placeholder="e.g. Community"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                />
+                <datalist id="survey-category-options">
+                  {SURVEY_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="w-1/3 flex items-center pt-6">
                 <label className="flex items-center cursor-pointer">
