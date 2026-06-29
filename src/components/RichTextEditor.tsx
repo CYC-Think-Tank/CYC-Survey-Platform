@@ -66,6 +66,10 @@ interface RichTextEditorProps {
    * When omitted it behaves as a normal single-user editor.
    */
   collab?: CollabConfig;
+  /** Fired when the editor gains focus (used for per-field presence). */
+  onFocus?: () => void;
+  /** Fired when the editor loses focus. */
+  onBlur?: () => void;
 }
 
 export const RichTextEditor = ({
@@ -75,6 +79,8 @@ export const RichTextEditor = ({
   className = '',
   readOnly = false,
   collab,
+  onFocus,
+  onBlur,
 }: RichTextEditorProps) => {
   const [showColors, setShowColors] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -84,11 +90,15 @@ export const RichTextEditor = ({
   const onChangeRef = useRef(onChange);
   const collabReadyRef = useRef(collab ? collab.ready : true);
   const onActivityRef = useRef(collab?.onActivity);
+  const onFocusRef = useRef(onFocus);
+  const onBlurRef = useRef(onBlur);
   const seededContentRef = useRef(false);
   useEffect(() => {
     onChangeRef.current = onChange;
     collabReadyRef.current = collab ? collab.ready : true;
     onActivityRef.current = collab?.onActivity;
+    onFocusRef.current = onFocus;
+    onBlurRef.current = onBlur;
   });
 
   const collabDoc = collab?.doc ?? null;
@@ -168,6 +178,8 @@ export const RichTextEditor = ({
         // updates the collaboration plugin applied to our editor.
         if (collab && !isChangeOrigin(transaction)) onActivityRef.current?.();
       },
+      onFocus: () => onFocusRef.current?.(),
+      onBlur: () => onBlurRef.current?.(),
     },
     [collabDoc]
   );

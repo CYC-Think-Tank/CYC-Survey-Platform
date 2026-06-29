@@ -41,6 +41,14 @@ const TYPING_THROTTLE_MS = 600;
 const TYPING_IDLE_MS = 1800;
 const TYPING_TTL_MS = 3000;
 
+export interface FieldEditor {
+  clientId: number;
+  name: string;
+  color: string;
+  /** True while this person is actively typing in the field (not just focused). */
+  active: boolean;
+}
+
 export interface CollaboratorPresence {
   clientId: number;
   id: string;
@@ -81,6 +89,10 @@ export interface UseCollaborativeSurveyResult {
   typingNames: string[];
   /** Call on any local edit to broadcast a "typing…" signal to peers. */
   notifyTyping: () => void;
+  /** Peers currently editing each field, keyed by a caller-chosen field id. */
+  fieldEditors: Record<string, FieldEditor[]>;
+  /** Announce which field this user is focused on (null to clear, e.g. on blur). */
+  setFocusField: (key: string | null) => void;
 }
 
 export function useCollaborativeSurvey(
@@ -101,9 +113,11 @@ export function useCollaborativeSurvey(
   const [isSeeded, setIsSeeded] = useState(false);
   const [peers, setPeers] = useState<CollaboratorPresence[]>([]);
   const [typingNames, setTypingNames] = useState<string[]>([]);
+  const [fieldEditors, setFieldEditors] = useState<Record<string, FieldEditor[]>>({});
 
   const docRef = useRef<Y.Doc | null>(null);
   const awarenessRef = useRef<Awareness | null>(null);
+  const focusKeyRef = useRef<string | null>(null);
   const localOrigin = useRef<object>({});
 
   const seededRef = useRef(false);
@@ -130,12 +144,25 @@ export function useCollaborativeSurvey(
     if (now - lastTypingSent.current > TYPING_THROTTLE_MS) {
       lastTypingSent.current = now;
       awareness.setLocalStateField('typing', now);
+      // Keep the per-field "active" badge alive while typing in a focused field.
+      if (focusKeyRef.current) {
+        awareness.setLocalStateField('focus', { key: focusKeyRef.current, ts: now });
+      }
     }
     if (typingClearTimer.current) clearTimeout(typingClearTimer.current);
     typingClearTimer.current = setTimeout(() => {
       awarenessRef.current?.setLocalStateField('typing', null);
       lastTypingSent.current = 0;
     }, TYPING_IDLE_MS);
+  }, []);
+
+  // Announce (via awareness) which structured field this user is focused on, so
+  // peers can show a "{name} is editing" badge on that exact question/option.
+  const setFocusField = useCallback((key: string | null) => {
+    focusKeyRef.current = key;
+    const awareness = awarenessRef.current;
+    if (!awareness) return;
+    awareness.setLocalStateField('focus', key ? { key, ts: Date.now() } : null);
   }, []);
 
   const active = session !== null;
@@ -159,17 +186,29 @@ export function useCollaborativeSurvey(
     const updatePeers = () => {
       const list: CollaboratorPresence[] = [];
       const typing: string[] = [];
+      const editorsByField: Record<string, FieldEditor[]> = {};
       const now = Date.now();
       awareness.getStates().forEach((state, clientId) => {
         const u = (state as { user?: CollaboratorIdentity })?.user;
         if (!u) return;
         const isSelf = clientId === doc.clientID;
         list.push({ clientId, id: u.id, name: u.name, color: u.color, isSelf });
+        if (isSelf) return;
         const ts = (state as { typing?: unknown })?.typing;
-        if (!isSelf && typeof ts === 'number' && now - ts < TYPING_TTL_MS) typing.push(u.name);
+        if (typeof ts === 'number' && now - ts < TYPING_TTL_MS) typing.push(u.name);
+        const focus = (state as { focus?: { key?: unknown; ts?: unknown } })?.focus;
+        if (focus && typeof focus.key === 'string') {
+          (editorsByField[focus.key] ??= []).push({
+            clientId,
+            name: u.name,
+            color: u.color,
+            active: typeof focus.ts === 'number' && now - focus.ts < TYPING_TTL_MS,
+          });
+        }
       });
       setPeers(list);
       setTypingNames(typing);
+      setFieldEditors(editorsByField);
     };
     awareness.on('change', updatePeers);
     updatePeers();
@@ -260,6 +299,7 @@ export function useCollaborativeSurvey(
       setIsSeeded(false);
       setPeers([]);
       setTypingNames([]);
+      setFieldEditors({});
     };
     // user.id is stable for the session; re-create only when target changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -350,5 +390,7 @@ export function useCollaborativeSurvey(
     peers,
     typingNames,
     notifyTyping,
+    fieldEditors,
+    setFocusField,
   };
 }

@@ -22,6 +22,7 @@ import { SURVEY_CATEGORIES } from '@/config/categories';
 import { useCollaborativeSurvey } from '@/hooks/useCollaborativeSurvey';
 import type { QuestionRecord } from '@/lib/collab/surveyDoc';
 import { PresenceBar } from '@/components/collab/PresenceBar';
+import { FieldPresence } from '@/components/collab/FieldPresence';
 
 type QuestionType =
   | 'multiple_choice'
@@ -1600,6 +1601,11 @@ export default function EditSurvey() {
                       {q.type === 'section_header' ? '§' : `Q${qIdx + 1}`}
                     </span>
                     <div className="flex-grow">
+                      {collab.active && collab.fieldEditors[`q:${q.id}`]?.length ? (
+                        <div className="mb-1.5">
+                          <FieldPresence editors={collab.fieldEditors[`q:${q.id}`]} />
+                        </div>
+                      ) : null}
                       {language !== 'en' && (
                         <div className="text-sm text-gray-500 dark:text-slate-400 mb-1 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
                           {q.question_text || 'No English text provided'}
@@ -1609,6 +1615,8 @@ export default function EditSurvey() {
                         value={getTransField(q, 'question_text')}
                         onChange={(val) => setTransField(q.id, 'question_text', val)}
                         readOnly={isLocked && language === 'en'}
+                        onFocus={() => collab.setFocusField(`q:${q.id}`)}
+                        onBlur={() => collab.setFocusField(null)}
                         placeholder={
                           language === 'en'
                             ? q.type === 'section_header'
@@ -1858,8 +1866,13 @@ export default function EditSurvey() {
                                 : getOptionsArray(q.options)[oIdx] || `Option ${oIdx + 1}`
                             }
                             onChange={(e) => updateOption(q.id, oIdx, e.target.value)}
+                            onFocus={() => collab.setFocusField(`opt:${q.id}:${oIdx}`)}
+                            onBlur={() => collab.setFocusField(null)}
                             className={`flex-grow p-1.5 border-b focus:border-[var(--color-cyc-primary)] focus:outline-none bg-transparent ${language !== 'en' ? 'border-blue-200 focus:border-blue-500' : ''}`}
                           />
+                          {collab.active && collab.fieldEditors[`opt:${q.id}:${oIdx}`]?.length ? (
+                            <FieldPresence editors={collab.fieldEditors[`opt:${q.id}:${oIdx}`]} />
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => toggleLockChoice(q.id, opt)}
