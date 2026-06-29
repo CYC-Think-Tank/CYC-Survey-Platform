@@ -1,62 +1,100 @@
 # Import libraries 
 library(mirt) # This library contains the models to fit
-library(DBI) # This is the database connection library (to Supabase)
-library(RPostgres) # Library for connection object, queries, disconnect to Supabase 
 library(dplyr) # Library for data wrangling 
 library(tidyr) # Reshaping data long -> wide, cleaning 
 library(jsonlite) # JSON parser library 
 library(stringr) # Library for easier string manipulation
 library(ggplot2) # Library for R visualizations 
 
-# Connect to Supabase. Defaults target the local Supabase clone, but the API can
-# override these values via environment variables when it runs this script.
-db_name <- Sys.getenv("LATENT_TRAIT_DB_NAME", "postgres")
-db_host <- Sys.getenv("LATENT_TRAIT_DB_HOST", "127.0.0.1")
-db_port <- as.integer(Sys.getenv("LATENT_TRAIT_DB_PORT", "54322"))
-db_user <- Sys.getenv("LATENT_TRAIT_DB_USER", "postgres")
-db_password <- Sys.getenv("LATENT_TRAIT_DB_PASSWORD", "postgres")
+# Config architecture:
+# - Each survey gets one JSON config in api/question_topic_configs.
+# - LATENT_TRAIT_CONFIG_PATH can point to an explicit file.
+# - LATENT_TRAIT_SURVEY_ID can select the config by survey_id.
+# - If neither is provided, the script selects the one config whose survey_id
+#   appears in the loaded valid response data.
+config_dir <- Sys.getenv("LATENT_TRAIT_CONFIG_DIR", "api/question_topic_configs")
+config_path <- Sys.getenv("LATENT_TRAIT_CONFIG_PATH", "")
+config_survey_id <- Sys.getenv("LATENT_TRAIT_SURVEY_ID", "")
 api_mode <- tolower(Sys.getenv("LATENT_TRAIT_API_MODE", "false")) %in% c("1", "true", "yes")
 
-con <- dbConnect( # Creates the connection object 
-    RPostgres::Postgres(),
-    dbname = db_name,
-    host = db_host,
-    port = db_port,
-    user = db_user,
-    password = db_password
+preload_config_for_survey_filter <- function(config_dir, config_path, config_survey_id) {
+  if (nzchar(config_path)) {
+    if (!file.exists(config_path)) {
+      stop(paste0("LATENT_TRAIT_CONFIG_PATH does not exist: ", config_path))
+    }
+
+    config <- jsonlite::fromJSON(config_path, simplifyVector = FALSE)
+    config$source_file <- normalizePath(config_path, winslash = "/", mustWork = FALSE)
+    return(config)
+  }
+
+  if (!nzchar(config_survey_id)) {
+    return(NULL)
+  }
+
+  config_files <- list.files(config_dir, pattern = "\\.json$", full.names = TRUE)
+  configs <- lapply(config_files, function(path) {
+    config <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+    config$source_file <- normalizePath(path, winslash = "/", mustWork = FALSE)
+    config
+  })
+  matches <- configs[vapply(configs, function(x) x$survey_id == config_survey_id, logical(1))]
+
+  if (length(matches) != 1) {
+    stop(paste0("Expected one config for survey_id ", config_survey_id, " but found ", length(matches)))
+  }
+
+  matches[[1]]
+}
+
+preselected_config <- preload_config_for_survey_filter(
+  config_dir = config_dir,
+  config_path = config_path,
+  config_survey_id = config_survey_id
 )
 
 # =========================
 # 2. LOAD DATA
 # =========================
-# Load data from Supabase, assigns SQL query string to `query`
-# `response_sessions` is the table in Supabase that contains 
-# every response instance from any individual.
-# `answers` is the table that contains every answer to any question
-# in any survey. It may be answer_text, answer_numeric, or answer_options.
-# This query is going to return every valid session's survey id, 
-# question id, question type, question options, and every single answer 
-# for all of those questions. 
-query <- "
-SELECT 
-  rs.id AS session_id, 
-  rs.survey_id, 
-  q.id AS question_id, 
-  q.question_text, 
-  q.type AS question_type, 
-  q.options AS question_options, 
-  a.answer_text, 
-  a.answer_numeric, 
-  a.answer_options 
-FROM response_sessions rs 
-JOIN answers a ON rs.id = a.session_id 
-JOIN questions q ON a.question_id = q.id
-WHERE rs.is_valid = TRUE
-"
+# In API mode, Python owns all Supabase access and passes a prepared JSON row
+# set to R. This keeps R focused on psychometric fitting and avoids separate
+# production Postgres credentials.
+input_path <- Sys.getenv("LATENT_TRAIT_INPUT_PATH", "")
+if (!nzchar(input_path)) {
+  stop("LATENT_TRAIT_INPUT_PATH is required for latent trait fits.")
+}
+if (!file.exists(input_path)) {
+  stop(paste0("LATENT_TRAIT_INPUT_PATH does not exist: ", input_path))
+}
 
-# assign the response from the query via connection object to `raw`
-raw <- dbGetQuery(con, query) 
-dbDisconnect(con) # disconnect from db after use 
+raw_rows <- jsonlite::fromJSON(input_path, simplifyVector = FALSE)
+raw <- dplyr::bind_rows(raw_rows)
+required_raw_columns <- c(
+  "session_id",
+  "survey_id",
+  "question_id",
+  "question_text",
+  "question_type",
+  "question_options",
+  "answer_text",
+  "answer_numeric",
+  "answer_options"
+)
+missing_raw_columns <- setdiff(required_raw_columns, names(raw))
+if (length(missing_raw_columns) > 0) {
+  stop(paste0("Prepared latent trait input is missing columns: ", paste(missing_raw_columns, collapse = ", ")))
+}
+
+raw <- raw %>%
+  mutate(
+    session_id = as.character(session_id),
+    survey_id = as.character(survey_id),
+    question_id = as.character(question_id),
+    question_text = as.character(question_text),
+    question_type = as.character(question_type),
+    answer_text = as.character(answer_text),
+    answer_numeric = as.numeric(answer_numeric)
+  )
 
 # =========================
 # 3. CLEAN DUPLICATES (CRITICAL)
@@ -72,16 +110,6 @@ raw <- raw %>%
 # =========================
 # 4. DEFINE LATENT TRAITS (SOURCE OF TRUTH)
 # =========================
-# Config architecture:
-# - Each survey gets one JSON config in api/question_topic_configs.
-# - LATENT_TRAIT_CONFIG_PATH can point to an explicit file.
-# - LATENT_TRAIT_SURVEY_ID can select the config by survey_id.
-# - If neither is provided, the script selects the one config whose survey_id
-#   appears in the loaded valid response data.
-config_dir <- Sys.getenv("LATENT_TRAIT_CONFIG_DIR", "api/question_topic_configs")
-config_path <- Sys.getenv("LATENT_TRAIT_CONFIG_PATH", "")
-config_survey_id <- Sys.getenv("LATENT_TRAIT_SURVEY_ID", "")
-
 validate_latent_trait_config <- function(config, source_name) {
   if (is.null(config$survey_id) || !nzchar(config$survey_id)) {
     stop(paste0("Config ", source_name, " is missing survey_id"))
@@ -155,12 +183,16 @@ load_latent_trait_config <- function(config_dir, config_path, config_survey_id, 
   matches[[1]]
 }
 
-config <- load_latent_trait_config(
-  config_dir = config_dir,
-  config_path = config_path,
-  config_survey_id = config_survey_id,
-  raw_survey_ids = raw$survey_id
-)
+config <- if (!is.null(preselected_config)) {
+  validate_latent_trait_config(preselected_config, basename(preselected_config$source_file))
+} else {
+  load_latent_trait_config(
+    config_dir = config_dir,
+    config_path = config_path,
+    config_survey_id = config_survey_id,
+    raw_survey_ids = raw$survey_id
+  )
+}
 
 raw <- raw %>%
   filter(as.character(survey_id) == config$survey_id)
@@ -168,6 +200,11 @@ raw <- raw %>%
 max_latent_traits <- as.integer(Sys.getenv("LATENT_TRAIT_MAX_DIMENSIONS", "3"))
 if (is.na(max_latent_traits) || max_latent_traits < 1) {
   stop("LATENT_TRAIT_MAX_DIMENSIONS must be a positive integer")
+}
+
+min_items_per_dimension <- as.integer(Sys.getenv("LATENT_TRAIT_MIN_ITEMS_PER_DIMENSION", "3"))
+if (is.na(min_items_per_dimension) || min_items_per_dimension < 1) {
+  stop("LATENT_TRAIT_MIN_ITEMS_PER_DIMENSION must be a positive integer")
 }
 
 # make a list of all of the latent traits being optimized for
@@ -433,7 +470,7 @@ analysis_rows <- analysis_rows %>%
 item_metadata <- item_metadata %>%
   filter(question_type != "ranking")
 
-analysis_data <- analysis_rows %>%
+analysis_wide <- analysis_rows %>%
   select(session_id, item_id, value) %>%
   group_by(session_id, item_id) %>%
   summarise(value = first(value), .groups = "drop") %>%
@@ -442,7 +479,11 @@ analysis_data <- analysis_rows %>%
     values_from = value,
     values_fn = first,
     values_fill = NA
-  ) %>%
+  )
+
+respondent_ids <- as.character(analysis_wide$session_id)
+
+analysis_data <- analysis_wide %>%
   select(-session_id)
 
 # =========================
@@ -608,6 +649,48 @@ item_metadata <- item_metadata %>%
     )
   )
 
+metadata_with_dimensions_for_counts <- item_metadata %>%
+  left_join(question_map, by = "question_id") %>%
+  filter(!is.na(dimension), dimension %in% dimensions)
+
+dimension_item_counts <- metadata_with_dimensions_for_counts %>%
+  count(dimension, name = "item_count")
+
+underidentified_dimensions <- dimension_item_counts %>%
+  filter(item_count < min_items_per_dimension) %>%
+  pull(dimension)
+
+if (length(underidentified_dimensions) > 0) {
+  message(
+    paste0(
+      "Excluding latent traits with fewer than ",
+      min_items_per_dimension,
+      " estimable non-ranking items: ",
+      paste(underidentified_dimensions, collapse = ", ")
+    )
+  )
+}
+
+item_metadata <- item_metadata %>%
+  left_join(question_map, by = "question_id") %>%
+  filter(!dimension %in% underidentified_dimensions) %>%
+  select(-dimension) %>%
+  arrange(match(item_id, colnames(analysis_data)))
+
+analysis_data <- analysis_data[, item_metadata$item_id, drop = FALSE]
+
+if (ncol(analysis_data) == 0) {
+  stop("No estimable items remain after removing underidentified latent traits")
+}
+
+modeled_items <- item_metadata %>%
+  transmute(
+    item_id = as.character(item_id),
+    question_id = as.character(question_id),
+    question_type = as.character(question_type),
+    option_count = as.integer(option_count)
+  )
+
 
 item_types <- item_metadata$mirt_itemtype
 
@@ -627,6 +710,27 @@ compile_mirt_model <- function(item_metadata, dimensions, question_map) {
     left_join(question_map, by = "question_id") %>%
     mutate(item_index = dplyr::row_number()) %>%
     filter(!is.na(dimension), dimension %in% dimensions)
+
+  dimension_item_counts <- metadata_with_dimensions %>%
+    count(dimension, name = "item_count")
+
+  underidentified_dimensions <- dimension_item_counts %>%
+    filter(item_count < min_items_per_dimension) %>%
+    pull(dimension)
+
+  if (length(underidentified_dimensions) > 0) {
+    message(
+      paste0(
+        "Excluding latent traits with fewer than ",
+        min_items_per_dimension,
+        " estimable non-ranking items: ",
+        paste(underidentified_dimensions, collapse = ", ")
+      )
+    )
+  }
+
+  metadata_with_dimensions <- metadata_with_dimensions %>%
+    filter(!dimension %in% underidentified_dimensions)
 
   modeled_dimensions <- dimensions[dimensions %in% metadata_with_dimensions$dimension]
   if (length(modeled_dimensions) == 0) {
@@ -762,6 +866,8 @@ fit_summary <- list(
   status = "fit_complete",
   source_file = config$source_file,
   generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+  respondentIds = I(respondent_ids),
+  modeledItems = modeled_items,
   dimensions = lapply(modeled_dimensions, summarize_dimension),
   fit = list(
     status = "complete",

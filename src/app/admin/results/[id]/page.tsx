@@ -155,11 +155,50 @@ interface LatentTraitFitStats {
   lastRun: string | null;
 }
 
+interface LatentTraitPredictiveQuality {
+  r2: number;
+  rmse: number;
+  n: number;
+  featureCount: number;
+}
+
+interface LatentTraitContributingQuestion {
+  questionId: string;
+  questionText: string;
+  score: number;
+  signedScore: number;
+  percentage: number;
+  direction: 'positive' | 'negative' | 'neutral';
+}
+
+interface LatentTraitPredictiveModel {
+  modelType: string;
+  rankedQuestions: LatentTraitContributingQuestion[];
+  quality: LatentTraitPredictiveQuality | null;
+}
+
+interface LatentTraitPredictiveExplanation {
+  traitId: string;
+  status: 'complete' | 'unavailable';
+  message?: string;
+  models: {
+    ridge?: LatentTraitPredictiveModel;
+    lasso?: LatentTraitPredictiveModel;
+  };
+}
+
+interface LatentTraitPredictiveModels {
+  status: 'pending' | 'complete' | 'unavailable';
+  message?: string;
+  traits: LatentTraitPredictiveExplanation[];
+}
+
 interface LatentTraitData {
   status?: 'preview' | 'running' | 'complete' | 'error' | 'fit_complete' | 'config_ready';
   message?: string | null;
   dimensions: LatentTraitDimensionStats[];
   fit: LatentTraitFitStats;
+  predictiveModels?: LatentTraitPredictiveModels;
 }
 
 export default function ResultsPage() {
@@ -1014,6 +1053,101 @@ export default function ResultsPage() {
     );
   }
 
+  function renderPredictiveModelList(model: LatentTraitPredictiveModel | undefined, label: string) {
+    const questions = model?.rankedQuestions?.slice(0, 5) || [];
+
+    return (
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</h4>
+          {model?.quality && (
+            <span className="text-xs text-gray-400">
+              R2 {model.quality.r2.toFixed(2)} / RMSE {model.quality.rmse.toFixed(2)}
+            </span>
+          )}
+        </div>
+
+        {questions.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-500">No ranked questions available yet.</p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {questions.map((question) => (
+              <div key={`${label}-${question.questionId}`}>
+                <div className="flex items-start justify-between gap-3 text-sm">
+                  <span className="font-medium text-gray-700 line-clamp-2">
+                    {question.questionText}
+                  </span>
+                  <span
+                    className={`shrink-0 text-xs font-bold ${
+                      question.direction === 'negative' ? 'text-red-600' : 'text-teal-600'
+                    }`}
+                  >
+                    {question.percentage.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="mt-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      question.direction === 'negative'
+                        ? 'bg-red-400'
+                        : 'bg-[var(--color-cyc-primary)]'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(2, question.percentage))}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderTopContributingQuestions(dimension: LatentTraitDimensionStats) {
+    const predictiveModels = latentTraitStats?.predictiveModels;
+    const explanation = predictiveModels?.traits.find((trait) => trait.traitId === dimension.id);
+
+    if (!predictiveModels || predictiveModels.status === 'pending') {
+      return (
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <h3 className="text-sm font-bold text-[var(--color-cyc-secondary)]">
+            Top Contributing Questions
+          </h3>
+          <p className="mt-2 text-sm text-gray-500">
+            Contribution rankings will appear after the latent trait fit completes.
+          </p>
+        </div>
+      );
+    }
+
+    if (!explanation || explanation.status === 'unavailable') {
+      return (
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <h3 className="text-sm font-bold text-[var(--color-cyc-secondary)]">
+            Top Contributing Questions
+          </h3>
+          <p className="mt-2 text-sm text-gray-500">
+            {explanation?.message ||
+              predictiveModels.message ||
+              'Contribution rankings are unavailable.'}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-6 pt-5 border-t border-gray-100">
+        <h3 className="text-sm font-bold text-[var(--color-cyc-secondary)]">
+          Top Contributing Questions
+        </h3>
+        <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-5">
+          {renderPredictiveModelList(explanation.models.ridge, 'Ridge')}
+          {renderPredictiveModelList(explanation.models.lasso, 'Lasso')}
+        </div>
+      </div>
+    );
+  }
+
   function renderLatentTraitTab() {
     if (latentTraitError) {
       return (
@@ -1140,6 +1274,8 @@ export default function ResultsPage() {
                   )}
                   {renderMetric('N', displayStats.respondents)}
                 </div>
+
+                {renderTopContributingQuestions(dimension)}
               </div>
             );
           })}
