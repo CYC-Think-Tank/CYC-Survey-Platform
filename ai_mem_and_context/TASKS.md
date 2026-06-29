@@ -11,58 +11,64 @@ This file tracks implementation tasks aligned with the decision log.
 
 ## 🔴 HIGH PRIORITY
 
-### TASK-001: Create routing connection between latent trait R analysis and frontend calls
+### TASK-001: Implement Ridge/Lasso latent trait explanation layer
 
-- First, summarize the intended architecture and implementation plan, then ask for permission before making code changes.
-- Model the backend route structure after `api/routes/ai_insights.py`.
-- Create a new file under `api/routes/` called `latent_trait_insights.py`.
+Business objective:
 
-Files to change:
+Provide an interpretable explanation of which survey questions contribute most strongly to each latent trait estimated by the MIRT pipeline.
 
-- general_script.r
-- (to be created) api/routes/latent_trait_insights.py
+Files to create:
 
-Architecture direction:
+* `api/services/ridge_lasso_service.py`
+* `api/routes/predictive_models.py` (or integrate into latent trait routes)
 
-- Use FastAPI/Python as the orchestration layer.
-- Python should determine the relevant `survey_id`.
-- Python should locate, load, and validate the correct JSON config file for that survey.
-- Do **not** hardcode the config path inside `general_script.r`.
-- Refactor `general_script.r` so the main analysis logic can accept a config object or serialized JSON config passed in from Python.
-- R should focus only on statistical processing/model fitting, not on deciding where config files live.
+Files to modify:
 
-Backend tasks:
+* Frontend latent trait tab
+* Existing latent trait API models
+* Shared model schemas
 
-- Identify the frontend API requests needed to fetch latent trait insight data.
-- Identify the JSON response structure needed to dynamically populate frontend displays across different surveys and different theta dimensions.
-- Add API endpoints in `latent_trait_insights.py` that:
-  - receive a `survey_id`
-  - select/load the matching JSON config
-  - call `general_script.r`
-  - pass the config into R dynamically
-  - collect the R output
-  - format and return frontend-ready JSON
+Backend implementation:
 
-R refactor tasks:
+* Reuse the existing response preprocessing pipeline.
+* Use MIRT theta scores as regression targets.
+* For each latent trait:
 
-- Convert `general_script.r` from a one-off script into a reusable analysis function or callable script entry point.
-- Replace hardcoded config loading such as:
-  `jsonlite::fromJSON("api/question_topic_configs/build_canada_strong_config.json", simplifyVector = FALSE)`
-  with a function parameter or command-line argument.
-- Ensure theta extraction is dynamic based on the dimensions in the passed config.
-- Exclude or disable hardcoded visualization logic for now, since frontend charts will be generated from JSON data rather than `ggplot2` images.
-- Write code in the R file to do unit tests to make sure it still works locally
+  * Build feature matrix from modeled survey responses.
+  * Fit Ridge regression.
+  * Fit Lasso regression.
+  * Rank questions by contribution.
+* Return a frontend-ready JSON object containing:
 
-Expected output:
+  * latent trait id
+  * model type
+  * ranked questions
+  * contribution scores
+  * model quality metrics (R², RMSE, etc.)
 
-- The API should return structured JSON containing survey id, dimension names, theta scores, standard errors, model metadata, and any summary statistics needed by the frontend.
-- The frontend should receive data, not static R visualizations.
+Frontend implementation:
 
-### TASK-002: modify frontend visualization to include cards that display histogram visualizations of each theta
+* Add a "Top Contributing Questions" component beneath each latent trait.
+* The parent latent trait page should issue a single API request.
+* Dynamically render one contribution component per latent trait.
+* Each component displays:
 
--
+  * top five contributing questions
+  * contribution percentages/scores
+  * positive/negative contribution direction (optional)
 
-### TASK-003:
+Architecture constraints:
+
+* Frontend must not trigger one regression job per component.
+* Backend performs all model fitting in one request and returns results for every latent trait.
+* Keep predictive models independent of frontend rendering logic.
+* Preserve compatibility with future cluster-based latent trait mappings.
+
+
+### TASK-002: Debug Ridge and Lasso implementation
+
+- Investigate the cause of `{'message': 'JSON could not be generated', 'code': 414, 'hint': 'Refer to full message for details', 'details': "b'URI too long\\n'"}` error message for Top Contributing Questions section of Build Canada Strong Questionnaire
+- Implement fixes to address this bug 
 
 ### TASK-004: Stabilize EM convergence
 
@@ -93,6 +99,20 @@ Investigate fitting ranking items separately using a Plackett–Luce model.
 - Fit ranking items outside mirt
 - Use Plackett–Luce likelihood for ordered responses
 - Build custom estimation pipeline to combine IRT likelihood with ranking likelihood
+
+---
+
+### TASK-009: Implement Python-managed latent trait data extraction for R
+
+Replace direct R database access with a Python-managed extraction layer.
+
+- Use the existing Supabase client / API credentials as the single source of database connectivity
+- Fetch survey responses in Python through read-only, paginated queries
+- Serialize a prepared analysis dataset for `general_script.r`
+- Keep R responsible for psychometric fitting while removing the need for separate R Postgres credentials
+- Preserve the existing config-driven mapping provider and future learned-mapping compatibility
+- Pass the prepared dataset to R through `LATENT_TRAIT_INPUT_PATH`
+- Keep production database access read-only through Supabase `select` calls
 
 ---
 

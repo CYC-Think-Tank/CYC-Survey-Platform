@@ -6,10 +6,12 @@ requires-python = ">=3.9"
 dependencies = [
     "fastapi",
     "httpx",
+    "numpy",
     "pdfplumber",
     "python-dotenv",
     "python-multipart",
     "pydantic",
+    "scikit-learn",
     "supabase",
     "uvicorn",
 ]

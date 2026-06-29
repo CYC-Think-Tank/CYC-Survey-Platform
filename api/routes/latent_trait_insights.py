@@ -10,12 +10,19 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query
 
 from api.dependencies import supabase
+from api.services.latent_trait_mapping_provider import (
+    LatentTraitMappingError,
+    get_trait_mapping_for_survey,
+    load_all_trait_mappings,
+    normalize_survey_id,
+    to_config_payload,
+)
+from api.services.ridge_lasso_service import PREDICTIVE_PENDING, build_predictive_models
 
 router = APIRouter()
 
 API_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = API_DIR.parent
-CONFIG_DIR = API_DIR / "question_topic_configs"
 OUTPUT_DIR = Path(
     os.getenv(
         "LATENT_TRAIT_OUTPUT_DIR",
@@ -23,24 +30,20 @@ OUTPUT_DIR = Path(
     )
 )
 JOB_STATUS_DIR = OUTPUT_DIR / "_jobs"
+INPUT_DIR = OUTPUT_DIR / "_inputs"
 GENERAL_SCRIPT_PATH = API_DIR / "general_script.r"
 R_SCRIPT_TIMEOUT_SECONDS = int(os.getenv("LATENT_TRAIT_R_TIMEOUT_SECONDS", "600"))
 MAX_LATENT_TRAITS = int(os.getenv("LATENT_TRAIT_MAX_DIMENSIONS", "3"))
 MODELED_QUESTION_TYPES = {"checkboxes", "likert_scale", "multiple_choice"}
 EXCLUDED_QUESTION_TYPES = {"ranking"}
+SUPABASE_IN_FILTER_CHUNK_SIZE = 50
+SUPABASE_PAGE_SIZE = 1000
 _running_jobs: set[str] = set()
 _running_jobs_lock = threading.Lock()
 
 
-def _normalize_survey_id(survey_id: str | UUID) -> str:
-    try:
-        return str(UUID(str(survey_id)))
-    except (TypeError, ValueError) as e:
-        raise ValueError("Invalid survey_id") from e
-
-
 def _safe_json_path(base_dir: Path, survey_id: str | UUID) -> Path:
-    safe_survey_id = _normalize_survey_id(survey_id)
+    safe_survey_id = normalize_survey_id(survey_id)
     base_path = base_dir.resolve()
     target_path = (base_path / f"{safe_survey_id}.json").resolve()
 
@@ -50,77 +53,35 @@ def _safe_json_path(base_dir: Path, survey_id: str | UUID) -> Path:
     return target_path
 
 
-def _validate_config(config: dict[str, Any], source_file: Path) -> dict[str, Any]:
-    survey_id = config.get("survey_id")
-    dimensions = config.get("dimensions")
-
-    if not isinstance(survey_id, str) or not survey_id:
-        raise ValueError(f"{source_file.name} is missing survey_id")
-
-    try:
-        survey_id = _normalize_survey_id(survey_id)
-    except ValueError as e:
-        raise ValueError(f"{source_file.name} has invalid survey_id") from e
-
-    if not isinstance(dimensions, dict) or not dimensions:
-        raise ValueError(f"{source_file.name} must define at least one dimension")
-
-    for dimension, question_ids in dimensions.items():
-        if not isinstance(dimension, str) or not dimension:
-            raise ValueError(f"{source_file.name} contains an unnamed dimension")
-        if not isinstance(question_ids, list) or not question_ids:
-            raise ValueError(
-                f"{source_file.name} dimension '{dimension}' must contain question ids"
-            )
-        if not all(isinstance(question_id, str) for question_id in question_ids):
-            raise ValueError(
-                f"{source_file.name} dimension '{dimension}' contains a non-string question id"
-            )
-
-    return {
-        "survey_id": survey_id,
-        "dimensions": dimensions,
-        "source_file": str(source_file),
-    }
-
-
-def _load_config_file(path: Path) -> dict[str, Any]:
-    try:
-        with path.open("r", encoding="utf-8") as f:
-            config = json.load(f)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in {path.name}: {e}") from e
-
-    return _validate_config(config, path)
-
-
 def _load_all_configs() -> list[dict[str, Any]]:
-    if not CONFIG_DIR.exists():
-        raise FileNotFoundError(f"Config directory does not exist: {CONFIG_DIR}")
-
-    configs = [_load_config_file(path) for path in sorted(CONFIG_DIR.glob("*.json"))]
-    if not configs:
-        raise FileNotFoundError(f"No config JSON files found in {CONFIG_DIR}")
-
-    return configs
+    return [to_config_payload(mapping) for mapping in load_all_trait_mappings()]
 
 
 def _get_config_for_survey(survey_id: str) -> dict[str, Any]:
-    matches = [
-        config for config in _load_all_configs() if config["survey_id"] == survey_id
-    ]
-    if not matches:
+    try:
+        return to_config_payload(get_trait_mapping_for_survey(survey_id))
+    except LookupError:
         raise HTTPException(
             status_code=404,
             detail=f"No latent trait config found for survey_id {survey_id}",
         )
-    if len(matches) > 1:
+    except LatentTraitMappingError as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Multiple latent trait configs found for survey_id {survey_id}",
+            detail=str(e),
         )
 
-    return matches[0]
+
+def _get_mapping_for_survey(survey_id: str):
+    try:
+        return get_trait_mapping_for_survey(survey_id)
+    except LookupError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No latent trait config found for survey_id {survey_id}",
+        )
+    except LatentTraitMappingError as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def _count_valid_responses(survey_id: str) -> int:
@@ -147,6 +108,161 @@ def _count_modeled_questions(survey_id: str, configured_question_ids: set[str]) 
         for question in response.data or []
         if question.get("type") in MODELED_QUESTION_TYPES
     )
+
+
+def _chunks(values: list[str], chunk_size: int = SUPABASE_IN_FILTER_CHUNK_SIZE):
+    for start in range(0, len(values), chunk_size):
+        yield values[start : start + chunk_size]
+
+
+def _select_all_paginated(
+    table: str,
+    columns: str,
+    filters: list[tuple[str, str, Any]],
+    page_size: int = SUPABASE_PAGE_SIZE,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    start = 0
+
+    while True:
+        query = supabase.table(table).select(columns)
+        for method, column, value in filters:
+            query = getattr(query, method)(column, value)
+
+        page = query.range(start, start + page_size - 1).execute().data or []
+        rows.extend(page)
+
+        if len(page) < page_size:
+            return rows
+
+        start += page_size
+
+
+def _load_valid_response_sessions(survey_id: str) -> list[dict[str, Any]]:
+    return _select_all_paginated(
+        "response_sessions",
+        "id,survey_id",
+        [
+            ("eq", "survey_id", survey_id),
+            ("eq", "is_valid", True),
+        ],
+    )
+
+
+def _load_questions_for_latent_traits(
+    survey_id: str,
+    question_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    if not question_ids:
+        return {}
+
+    questions: list[dict[str, Any]] = []
+    for question_chunk in _chunks(question_ids):
+        questions.extend(
+            _select_all_paginated(
+                "questions",
+                "id,question_text,type,options",
+                [
+                    ("eq", "survey_id", survey_id),
+                    ("in_", "id", question_chunk),
+                ],
+            )
+        )
+
+    return {str(question["id"]): question for question in questions}
+
+
+def _load_answers_for_latent_traits(
+    respondent_ids: list[str],
+    question_ids: list[str],
+) -> list[dict[str, Any]]:
+    if not respondent_ids or not question_ids:
+        return []
+
+    answers: list[dict[str, Any]] = []
+    for respondent_chunk in _chunks(respondent_ids):
+        for question_chunk in _chunks(question_ids):
+            answers.extend(
+                _select_all_paginated(
+                    "answers",
+                    "session_id,question_id,answer_text,answer_numeric,answer_options",
+                    [
+                        ("in_", "session_id", respondent_chunk),
+                        ("in_", "question_id", question_chunk),
+                    ],
+                )
+            )
+
+    return answers
+
+
+def _json_cell(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return value
+    return json.dumps(value)
+
+
+def _build_latent_trait_input_rows(
+    survey_id: str,
+    config: dict[str, Any],
+) -> list[dict[str, Any]]:
+    selected_dimensions = dict(list(config["dimensions"].items())[:MAX_LATENT_TRAITS])
+    question_ids = list(
+        dict.fromkeys(
+            question_id
+            for question_ids in selected_dimensions.values()
+            for question_id in question_ids
+        )
+    )
+    sessions = _load_valid_response_sessions(survey_id)
+    respondent_ids = [str(session["id"]) for session in sessions]
+    questions_by_id = _load_questions_for_latent_traits(survey_id, question_ids)
+    answers = _load_answers_for_latent_traits(respondent_ids, question_ids)
+
+    input_rows: list[dict[str, Any]] = []
+    session_survey_ids = {
+        str(session["id"]): str(session.get("survey_id") or survey_id)
+        for session in sessions
+    }
+
+    for answer in answers:
+        question_id = str(answer.get("question_id"))
+        question = questions_by_id.get(question_id)
+        session_id = str(answer.get("session_id"))
+        if not question or session_id not in session_survey_ids:
+            continue
+
+        input_rows.append(
+            {
+                "session_id": session_id,
+                "survey_id": session_survey_ids[session_id],
+                "question_id": question_id,
+                "question_text": question.get("question_text"),
+                "question_type": question.get("type"),
+                "question_options": _json_cell(question.get("options")),
+                "answer_text": answer.get("answer_text"),
+                "answer_numeric": answer.get("answer_numeric"),
+                "answer_options": _json_cell(answer.get("answer_options")),
+            }
+        )
+
+    return input_rows
+
+
+def _write_latent_trait_input_rows(
+    survey_id: str,
+    config: dict[str, Any],
+) -> Path:
+    INPUT_DIR.mkdir(parents=True, exist_ok=True)
+    input_path = _safe_json_path(INPUT_DIR, survey_id)
+    input_rows = _build_latent_trait_input_rows(survey_id, config)
+
+    with input_path.open("w", encoding="utf-8") as f:
+        json.dump(input_rows, f)
+
+    return input_path
 
 
 def _get_fitted_result_path(survey_id: str) -> Path:
@@ -195,7 +311,7 @@ def _clear_job_status(survey_id: str) -> None:
         status_path.unlink()
 
 
-def _load_fitted_result(survey_id: str) -> dict[str, Any] | None:
+def _load_fitted_result(survey_id: str, mapping: Any) -> dict[str, Any] | None:
     path = _get_fitted_result_path(survey_id)
     if not path.exists():
         return None
@@ -220,6 +336,7 @@ def _load_fitted_result(survey_id: str) -> dict[str, Any] | None:
 
     result["status"] = result.get("status") or "fit_complete"
     result["source_file"] = result.get("source_file") or str(path)
+    result["predictiveModels"] = build_predictive_models(survey_id, mapping, result)
     return result
 
 
@@ -272,6 +389,7 @@ def _build_status_response(
             "bic": None,
             "lastRun": None,
         },
+        "predictiveModels": PREDICTIVE_PENDING,
     }
 
 
@@ -282,10 +400,12 @@ def _run_latent_trait_script(survey_id: str, config: dict[str, Any]) -> None:
         )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    input_path = _write_latent_trait_input_rows(survey_id, config)
     env = {
         **os.environ,
         "LATENT_TRAIT_SURVEY_ID": survey_id,
         "LATENT_TRAIT_CONFIG_PATH": config["source_file"],
+        "LATENT_TRAIT_INPUT_PATH": str(input_path),
         "LATENT_TRAIT_OUTPUT_DIR": str(OUTPUT_DIR),
         "LATENT_TRAIT_API_MODE": "true",
     }
@@ -408,12 +528,13 @@ async def get_latent_trait_preview(
 ):
     survey_id = str(survey_id)
     try:
-        config = _get_config_for_survey(survey_id)
+        mapping = _get_mapping_for_survey(survey_id)
+        config = to_config_payload(mapping)
         if retry:
             _clear_fitted_result(survey_id)
             _clear_job_status(survey_id)
 
-        fitted_result = _load_fitted_result(survey_id)
+        fitted_result = _load_fitted_result(survey_id, mapping)
         if fitted_result is not None:
             return fitted_result
 
