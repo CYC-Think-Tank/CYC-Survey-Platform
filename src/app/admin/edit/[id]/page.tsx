@@ -1191,7 +1191,13 @@ export default function EditSurvey() {
             Edit Survey
           </h1>
         </div>
-        {collab.active && <PresenceBar peers={collab.peers} connected={collab.connected} />}
+        {collab.active && (
+          <PresenceBar
+            peers={collab.peers}
+            connected={collab.connected}
+            typingNames={collab.typingNames}
+          />
+        )}
       </div>
 
       {error && <div className="bg-red-50 text-red-600 p-4 rounded mb-6">{error}</div>}
@@ -1280,6 +1286,7 @@ export default function EditSurvey() {
                         user: collab.user,
                         isSeeder: collab.isSeeder,
                         ready: collab.isSeeded,
+                        onActivity: collab.notifyTyping,
                       }
                     : undefined
                 }
