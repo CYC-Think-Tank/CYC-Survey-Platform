@@ -12,6 +12,9 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import { Collaboration } from '@tiptap/extension-collaboration';
+import { CollaborationCaret } from '@tiptap/extension-collaboration-caret';
+import type { Doc as YDoc } from 'yjs';
 
 import {
   Bold,
@@ -32,7 +35,22 @@ import {
   AlignRight,
   Table as TableIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+interface CollabConfig {
+  /** Shared Yjs document for this survey. */
+  doc: YDoc;
+  /** Y.js fragment name to bind this editor to (e.g. 'description'). */
+  field: string;
+  /** Provider exposing `.awareness` (drives live cursors). */
+  provider: { awareness: unknown };
+  /** Local user shown on the cursor/caret. */
+  user: { name: string; color: string };
+  /** Whether this client should seed the shared doc with initial content. */
+  isSeeder: boolean;
+  /** True once the shared doc is seeded — gates content seeding + onChange. */
+  ready: boolean;
+}
 
 interface RichTextEditorProps {
   value: string;
@@ -40,6 +58,12 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   readOnly?: boolean;
+  /**
+   * When provided, the editor becomes collaborative: content lives in the Yjs
+   * document (character-level merge, no conflicts) and remote cursors are shown.
+   * When omitted it behaves as a normal single-user editor.
+   */
+  collab?: CollabConfig;
 }
 
 export const RichTextEditor = ({
@@ -48,73 +72,122 @@ export const RichTextEditor = ({
   placeholder,
   className = '',
   readOnly = false,
+  collab,
 }: RichTextEditorProps) => {
   const [showColors, setShowColors] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  const editor = useEditor({
-    editable: !readOnly,
-    extensions: [
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-      }),
-      Underline,
-      Highlight.configure({
-        multicolor: true,
-      }),
-      TextStyle,
-      Color,
-      LinkExtension.configure({
-        openOnClick: false,
-        autolink: true,
-        defaultProtocol: 'https',
-      }),
-      ImageExtension.configure({
-        HTMLAttributes: {
-          class:
-            'rounded-lg max-h-[500px] object-contain my-4 w-auto mx-auto border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900',
-        },
-      }),
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: {
-          class:
-            'border-collapse table-auto w-full border border-gray-300 dark:border-slate-600 my-4 shadow-sm',
-        },
-      }),
-      TableRow,
-      TableHeader.configure({
-        HTMLAttributes: {
-          class:
-            'border border-gray-300 dark:border-slate-600 p-2 bg-gray-100 dark:bg-slate-800 font-bold text-left',
-        },
-      }),
-      TableCell.configure({
-        HTMLAttributes: {
-          class: 'border border-gray-300 dark:border-slate-600 p-2 relative',
-        },
-      }),
-    ],
-    content: value,
-    editorProps: {
-      attributes: {
-        class: `prose prose-sm focus:outline-none min-h-[150px] px-3 py-2 text-sm max-w-none ${className} ${readOnly ? 'opacity-70 cursor-not-allowed bg-gray-50 dark:bg-slate-800' : ''}`,
-      },
-    },
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      onChange(html === '<p></p>' ? '' : html);
-    },
+  // Read fresh values inside the editor's (creation-time) callbacks. These are
+  // updated after render (refs must not be written during render).
+  const onChangeRef = useRef(onChange);
+  const collabReadyRef = useRef(collab ? collab.ready : true);
+  const seededContentRef = useRef(false);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    collabReadyRef.current = collab ? collab.ready : true;
   });
 
+  const collabDoc = collab?.doc ?? null;
+
+  const editor = useEditor(
+    {
+      editable: !readOnly,
+      extensions: [
+        StarterKit.configure({
+          heading: { levels: [1, 2, 3] },
+          // Collaboration ships its own (Yjs-aware) undo/redo; disable the
+          // default history so the two don't fight.
+          ...(collabDoc ? { undoRedo: false as const } : {}),
+        }),
+        Underline,
+        Highlight.configure({
+          multicolor: true,
+        }),
+        TextStyle,
+        Color,
+        LinkExtension.configure({
+          openOnClick: false,
+          autolink: true,
+          defaultProtocol: 'https',
+        }),
+        ImageExtension.configure({
+          HTMLAttributes: {
+            class:
+              'rounded-lg max-h-[500px] object-contain my-4 w-auto mx-auto border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900',
+          },
+        }),
+        TextAlign.configure({
+          types: ['heading', 'paragraph'],
+        }),
+        Table.configure({
+          resizable: true,
+          HTMLAttributes: {
+            class:
+              'border-collapse table-auto w-full border border-gray-300 dark:border-slate-600 my-4 shadow-sm',
+          },
+        }),
+        TableRow,
+        TableHeader.configure({
+          HTMLAttributes: {
+            class:
+              'border border-gray-300 dark:border-slate-600 p-2 bg-gray-100 dark:bg-slate-800 font-bold text-left',
+          },
+        }),
+        TableCell.configure({
+          HTMLAttributes: {
+            class: 'border border-gray-300 dark:border-slate-600 p-2 relative',
+          },
+        }),
+        ...(collabDoc
+          ? [
+              Collaboration.configure({ document: collabDoc, field: collab!.field }),
+              CollaborationCaret.configure({ provider: collab!.provider, user: collab!.user }),
+            ]
+          : []),
+      ],
+      // In collab mode the content comes from Yjs, not the `value` prop.
+      content: collabDoc ? undefined : value,
+      immediatelyRender: false,
+      editorProps: {
+        attributes: {
+          class: `prose prose-sm focus:outline-none min-h-[150px] px-3 py-2 text-sm max-w-none ${className} ${readOnly ? 'opacity-70 cursor-not-allowed bg-gray-50 dark:bg-slate-800' : ''}`,
+        },
+      },
+      onUpdate: ({ editor }) => {
+        // Until the shared doc is seeded, the collaborative editor is empty;
+        // don't propagate that emptiness back into React state (would wipe the
+        // saved description). After seeding, mirror content so saving works.
+        if (collab && !collabReadyRef.current) return;
+        const html = editor.getHTML();
+        onChangeRef.current(html === '<p></p>' ? '' : html);
+      },
+    },
+    [collabDoc]
+  );
+
+  // Non-collab mode: keep the editor in sync when `value` changes externally.
+  // Collab mode: Yjs is the source of truth, so this is skipped.
   useEffect(() => {
+    if (collab) return;
     if (editor && value !== editor.getHTML() && !(value === '' && editor.getHTML() === '<p></p>')) {
       editor.commands.setContent(value);
     }
-  }, [value, editor]);
+  }, [value, editor, collab]);
+
+  // Collab mode: the elected seeder loads the initial description into the
+  // shared doc once (only if no peer has populated it yet).
+  useEffect(() => {
+    if (!collab || !editor || seededContentRef.current) return;
+    if (!collab.isSeeder || !collab.ready) return;
+    if (!editor.isEmpty) {
+      seededContentRef.current = true; // already populated by a peer
+      return;
+    }
+    if (value && value !== '<p></p>') {
+      seededContentRef.current = true;
+      editor.commands.setContent(value);
+    }
+  }, [collab, editor, value]);
 
   if (!editor) {
     return null;

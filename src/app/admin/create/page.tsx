@@ -18,6 +18,7 @@ import {
   getLanguageConfig,
   TRANSLATE_TARGET_LANGUAGES,
 } from '@/config/languages';
+import { SURVEY_CATEGORIES } from '@/config/categories';
 
 type QuestionType =
   | 'multiple_choice'
@@ -83,6 +84,7 @@ export default function CreateSurvey() {
   const [descriptionZh, setDescriptionZh] = useState('');
   const [descriptionAlignment, setDescriptionAlignment] = useState('left');
   const [estimatedMinutes, setEstimatedMinutes] = useState(5);
+  const [category, setCategory] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
@@ -643,6 +645,7 @@ export default function CreateSurvey() {
         description,
         description_alignment: descriptionAlignment,
         estimated_minutes: estimatedMinutes,
+        category: category.trim() || null,
         is_active: isActive,
         thumbnail_url: thumbnailUrl || undefined,
         enabled_languages: [...enabledLangs],
@@ -1021,6 +1024,24 @@ export default function CreateSurvey() {
                   onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
                   className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
+              </div>
+              <div className="w-1/3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  list="survey-category-options"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g. Community"
+                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                />
+                <datalist id="survey-category-options">
+                  {SURVEY_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
               </div>
               <div className="w-1/3 flex items-center pt-6">
                 <label className="flex items-center cursor-pointer">

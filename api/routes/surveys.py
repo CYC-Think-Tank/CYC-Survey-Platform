@@ -113,6 +113,7 @@ async def create_survey(survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
+                    "category": survey.category,
                     "enabled_languages": survey.enabled_languages,
                 }
             )
@@ -223,6 +224,7 @@ async def duplicate_survey(survey_id: str):
                     "is_active": False,
                     "has_been_published": False,
                     "thumbnail_url": original_survey.get("thumbnail_url"),
+                    "category": original_survey.get("category"),
                     "enabled_languages": original_survey.get("enabled_languages"),
                 }
             )
@@ -410,6 +412,7 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
                     "is_active": survey.is_active,
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
+                    "category": survey.category,
                     "enabled_languages": survey.enabled_languages,
                     "updated_at": datetime.utcnow().isoformat(),
                 }
