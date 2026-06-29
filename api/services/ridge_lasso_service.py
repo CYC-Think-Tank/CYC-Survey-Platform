@@ -86,7 +86,9 @@ def _unavailable_trait(trait_id: str, message: str) -> dict[str, Any]:
     }
 
 
-def _select_all(client: Any, table: str, columns: str, filters: list[tuple[str, str, Any]]) -> list[dict[str, Any]]:
+def _select_all(
+    client: Any, table: str, columns: str, filters: list[tuple[str, str, Any]]
+) -> list[dict[str, Any]]:
     query = client.table(table).select(columns)
     for method, column, value in filters:
         query = getattr(query, method)(column, value)
@@ -188,7 +190,9 @@ def _answer_to_item_values(
     value = _safe_float(answer.get("answer_numeric"))
     if value is None and answer.get("answer_text") is not None:
         answer_text = str(answer["answer_text"])
-        value = float(choices.index(answer_text) + 1) if answer_text in choices else None
+        value = (
+            float(choices.index(answer_text) + 1) if answer_text in choices else None
+        )
 
     if question_type == "multiple_choice" and len(choices) == 2 and value in {1.0, 2.0}:
         value -= 1
@@ -202,9 +206,13 @@ def _build_feature_matrix(
     fitted_result: dict[str, Any],
     client: Any | None = None,
 ) -> tuple[np.ndarray, list[dict[str, Any]], list[str]]:
-    respondent_ids = [str(row_id) for row_id in fitted_result.get("respondentIds") or []]
+    respondent_ids = [
+        str(row_id) for row_id in fitted_result.get("respondentIds") or []
+    ]
     modeled_items = fitted_result.get("modeledItems") or []
-    modeled_item_ids = [str(item.get("item_id")) for item in modeled_items if item.get("item_id")]
+    modeled_item_ids = [
+        str(item.get("item_id")) for item in modeled_items if item.get("item_id")
+    ]
     configured_question_ids = [
         question_id
         for question_ids in mapping.trait_to_question_ids.values()
@@ -230,14 +238,18 @@ def _build_feature_matrix(
                 continue
             item_values.update(_answer_to_item_values(answer, question))
 
-        feature_rows.append([item_values.get(item_id, np.nan) for item_id in modeled_item_ids])
+        feature_rows.append(
+            [item_values.get(item_id, np.nan) for item_id in modeled_item_ids]
+        )
 
     item_metadata_by_id = {str(item.get("item_id")): item for item in modeled_items}
     feature_metadata = [
         {
             **item_metadata_by_id.get(item_id, {}),
             "item_id": item_id,
-            "question_id": str(item_metadata_by_id.get(item_id, {}).get("question_id", item_id)),
+            "question_id": str(
+                item_metadata_by_id.get(item_id, {}).get("question_id", item_id)
+            ),
             "question_text": questions_by_id.get(
                 str(item_metadata_by_id.get(item_id, {}).get("question_id", item_id)),
                 {},
@@ -249,7 +261,9 @@ def _build_feature_matrix(
     return np.asarray(feature_rows, dtype=float), feature_metadata, respondent_ids
 
 
-def _fit_model(model_type: str, x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, dict[str, Any]]:
+def _fit_model(
+    model_type: str, x: np.ndarray, y: np.ndarray
+) -> tuple[np.ndarray, dict[str, Any]]:
     from sklearn.impute import SimpleImputer
     from sklearn.linear_model import LassoCV, RidgeCV
     from sklearn.metrics import mean_squared_error, r2_score
@@ -328,7 +342,9 @@ def _rank_questions(
     }
 
 
-def _theta_values_for_trait(fitted_result: dict[str, Any], trait_id: str) -> list[float]:
+def _theta_values_for_trait(
+    fitted_result: dict[str, Any], trait_id: str
+) -> list[float]:
     for dimension in fitted_result.get("dimensions") or []:
         if dimension.get("id") == trait_id:
             return [
@@ -380,10 +396,16 @@ def build_predictive_models(
         y_trait = y[finite_mask]
 
         if len(y_trait) < 5:
-            traits.append(_unavailable_trait(trait_id, "At least five aligned respondents are required."))
+            traits.append(
+                _unavailable_trait(
+                    trait_id, "At least five aligned respondents are required."
+                )
+            )
             continue
         if np.nanstd(y_trait) == 0:
-            traits.append(_unavailable_trait(trait_id, "Theta target has no variation."))
+            traits.append(
+                _unavailable_trait(trait_id, "Theta target has no variation.")
+            )
             continue
 
         finite_feature_counts = np.sum(np.isfinite(x_trait), axis=0)
@@ -394,11 +416,17 @@ def build_predictive_models(
             and len(np.unique(x_trait[np.isfinite(x_trait[:, index]), index])) > 1
         ]
         if not variable_features:
-            traits.append(_unavailable_trait(trait_id, "No variable response features are available."))
+            traits.append(
+                _unavailable_trait(
+                    trait_id, "No variable response features are available."
+                )
+            )
             continue
 
         x_trait = x_trait[:, variable_features]
-        trait_feature_metadata = [feature_metadata[index] for index in variable_features]
+        trait_feature_metadata = [
+            feature_metadata[index] for index in variable_features
+        ]
 
         try:
             ridge_coefficients, ridge_quality = _fit_model("ridge", x_trait, y_trait)
@@ -428,5 +456,9 @@ def build_predictive_models(
             }
         )
 
-    status = "complete" if any(trait.get("status") == "complete" for trait in traits) else "unavailable"
+    status = (
+        "complete"
+        if any(trait.get("status") == "complete" for trait in traits)
+        else "unavailable"
+    )
     return {"status": status, "traits": traits}

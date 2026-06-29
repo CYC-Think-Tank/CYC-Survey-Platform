@@ -36,7 +36,9 @@ def _validate_mapping(config: dict[str, Any], source_file: Path) -> LatentTraitM
     try:
         normalized_survey_id = normalize_survey_id(survey_id)
     except LatentTraitMappingError as e:
-        raise LatentTraitMappingError(f"{source_file.name} has invalid survey_id") from e
+        raise LatentTraitMappingError(
+            f"{source_file.name} has invalid survey_id"
+        ) from e
 
     if not isinstance(dimensions, dict) or not dimensions:
         raise LatentTraitMappingError(
@@ -46,7 +48,9 @@ def _validate_mapping(config: dict[str, Any], source_file: Path) -> LatentTraitM
     trait_to_question_ids: dict[str, list[str]] = {}
     for trait_id, question_ids in dimensions.items():
         if not isinstance(trait_id, str) or not trait_id:
-            raise LatentTraitMappingError(f"{source_file.name} contains an unnamed dimension")
+            raise LatentTraitMappingError(
+                f"{source_file.name} contains an unnamed dimension"
+            )
         if not isinstance(question_ids, list) or not question_ids:
             raise LatentTraitMappingError(
                 f"{source_file.name} dimension '{trait_id}' must contain question ids"
@@ -97,7 +101,9 @@ def get_trait_mapping_for_survey(
     ]
 
     if not matches:
-        raise LookupError(f"No latent trait config found for survey_id {normalized_survey_id}")
+        raise LookupError(
+            f"No latent trait config found for survey_id {normalized_survey_id}"
+        )
     if len(matches) > 1:
         raise LatentTraitMappingError(
             f"Multiple latent trait configs found for survey_id {normalized_survey_id}"
