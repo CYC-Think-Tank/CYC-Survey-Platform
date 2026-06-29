@@ -1,3 +1,8 @@
+import os
+
+os.environ.setdefault("SUPABASE_URL", "http://127.0.0.1:54321")
+os.environ.setdefault("SUPABASE_KEY", "test-key")
+
 from api.routes import latent_trait_insights
 
 
