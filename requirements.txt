@@ -54,7 +54,7 @@ requests==2.34.2
 rich==14.3.4
 rich-toolkit==0.19.9
 rignore==0.7.6
-sentry-sdk==2.60.0
+sentry-sdk==2.61.1
 shellingham==1.5.4
 six==1.17.0
 scikit-learn==1.9.0
