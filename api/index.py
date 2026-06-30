@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import (
+    admin,
     ai_insights,
     blog,
     latent_trait_insights,
@@ -29,6 +30,7 @@ async def health_check():
 
 
 app.include_router(translations.router)
+app.include_router(admin.router)
 app.include_router(surveys.router)
 app.include_router(sessions.router)
 app.include_router(results.router)

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { adminFetch } from '@/lib/adminAuth';
 import {
   SUPPORTED_LANGUAGES,
   getLanguageConfig,
@@ -124,7 +125,7 @@ export default function CreateSurvey() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await adminFetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       return await res.json();
     } catch {
@@ -507,7 +508,7 @@ export default function CreateSurvey() {
         const isFirst = b === 0;
         setTranslateAllSuccess(`Translating batch ${b + 1} of ${batches.length}...`);
 
-        const res = await fetch('/api/surveys/translate-all', {
+        const res = await adminFetch('/api/surveys/translate-all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -707,7 +708,7 @@ export default function CreateSurvey() {
         }),
       };
 
-      const res = await fetch('/api/surveys', {
+      const res = await adminFetch('/api/surveys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -777,7 +778,7 @@ export default function CreateSurvey() {
 
       const filteredPayloadFr = payloadFr.filter((q) => q.id);
       if (filteredPayloadFr.length > 0) {
-        const resFr = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
+        const resFr = await adminFetch(`/api/surveys/${createdSurvey.id}/translation`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -851,7 +852,7 @@ export default function CreateSurvey() {
 
       const filteredPayloadZh = payloadZh.filter((q) => q.id);
       if (filteredPayloadZh.length > 0) {
-        const resZh = await fetch(`/api/surveys/${createdSurvey.id}/translation`, {
+        const resZh = await adminFetch(`/api/surveys/${createdSurvey.id}/translation`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

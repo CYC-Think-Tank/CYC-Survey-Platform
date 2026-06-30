@@ -5,14 +5,20 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Request
 
-from api.dependencies import supabase
+from api.dependencies import require_admin_context, require_survey_team_access, supabase
 from api.models import SurveyCreate, SurveyDetail, SurveyList
 
 router = APIRouter()
 
 
+def _has_bearer_token(request: Request) -> bool:
+    auth_header = request.headers.get("authorization") or ""
+    scheme, _, token = auth_header.partition(" ")
+    return scheme.lower() == "bearer" and bool(token)
+
+
 @router.get("/api/surveys", response_model=list[SurveyList])
-async def get_surveys(include_inactive: bool = False):
+async def get_surveys(request: Request, include_inactive: bool = False):
     """
     Return surveys and their response counts for the survey listing UI.
 
@@ -21,9 +27,19 @@ async def get_surveys(include_inactive: bool = False):
     derived from the joined `response_sessions` count.
     """
     try:
+        context = None
+        if include_inactive:
+            context = await require_admin_context(request)
+        elif _has_bearer_token(request):
+            context = await require_admin_context(request, require_team=False)
+
         query = supabase.table("surveys").select("*, response_sessions(count)")
-        if not include_inactive:
+        if context and context.teams:
+            query = query.in_("team_id", context.team_ids())
+        elif not include_inactive:
             query = query.eq("is_active", True)
+        else:
+            raise HTTPException(status_code=403, detail="No team assignment")
 
         response = query.execute()
 
@@ -49,6 +65,8 @@ async def get_surveys(include_inactive: bool = False):
             surveys.append(row)
 
         return surveys
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
 
@@ -57,7 +75,7 @@ async def get_surveys(include_inactive: bool = False):
 
 
 @router.get("/api/surveys/{survey_id}", response_model=SurveyDetail)
-async def get_survey(survey_id: str):
+async def get_survey(survey_id: str, request: Request):
     """
     Return a single survey and its ordered questions.
 
@@ -65,12 +83,22 @@ async def get_survey(survey_id: str):
     404 when the survey does not exist.
     """
     try:
+        context = None
+        if _has_bearer_token(request):
+            context = await require_admin_context(request)
+
         # Fetch survey
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
 
         survey = survey_res.data[0]
+        if context:
+            team_id = survey.get("team_id")
+            if not team_id or not context.is_team_member(team_id):
+                raise HTTPException(status_code=404, detail="Survey not found")
+        elif not survey.get("is_active"):
+            raise HTTPException(status_code=404, detail="Survey not found")
 
         # Fetch questions
         questions_res = (
@@ -90,7 +118,7 @@ async def get_survey(survey_id: str):
 
 
 @router.post("/api/surveys", response_model=SurveyDetail)
-async def create_survey(survey: SurveyCreate):
+async def create_survey(survey: SurveyCreate, request: Request):
     """
     Create a survey and its questions, including logic gate ID remapping.
 
@@ -99,6 +127,10 @@ async def create_survey(survey: SurveyCreate):
     maps temporary IDs to real UUIDs and updates any logic gate references.
     """
     try:
+        context = await require_admin_context(request)
+        selected_team_id = survey.team_id or context.default_team.team_id
+        if not context.is_team_member(selected_team_id):
+            raise HTTPException(status_code=403, detail="Team access required")
         has_been_published = survey.is_active
 
         # 1. Create Survey
@@ -114,6 +146,8 @@ async def create_survey(survey: SurveyCreate):
                     "has_been_published": has_been_published,
                     "thumbnail_url": survey.thumbnail_url,
                     "enabled_languages": survey.enabled_languages,
+                    "owner_user_id": context.user.id,
+                    "team_id": selected_team_id,
                 }
             )
             .execute()
@@ -177,12 +211,14 @@ async def create_survey(survey: SurveyCreate):
         created_survey["response_count"] = 0
 
         return created_survey
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/api/surveys/{survey_id}/duplicate", response_model=SurveyDetail)
-async def duplicate_survey(survey_id: str):
+async def duplicate_survey(survey_id: str, request: Request):
     """
     Duplicate a survey, its questions, logic gates, and stored translations.
 
@@ -192,6 +228,8 @@ async def duplicate_survey(survey_id: str):
     updated for the new survey.
     """
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         # 1. Fetch original survey
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
@@ -224,6 +262,8 @@ async def duplicate_survey(survey_id: str):
                     "has_been_published": False,
                     "thumbnail_url": original_survey.get("thumbnail_url"),
                     "enabled_languages": original_survey.get("enabled_languages"),
+                    "owner_user_id": context.user.id,
+                    "team_id": original_survey.get("team_id"),
                 }
             )
             .execute()
@@ -368,15 +408,19 @@ async def duplicate_survey(survey_id: str):
         new_survey["response_count"] = 0
 
         return new_survey
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/api/surveys/{survey_id}", response_model=SurveyDetail)
-async def update_survey(survey_id: str, survey: SurveyCreate):
+async def update_survey(survey_id: str, survey: SurveyCreate, request: Request):
     """Update an existing survey and its questions. Fails if the survey has ever been published."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         # 1. Check if existing survey has been published
         existing_res = (
             supabase.table("surveys")
@@ -490,9 +534,11 @@ async def update_survey(survey_id: str, survey: SurveyCreate):
 
 
 @router.delete("/api/surveys/{survey_id}")
-async def delete_survey(survey_id: str):
+async def delete_survey(survey_id: str, request: Request):
     """Delete a survey and all its associated data (cascade)."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context, leader_required=True)
         # Check if exists
         existing = supabase.table("surveys").select("id").eq("id", survey_id).execute()
         if not existing.data:
@@ -505,14 +551,18 @@ async def delete_survey(survey_id: str):
             "success": True,
             "message": "Survey and all related data deleted successfully",
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/api/surveys/{survey_id}/toggle", response_model=SurveyList)
-async def toggle_survey_status(survey_id: str):
+async def toggle_survey_status(survey_id: str, request: Request):
     """Toggle a survey's active status."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         existing = (
             supabase.table("surveys")
             .select("is_active", "has_been_published")
@@ -543,6 +593,8 @@ async def toggle_survey_status(survey_id: str):
         updated = res.data[0]
         updated["response_count"] = 0
         return updated
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -551,6 +603,8 @@ async def toggle_survey_status(survey_id: str):
 async def update_survey_languages(survey_id: str, request: Request):
     """Update enabled languages for a survey. Works even on locked/published surveys."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         body = await request.json()
         enabled_languages = body.get("enabled_languages")
 

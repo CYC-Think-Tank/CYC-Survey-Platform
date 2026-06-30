@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { adminFetch, ensureArray, isAdminFetchError, parseJsonResponse } from '@/lib/adminAuth';
 
 interface Survey {
   id: string;
@@ -112,16 +113,18 @@ export default function AdminRafflePage() {
     const storedSurvey = localStorage.getItem(EVENT_SURVEY_KEY);
     if (storedSurvey) setSelectedSurvey(storedSurvey);
 
-    fetch('/api/surveys?include_inactive=true')
-      .then((res) => res.json())
-      .then((data) => setSurveys(Array.isArray(data) ? data : []))
+    adminFetch('/api/surveys?include_inactive=true')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load surveys'))
+      .then((data) => setSurveys(ensureArray<Survey>(data, 'Unexpected survey response from API')))
       .catch(() => setSurveys([]));
   }, []);
 
   const loadKnownEvents = useCallback(() => {
-    fetch('/api/admin/event-codes')
-      .then((res) => res.json())
-      .then((data) => setKnownEvents(Array.isArray(data) ? data : []))
+    adminFetch('/api/admin/event-codes')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load event codes'))
+      .then((data) =>
+        setKnownEvents(ensureArray<EventCode>(data, 'Unexpected event-code response from API'))
+      )
       .catch(() => setKnownEvents([]));
   }, []);
 
@@ -143,14 +146,16 @@ export default function AdminRafflePage() {
       if (!eventCode) return;
       if (!silent) setLoadingEntries(true);
       setEntriesError(null);
-      fetch(`/api/admin/event-raffle-entries?event_code=${encodeURIComponent(eventCode)}`)
+      adminFetch(`/api/admin/event-raffle-entries?event_code=${encodeURIComponent(eventCode)}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data) => setEntries(data.entries || []))
         .catch((err) => {
-          console.error(err);
+          if (!isAdminFetchError(err)) {
+            console.error(err);
+          }
           if (!silent) setEntriesError('Failed to load event entries.');
         })
         .finally(() => {

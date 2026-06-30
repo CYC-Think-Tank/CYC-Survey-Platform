@@ -33,6 +33,7 @@ import {
   Table as TableIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { adminFetch } from '@/lib/adminAuth';
 
 interface RichTextEditorProps {
   value: string;
@@ -128,7 +129,7 @@ export const RichTextEditor = ({
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await adminFetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       if (data.url) {

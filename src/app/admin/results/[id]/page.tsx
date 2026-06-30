@@ -23,6 +23,7 @@ import {
 import AiInsightsTab from '@/components/AiInsightsTab';
 import type { FsaMapDot } from '@/components/FsaDotMap';
 import { getLanguageConfig } from '@/config/languages';
+import { adminFetch, parseJsonResponse } from '@/lib/adminAuth';
 
 const FsaDotMap = dynamic(() => import('@/components/FsaDotMap'), {
   ssr: false,
@@ -233,8 +234,8 @@ export default function ResultsPage() {
     setShowAdvanced((prev) => ({ ...prev, [qId]: !prev[qId] }));
 
   const fetchResults = useCallback(() => {
-    fetch(`/api/surveys/${params.id}/results`)
-      .then((res) => res.json())
+    adminFetch(`/api/surveys/${params.id}/results`)
+      .then((res) => parseJsonResponse<ResultsData>(res, 'Failed to load survey results'))
       .then((d) => {
         setData(d);
         setLoading(false);
@@ -244,8 +245,10 @@ export default function ResultsPage() {
 
   const fetchSummary = useCallback(() => {
     setSummaryLoading(true);
-    fetch(`/api/surveys/${params.id}/summary`)
-      .then((res) => res.json())
+    adminFetch(`/api/surveys/${params.id}/summary`)
+      .then((res) =>
+        parseJsonResponse<Record<string, QuestionSummaryStats>>(res, 'Failed to load summary')
+      )
       .then((d) => {
         setSummaryStats(d);
         setSummaryLoading(false);
@@ -256,10 +259,15 @@ export default function ResultsPage() {
   const fetchIndividualResponse = useCallback(
     (index: number, failedOnly: boolean) => {
       setRespLoading(true);
-      fetch(
+      adminFetch(
         `/api/surveys/${params.id}/responses/paginated?offset=${index}&limit=1&filter_failed=${failedOnly}`
       )
-        .then((res) => res.json())
+        .then((res) =>
+          parseJsonResponse<{ responses?: Response[]; total?: number }>(
+            res,
+            'Failed to load response'
+          )
+        )
         .then((d) => {
           if (d.responses && d.responses.length > 0) {
             setCurrentResp(d.responses[0]);
@@ -283,7 +291,7 @@ export default function ResultsPage() {
 
       const endpoint = retry ? `${latentTraitsEndpoint}?retry=true` : latentTraitsEndpoint;
 
-      fetch(endpoint)
+      adminFetch(endpoint)
         .then((res) => {
           if (!res.ok) {
             throw new Error('Failed to load latent trait statistics.');
@@ -348,7 +356,7 @@ export default function ResultsPage() {
       return;
     }
     try {
-      await fetch(`/api/surveys/${params.id}/responses`, { method: 'DELETE' });
+      await adminFetch(`/api/surveys/${params.id}/responses`, { method: 'DELETE' });
       setCurrentResponseIndex(0);
       setSummaryStats(null);
       fetchResults();
@@ -365,7 +373,7 @@ export default function ResultsPage() {
     )
       return;
     try {
-      await fetch(`/api/responses/${sessionId}`, { method: 'DELETE' });
+      await adminFetch(`/api/responses/${sessionId}`, { method: 'DELETE' });
       setCurrentResponseIndex((prev) => Math.max(0, prev - 1));
       setSummaryStats(null); // Invalidate summary
       fetchResults();

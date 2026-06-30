@@ -10,17 +10,19 @@ Copy `.env.example` to `.env.local` and fill in your credentials:
 cp .env.example .env.local
 ```
 
-| Variable                        | Description                                                                            |
-| ------------------------------- | -------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL (browser, from Supabase dashboard)                                |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/publishable key (browser)                                                |
-| `SUPABASE_URL`                  | Supabase project URL (server, same as above)                                           |
-| `SUPABASE_KEY`                  | Supabase service_role key (server, **never exposed to client**)                        |
-| `NEXT_PUBLIC_SITE_URL`          | Public URL of your deployment (e.g. `https://example.vercel.app`)                      |
-| `GMAIL_USER`                    | Gmail address for sending survey reminder emails                                       |
-| `GMAIL_APP_PASSWORD`            | Gmail app password (enable 2FA → App Passwords in Google Account)                      |
-| `GOOGLE_AI_KEY`                 | Google Gemini API key for AI features (translation, insights)                          |
-| `CRON_SECRET`                   | Shared secret for securing the `/api/cron/reminders` endpoint (required in production) |
+| Variable                                 | Description                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`               | Supabase project URL (browser, from Supabase dashboard)                                |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`          | Supabase anon/publishable key (browser)                                                |
+| `SUPABASE_URL`                           | Supabase project URL (server, same as above)                                           |
+| `SUPABASE_KEY`                           | Supabase service_role key (server, **never exposed to client**)                        |
+| `NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN` | Allowed email domain for admin Supabase Auth sign-in/sign-up, e.g. `thecyc.org`        |
+| `ALLOWED_ADMIN_EMAIL_DOMAIN`             | Server-side allowed admin email domain. Keep it aligned with the public value.         |
+| `NEXT_PUBLIC_SITE_URL`                   | Public URL of your deployment (e.g. `https://example.vercel.app`)                      |
+| `GMAIL_USER`                             | Gmail address for sending survey reminder emails                                       |
+| `GMAIL_APP_PASSWORD`                     | Gmail app password (enable 2FA → App Passwords in Google Account)                      |
+| `GOOGLE_AI_KEY`                          | Google Gemini API key for AI features (translation, insights)                          |
+| `CRON_SECRET`                            | Shared secret for securing the `/api/cron/reminders` endpoint (required in production) |
 
 ## Quick Start (Docker)
 
@@ -80,7 +82,31 @@ The admin panel is not linked from the main UI — access it directly at:
 
 **[https://thinktank.thecyc.org/admin](https://thinktank.thecyc.org/admin)**
 
-**Password:** `cycsurveyplatformadmin`
+Admin access uses Supabase Auth. Users must sign in with an email from the configured allowed
+domain and must belong to a team.
+
+Teams have two roles:
+
+- `team_leader`: can create, edit, view, and delete team surveys, and approve or reject team join requests.
+- `team_member`: can create, edit, and view team surveys, and request to join teams.
+
+After running the admin/team migration locally, create at least one team and leader membership in
+your cloned/local Supabase database. Example SQL, using the authenticated user's UUID:
+
+```sql
+insert into public.teams (name, created_by)
+values ('CYC Admin', 'USER_UUID')
+returning id;
+
+insert into public.team_members (team_id, user_id, role)
+values ('TEAM_UUID', 'USER_UUID', 'team_leader');
+
+-- Assign existing cloned surveys to that team so they appear in admin.
+update public.surveys
+set team_id = 'TEAM_UUID',
+    owner_user_id = coalesce(owner_user_id, 'USER_UUID')
+where team_id is null;
+```
 
 ## Tech Stack
 

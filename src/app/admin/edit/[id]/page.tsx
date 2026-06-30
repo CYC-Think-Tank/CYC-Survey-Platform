@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { adminFetch } from '@/lib/adminAuth';
 import {
   SUPPORTED_LANGUAGES,
   getLanguageConfig,
@@ -178,7 +179,7 @@ export default function EditSurvey() {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 180000);
-        res = await fetch(url, { method: 'POST', body: formData, signal: controller.signal });
+        res = await adminFetch(url, { method: 'POST', body: formData, signal: controller.signal });
         clearTimeout(timeoutId);
       } catch (fetchErr: unknown) {
         if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
@@ -272,7 +273,7 @@ export default function EditSurvey() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/surveys/${params.id}`).then((res) => {
+      adminFetch(`/api/surveys/${params.id}`).then((res) => {
         if (!res.ok) throw new Error('Survey not found');
         return res.json();
       }),
@@ -525,7 +526,7 @@ export default function EditSurvey() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await adminFetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       return await res.json();
     } catch {
@@ -873,7 +874,7 @@ export default function EditSurvey() {
 
       let updatedSurvey = null;
       if (!isLocked) {
-        const res = await fetch(`/api/surveys/${params.id}`, {
+        const res = await adminFetch(`/api/surveys/${params.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -968,7 +969,7 @@ export default function EditSurvey() {
           .filter(Boolean);
 
         if (langQuestions.length > 0) {
-          const resTrans = await fetch(`/api/surveys/${params.id}/translation`, {
+          const resTrans = await adminFetch(`/api/surveys/${params.id}/translation`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -985,7 +986,7 @@ export default function EditSurvey() {
       }
 
       if (isLocked) {
-        const langRes = await fetch(`/api/surveys/${params.id}/languages`, {
+        const langRes = await adminFetch(`/api/surveys/${params.id}/languages`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enabled_languages: [...enabledLangs] }),
@@ -1045,7 +1046,7 @@ export default function EditSurvey() {
         const isFirst = b === 0;
         setTranslateAllSuccess(`Translating batch ${b + 1} of ${batches.length}...`);
 
-        const res = await fetch('/api/surveys/translate-all', {
+        const res = await adminFetch('/api/surveys/translate-all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

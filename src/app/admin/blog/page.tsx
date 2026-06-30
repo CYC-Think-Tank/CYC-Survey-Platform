@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PlusCircle, Edit3, Trash2, ArrowLeft, Check, X } from 'lucide-react';
+import { adminFetch, ensureArray, isAdminFetchError, parseJsonResponse } from '@/lib/adminAuth';
 
 interface BlogPost {
   id: string;
@@ -18,19 +19,17 @@ export default function AdminBlogDashboard() {
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = () => {
-    fetch('/api/blog?include_unpublished=true')
-      .then((res) => res.json())
+    adminFetch('/api/blog?include_unpublished=true')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to fetch posts'))
+      .then((data) => ensureArray<BlogPost>(data, 'Unexpected blog response from API'))
       .then((data) => {
-        if (Array.isArray(data)) {
-          setPosts(data);
-        } else {
-          console.error('Invalid data format received from API', data);
-          setPosts([]);
-        }
+        setPosts(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Failed to fetch posts', err);
+        if (!isAdminFetchError(err)) {
+          console.error('Failed to fetch posts', err);
+        }
         setLoading(false);
       });
   };
@@ -44,21 +43,23 @@ export default function AdminBlogDashboard() {
     if (!confirmed) return;
 
     try {
-      const res = await fetch(`/api/blog/${post.id}`, { method: 'DELETE' });
+      const res = await adminFetch(`/api/blog/${post.id}`, { method: 'DELETE' });
       if (res.ok) {
         fetchPosts();
       } else {
         alert('Failed to delete post.');
       }
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('An error occurred while deleting.');
     }
   };
 
   const handleTogglePublish = async (post: BlogPost) => {
     try {
-      const res = await fetch(`/api/blog/${post.id}`, {
+      const res = await adminFetch(`/api/blog/${post.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_published: !post.is_published }),
@@ -69,7 +70,9 @@ export default function AdminBlogDashboard() {
         alert('Failed to update post.');
       }
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('An error occurred while updating.');
     }
   };
