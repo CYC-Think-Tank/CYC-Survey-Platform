@@ -65,3 +65,4 @@ backups/
 
 # ai
 ai_mem_and_context/
+.supabase_status.txt
