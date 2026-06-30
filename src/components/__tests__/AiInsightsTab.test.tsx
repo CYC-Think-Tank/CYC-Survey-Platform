@@ -4,6 +4,10 @@ import AiInsightsTab from '../AiInsightsTab';
 
 global.fetch = vi.fn();
 
+vi.mock('@/lib/adminAuth', () => ({
+  adminFetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
+}));
+
 describe('AiInsightsTab', () => {
   beforeEach(() => {
     vi.resetAllMocks();

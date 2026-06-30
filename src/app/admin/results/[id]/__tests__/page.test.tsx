@@ -13,6 +13,11 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('@/lib/adminAuth', () => ({
+  adminFetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
+  parseJsonResponse: async (response: Response) => response.json(),
+}));
+
 vi.mock('next/dynamic', () => ({
   default: (
     loader: () => Promise<{ default: React.ComponentType<{ dots: Array<{ fsa: string }> }> }>

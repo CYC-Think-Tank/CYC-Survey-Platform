@@ -16,9 +16,8 @@ SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get(
     "NEXT_PUBLIC_SUPABASE_ANON_KEY"
 )
 ALLOWED_ADMIN_EMAIL_DOMAIN = (
-    os.environ.get("ALLOWED_ADMIN_EMAIL_DOMAIN")
-    or ""
-).strip().lstrip("@").lower()
+    (os.environ.get("ALLOWED_ADMIN_EMAIL_DOMAIN") or "").strip().lstrip("@").lower()
+)
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 

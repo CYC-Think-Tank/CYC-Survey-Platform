@@ -98,12 +98,13 @@ describe('AdminDashboard', () => {
     });
   });
 
-  it('has link to create new survey', async () => {
+  it('opens the create survey modal', async () => {
     mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
     render(<AdminDashboard />);
+    const newSurveyButton = await screen.findByText('New Survey');
+    fireEvent.click(newSurveyButton);
     await waitFor(() => {
-      const newSurveyLink = screen.getByText('New Survey');
-      expect(newSurveyLink.closest('a')).toHaveAttribute('href', '/admin/create');
+      expect(screen.getByText('Create New Survey')).toBeInTheDocument();
     });
   });
 

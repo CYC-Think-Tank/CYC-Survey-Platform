@@ -62,7 +62,9 @@ async def list_team_join_requests(request: Request):
 
     teams_by_id = {}
     if team_ids:
-        teams_res = supabase.table("teams").select("id, name").in_("id", team_ids).execute()
+        teams_res = (
+            supabase.table("teams").select("id, name").in_("id", team_ids).execute()
+        )
         teams_by_id = {row["id"]: row for row in teams_res.data or []}
 
     return [
@@ -77,4 +79,3 @@ async def list_team_join_requests(request: Request):
         }
         for row in requests
     ]
-
