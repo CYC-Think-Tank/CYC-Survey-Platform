@@ -85,32 +85,35 @@ The admin panel is not linked from the main UI — access it directly at:
 Admin access uses Supabase Auth. Users must sign in with an email from the configured allowed
 domain and must belong to a team.
 
+Admin signup is enforced in three places: client validation, the server signup endpoint, and a
+Supabase `before_user_created` Auth hook. Both domain environment variables are required; admin
+authentication fails closed if the server-side value is missing. The Auth hook applies only to
+Supabase Auth account creation and does not affect public survey submissions or respondent emails.
+
+After applying the Auth-hook migration locally, restart local Supabase so `config.toml` is reloaded:
+
+```bash
+supabase migration up --local
+supabase stop
+supabase start
+```
+
+For hosted Supabase, configure the `public.restrict_admin_signup_domain` function as the project's
+Before User Created hook after applying the migration. Do not assume the local `config.toml` changes
+hosted project settings.
+
 Teams have two roles:
 
 - `team_leader`: can create, edit, view, and delete team surveys, and approve or reject team join requests.
 - `team_member`: can create, edit, and view team surveys, and request to join teams.
 
+Each account can belong to only one team. An unassigned user can create a team or request to join an
+existing team from onboarding. Regular members can leave and return to onboarding. Leaders must
+transfer leadership before leaving.
+
 Each team can have only one `team_leader`. The current leader can transfer leadership to another
 existing member from the Team Members panel. The transfer demotes the current leader and promotes
 the selected member in one database transaction.
-
-After running the admin/team migration locally, create at least one team and leader membership in
-your cloned/local Supabase database. Example SQL, using the authenticated user's UUID:
-
-```sql
-insert into public.teams (name, created_by)
-values ('CYC Admin', 'USER_UUID')
-returning id;
-
-insert into public.team_members (team_id, user_id, role)
-values ('TEAM_UUID', 'USER_UUID', 'team_leader');
-
--- Assign existing cloned surveys to that team so they appear in admin.
-update public.surveys
-set team_id = 'TEAM_UUID',
-    owner_user_id = coalesce(owner_user_id, 'USER_UUID')
-where team_id is null;
-```
 
 For the cloned local database, the repository includes a guarded backfill script that creates or
 reuses the `CYC Admin` team, assigns `sylvia.zhang@thecyc.org` as leader, and assigns the three

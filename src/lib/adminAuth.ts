@@ -23,13 +23,16 @@ export class AdminFetchError extends Error {
 }
 
 export function getAllowedAdminEmailDomain() {
-  return (process.env.NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN || '').replace(/^@/, '').toLowerCase();
+  return (process.env.NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN || '')
+    .trim()
+    .replace(/^@/, '')
+    .toLowerCase();
 }
 
 export function isAllowedAdminEmail(email?: string | null) {
   const allowedDomain = getAllowedAdminEmailDomain();
-  if (!allowedDomain) return true;
-  const domain = email?.toLowerCase().split('@')[1];
+  if (!allowedDomain || !email) return false;
+  const domain = email.trim().toLowerCase().split('@')[1];
   return domain === allowedDomain;
 }
 

@@ -31,7 +31,9 @@ describe('AdminDashboard', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.mockPush.mockClear();
-    mocks.fetchAdminMe.mockResolvedValue({ teams: [] });
+    mocks.fetchAdminMe.mockResolvedValue({
+      teams: [{ id: 'team-1', name: 'CYC Admin', role: 'team_member' }],
+    });
   });
 
   it('renders loading state initially', () => {

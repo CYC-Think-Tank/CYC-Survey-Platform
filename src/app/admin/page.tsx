@@ -89,6 +89,7 @@ export default function AdminDashboard() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
   const [transferringMemberId, setTransferringMemberId] = useState<string | null>(null);
+  const [leavingTeam, setLeavingTeam] = useState(false);
   const [joinRequests, setJoinRequests] = useState<TeamJoinRequest[]>([]);
   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
   const [updatingJoinRequestId, setUpdatingJoinRequestId] = useState<string | null>(null);
@@ -150,18 +151,26 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchSurveys();
     fetchAdminMe()
       .then((me) => {
         setTeams(me.teams);
-        if (me.teams.length > 0) {
-          fetchTeamMembers();
+        if (me.teams.length === 0) {
+          setSurveys([]);
+          setLoading(false);
+          return;
         }
+
+        fetchSurveys();
+        fetchTeamMembers();
         if (isTeamLeader(me.teams)) {
           fetchJoinRequests();
         }
       })
-      .catch(() => setTeams([]));
+      .catch(() => {
+        setTeams([]);
+        setSurveys([]);
+        setLoading(false);
+      });
   }, []);
 
   const canDeleteSurvey = (survey: Survey) =>
@@ -229,6 +238,31 @@ export default function AdminDashboard() {
       alert('Failed to transfer leadership.');
     } finally {
       setTransferringMemberId(null);
+    }
+  };
+
+  const leaveTeam = async () => {
+    const confirmed = window.confirm(
+      'Leave this team? You will lose access to its surveys and return to team onboarding.'
+    );
+    if (!confirmed) return;
+
+    setLeavingTeam(true);
+    try {
+      const res = await adminFetch('/admin-api/team-members/leave', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || 'Failed to leave team.');
+        return;
+      }
+      window.location.href = '/admin/pending-team';
+    } catch (err) {
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
+      alert('Failed to leave team.');
+    } finally {
+      setLeavingTeam(false);
     }
   };
 
@@ -525,16 +559,33 @@ export default function AdminDashboard() {
                 View who has access to your team surveys.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={fetchTeamMembers}
-              disabled={loadingTeamMembers}
-              className="text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700 disabled:opacity-50"
-            >
-              {loadingTeamMembers ? 'Refreshing...' : 'Refresh'}
-            </button>
+            <div className="flex items-center gap-3">
+              {!currentUserIsTeamLeader && (
+                <button
+                  type="button"
+                  onClick={leaveTeam}
+                  disabled={leavingTeam}
+                  className="text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                >
+                  {leavingTeam ? 'Leaving...' : 'Leave team'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={fetchTeamMembers}
+                disabled={loadingTeamMembers}
+                className="text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700 disabled:opacity-50"
+              >
+                {loadingTeamMembers ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
           </div>
           <div className="divide-y divide-gray-100 dark:divide-slate-700">
+            {currentUserIsTeamLeader && (
+              <div className="bg-yellow-50 px-6 py-3 text-sm text-yellow-800">
+                Transfer leadership to another member before leaving this team.
+              </div>
+            )}
             {loadingTeamMembers ? (
               <div className="px-6 py-5 text-sm text-gray-500 dark:text-slate-500">
                 Loading team members...

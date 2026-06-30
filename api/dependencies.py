@@ -17,9 +17,8 @@ SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get(
 )
 ALLOWED_ADMIN_EMAIL_DOMAIN = (
     os.environ.get("ALLOWED_ADMIN_EMAIL_DOMAIN")
-    or os.environ.get("NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN")
     or ""
-).lower()
+).strip().lstrip("@").lower()
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -72,9 +71,9 @@ def _bearer_token(request: Request) -> str:
 
 def is_allowed_admin_email(email: str) -> bool:
     if not ALLOWED_ADMIN_EMAIL_DOMAIN:
-        return True
+        return False
     domain = email.lower().split("@")[-1] if "@" in email else ""
-    return domain == ALLOWED_ADMIN_EMAIL_DOMAIN.lstrip("@")
+    return domain == ALLOWED_ADMIN_EMAIL_DOMAIN
 
 
 async def get_admin_user(request: Request) -> AdminUser:
@@ -82,6 +81,10 @@ async def get_admin_user(request: Request) -> AdminUser:
     api_key = SUPABASE_ANON_KEY or SUPABASE_KEY
     if not SUPABASE_URL or not api_key:
         raise HTTPException(status_code=500, detail="Supabase auth is not configured")
+    if not ALLOWED_ADMIN_EMAIL_DOMAIN:
+        raise HTTPException(
+            status_code=500, detail="Admin email domain is not configured"
+        )
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(
@@ -137,6 +140,10 @@ async def require_admin_context(
     user = await get_admin_user(request)
     ensure_profile(user)
     teams = get_team_memberships(user.id)
+    if len(teams) > 1:
+        raise HTTPException(
+            status_code=409, detail="Account belongs to more than one team"
+        )
     if require_team and not teams:
         raise HTTPException(status_code=403, detail="No team assignment")
     return AdminContext(user=user, teams=teams)

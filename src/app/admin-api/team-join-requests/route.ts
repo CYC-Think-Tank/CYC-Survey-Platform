@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-type AuthResult =
-  | { user: { id: string; email?: string | null }; error?: never }
-  | { user?: never; error: NextResponse };
-
-function getAllowedDomain() {
-  return (
-    process.env.ALLOWED_ADMIN_EMAIL_DOMAIN ||
-    process.env.NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN ||
-    ''
-  )
-    .replace(/^@/, '')
-    .toLowerCase();
-}
+import { authenticateAdminRequest } from '@/lib/server/adminDomain';
 
 function getSupabaseConfig() {
   return {
@@ -28,35 +15,6 @@ function serviceHeaders(serviceKey: string) {
     Authorization: `Bearer ${serviceKey}`,
     'Content-Type': 'application/json',
   };
-}
-
-async function getAuthenticatedAdmin(
-  request: NextRequest,
-  supabaseUrl: string,
-  anonKey: string
-): Promise<AuthResult> {
-  const authHeader = request.headers.get('authorization') || '';
-  if (!authHeader.toLowerCase().startsWith('bearer ')) {
-    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  }
-
-  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: authHeader },
-  });
-  if (!userRes.ok) {
-    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  }
-
-  const user = await userRes.json();
-  const allowedDomain = getAllowedDomain();
-  const emailDomain = String(user.email || '')
-    .toLowerCase()
-    .split('@')[1];
-  if (allowedDomain && emailDomain !== allowedDomain) {
-    return { error: NextResponse.json({ error: 'Unauthorized domain' }, { status: 403 }) };
-  }
-
-  return { user };
 }
 
 function inFilter(values: string[]) {
@@ -82,7 +40,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing Supabase environment variables' }, { status: 500 });
   }
 
-  const auth = await getAuthenticatedAdmin(request, supabaseUrl, anonKey);
+  const auth = await authenticateAdminRequest(request, supabaseUrl, anonKey);
   if (auth.error) return auth.error;
 
   let leaderTeamIds: string[];
@@ -161,12 +119,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { supabaseUrl, serviceKey, anonKey } = getSupabaseConfig();
-  if (!supabaseUrl || !serviceKey || !anonKey) {
+  const { supabaseUrl, anonKey } = getSupabaseConfig();
+  if (!supabaseUrl || !anonKey) {
     return NextResponse.json({ error: 'Missing Supabase environment variables' }, { status: 500 });
   }
 
-  const auth = await getAuthenticatedAdmin(request, supabaseUrl, anonKey);
+  const auth = await authenticateAdminRequest(request, supabaseUrl, anonKey);
   if (auth.error) return auth.error;
 
   const body = await request.json().catch(() => ({}));
@@ -175,61 +133,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Team is required' }, { status: 400 });
   }
 
-  const headers = serviceHeaders(serviceKey);
-  const encodedTeamId = encodeURIComponent(teamId);
-  const encodedUserId = encodeURIComponent(auth.user.id);
-
-  const teamRes = await fetch(
-    `${supabaseUrl}/rest/v1/teams?select=id&id=eq.${encodedTeamId}&limit=1`,
-    { headers }
-  );
-  if (!teamRes.ok) {
-    return NextResponse.json({ error: 'Failed to check team' }, { status: 500 });
-  }
-  const teams = await teamRes.json();
-  if (teams.length === 0) {
-    return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-  }
-
-  const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?on_conflict=id`, {
+  const requestRes = await fetch(`${supabaseUrl}/rest/v1/rpc/request_team_join`, {
     method: 'POST',
-    headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify({ id: auth.user.id, email: auth.user.email || '' }),
+    headers: {
+      apikey: anonKey,
+      Authorization: request.headers.get('authorization') || '',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_team_id: teamId }),
   });
-  if (!profileRes.ok) {
-    return NextResponse.json({ error: 'Failed to prepare user profile' }, { status: 500 });
-  }
-
-  const existingMemberRes = await fetch(
-    `${supabaseUrl}/rest/v1/team_members?select=id&team_id=eq.${encodedTeamId}&user_id=eq.${encodedUserId}&limit=1`,
-    { headers }
-  );
-  if (!existingMemberRes.ok) {
-    return NextResponse.json({ error: 'Failed to check team membership' }, { status: 500 });
-  }
-  const existingMemberships = await existingMemberRes.json();
-  if (existingMemberships.length > 0) {
-    return NextResponse.json({ error: 'Already a member of this team' }, { status: 400 });
-  }
-
-  const requestRes = await fetch(
-    `${supabaseUrl}/rest/v1/team_join_requests?on_conflict=team_id,user_id,status`,
-    {
-      method: 'POST',
-      headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({
-        team_id: teamId,
-        user_id: auth.user.id,
-        status: 'pending',
-        resolved_at: null,
-        resolved_by: null,
-      }),
-    }
-  );
+  const data = await requestRes.json().catch(() => null);
   if (!requestRes.ok) {
-    return NextResponse.json({ error: 'Failed to request team access' }, { status: 500 });
+    return NextResponse.json(
+      { error: data?.message || 'Failed to request team access' },
+      { status: requestRes.status === 400 ? 400 : 409 }
+    );
   }
 
-  const [joinRequest] = await requestRes.json();
-  return NextResponse.json(joinRequest || { success: true });
+  return NextResponse.json({ success: true, request_id: data });
 }

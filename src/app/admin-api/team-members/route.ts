@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-type AuthResult =
-  | { user: { id: string; email?: string | null }; error?: never }
-  | { user?: never; error: NextResponse };
-
-function getAllowedDomain() {
-  return (
-    process.env.ALLOWED_ADMIN_EMAIL_DOMAIN ||
-    process.env.NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN ||
-    ''
-  )
-    .replace(/^@/, '')
-    .toLowerCase();
-}
+import { authenticateAdminRequest } from '@/lib/server/adminDomain';
 
 function getSupabaseConfig() {
   return {
@@ -30,35 +17,6 @@ function serviceHeaders(serviceKey: string) {
   };
 }
 
-async function getAuthenticatedAdmin(
-  request: NextRequest,
-  supabaseUrl: string,
-  anonKey: string
-): Promise<AuthResult> {
-  const authHeader = request.headers.get('authorization') || '';
-  if (!authHeader.toLowerCase().startsWith('bearer ')) {
-    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  }
-
-  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: authHeader },
-  });
-  if (!userRes.ok) {
-    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
-  }
-
-  const user = await userRes.json();
-  const allowedDomain = getAllowedDomain();
-  const emailDomain = String(user.email || '')
-    .toLowerCase()
-    .split('@')[1];
-  if (allowedDomain && emailDomain !== allowedDomain) {
-    return { error: NextResponse.json({ error: 'Unauthorized domain' }, { status: 403 }) };
-  }
-
-  return { user };
-}
-
 function inFilter(values: string[]) {
   return `in.(${values.map((value) => `"${value.replace(/"/g, '\\"')}"`).join(',')})`;
 }
@@ -69,7 +27,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing Supabase environment variables' }, { status: 500 });
   }
 
-  const auth = await getAuthenticatedAdmin(request, supabaseUrl, anonKey);
+  const auth = await authenticateAdminRequest(request, supabaseUrl, anonKey);
   if (auth.error) return auth.error;
 
   const headers = serviceHeaders(serviceKey);

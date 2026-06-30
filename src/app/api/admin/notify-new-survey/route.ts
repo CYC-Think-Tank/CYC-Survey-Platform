@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import {
+  getServerAllowedAdminEmailDomain,
+  isServerAllowedAdminEmail,
+} from '@/lib/server/adminDomain';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,18 +14,13 @@ export async function POST(request: NextRequest) {
     const GMAIL_USER = process.env.GMAIL_USER;
     const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cyc-survey-platform.vercel.app';
-    const allowedDomain = (
-      process.env.ALLOWED_ADMIN_EMAIL_DOMAIN ||
-      process.env.NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN ||
-      ''
-    )
-      .replace(/^@/, '')
-      .toLowerCase();
+    const allowedDomain = getServerAllowedAdminEmailDomain();
 
     if (
       !SUPABASE_URL ||
       !SUPABASE_KEY ||
       !SUPABASE_ANON_KEY ||
+      !allowedDomain ||
       !GMAIL_USER ||
       !GMAIL_APP_PASSWORD
     ) {
@@ -36,10 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const user = await userRes.json();
-    const emailDomain = String(user.email || '')
-      .toLowerCase()
-      .split('@')[1];
-    if (allowedDomain && emailDomain !== allowedDomain) {
+    if (!isServerAllowedAdminEmail(user.email)) {
       return NextResponse.json({ error: 'Unauthorized domain' }, { status: 403 });
     }
 

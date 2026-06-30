@@ -10,8 +10,11 @@ interface Team {
 }
 
 export default function PendingTeamPage() {
+  const [mode, setMode] = useState<'join' | 'create'>('join');
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState('');
+  const [teamSearch, setTeamSearch] = useState('');
+  const [newTeamName, setNewTeamName] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +24,7 @@ export default function PendingTeamPage() {
 
   useEffect(() => {
     Promise.all([
-      adminFetch('/api/admin/teams')
+      adminFetch('/admin-api/teams')
         .then((res) => parseJsonResponse<unknown>(res, 'Could not load teams.'))
         .then((data) => ensureArray<Team>(data, 'Unexpected team response from API')),
       fetchAdminMe(),
@@ -36,30 +39,69 @@ export default function PendingTeamPage() {
   }, []);
 
   const requestAccess = async () => {
-    if (!selectedTeam) return;
+    const targetTeamId = filteredTeams.some((team) => team.id === selectedTeam)
+      ? selectedTeam
+      : filteredTeams[0]?.id;
+    if (!targetTeamId) return;
     setError('');
     setMessage('');
     setSubmitting(true);
-    const res = await adminFetch('/admin-api/team-join-requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ team_id: selectedTeam }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.detail || data.error || 'Failed to request team access.');
+    try {
+      const res = await adminFetch('/admin-api/team-join-requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ team_id: targetTeamId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || data.error || 'Failed to request team access.');
+        return;
+      }
+      setMessage('Request sent. A team leader can approve it from team management.');
+      setPendingCount(1);
+    } catch {
+      setError('Failed to request team access.');
+    } finally {
       setSubmitting(false);
-      return;
     }
-    setMessage('Request sent. A team leader can approve it from team management.');
-    setPendingCount((count) => count + 1);
-    setSubmitting(false);
+  };
+
+  const createTeam = async () => {
+    const name = newTeamName.trim();
+    if (!name) return;
+    setError('');
+    setMessage('');
+    setSubmitting(true);
+    try {
+      const res = await adminFetch('/admin-api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.detail || data.error || 'Failed to create team.');
+        return;
+      }
+      window.location.href = '/admin';
+    } catch {
+      setError('Failed to create team.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
     router.push('/admin/login');
   };
+
+  const filteredTeams = teams.filter((team) =>
+    team.name.toLowerCase().includes(teamSearch.trim().toLowerCase())
+  );
+  const selectedVisibleTeam = filteredTeams.some((team) => team.id === selectedTeam)
+    ? selectedTeam
+    : filteredTeams[0]?.id || '';
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -68,8 +110,7 @@ export default function PendingTeamPage() {
           Admin Account Ready
         </h1>
         <p className="text-gray-600 mt-3">
-          Your account is authenticated. Choose an existing team to request access before managing
-          surveys.
+          Join an existing team or create a new one before managing surveys.
         </p>
 
         {loading ? (
@@ -84,48 +125,108 @@ export default function PendingTeamPage() {
             )}
             {pendingCount > 0 && (
               <div className="bg-yellow-50 text-yellow-800 p-3 rounded text-sm">
-                You already have {pendingCount} pending team request{pendingCount === 1 ? '' : 's'}.
+                Your team request is pending leader approval. You will get dashboard access after it
+                is approved.
               </div>
             )}
-            {teams.length === 0 ? (
-              <div className="bg-blue-50 text-blue-800 p-3 rounded text-sm">
-                No teams are available yet. Ask an existing administrator to create a team before
-                requesting access.
-              </div>
-            ) : (
+            {pendingCount === 0 && (
               <>
-                <div>
-                  <label
-                    htmlFor="team-request"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                <div className="grid grid-cols-2 rounded-lg border border-gray-200 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setMode('join')}
+                    className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === 'join' ? 'bg-[var(--color-cyc-secondary)] text-white' : 'text-gray-600'}`}
                   >
-                    Request a team
-                  </label>
-                  <select
-                    id="team-request"
-                    value={selectedTeam}
-                    onChange={(e) => setSelectedTeam(e.target.value)}
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
+                    Join a team
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('create')}
+                    className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === 'create' ? 'bg-[var(--color-cyc-secondary)] text-white' : 'text-gray-600'}`}
                   >
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
+                    Create a team
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={requestAccess}
-                  disabled={!selectedTeam || submitting || pendingCount > 0}
-                  className="w-full btn-primary py-3 disabled:opacity-50"
-                >
-                  {submitting
-                    ? 'Requesting...'
-                    : pendingCount > 0
-                      ? 'Request Pending'
-                      : 'Request Access'}
-                </button>
+
+                {mode === 'join' ? (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="team-search"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Search teams
+                      </label>
+                      <input
+                        id="team-search"
+                        value={teamSearch}
+                        onChange={(event) => setTeamSearch(event.target.value)}
+                        placeholder="Search by team name"
+                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                      />
+                    </div>
+                    {filteredTeams.length === 0 ? (
+                      <div className="bg-blue-50 text-blue-800 p-3 rounded text-sm">
+                        No matching teams are available.
+                      </div>
+                    ) : (
+                      <div>
+                        <label
+                          htmlFor="team-request"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Team
+                        </label>
+                        <select
+                          id="team-request"
+                          value={selectedVisibleTeam}
+                          onChange={(event) => setSelectedTeam(event.target.value)}
+                          className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                        >
+                          {filteredTeams.map((team) => (
+                            <option key={team.id} value={team.id}>
+                              {team.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={requestAccess}
+                      disabled={!selectedVisibleTeam || submitting}
+                      className="w-full btn-primary py-3 disabled:opacity-50"
+                    >
+                      {submitting ? 'Requesting...' : 'Request Access'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="new-team-name"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Team name
+                      </label>
+                      <input
+                        id="new-team-name"
+                        value={newTeamName}
+                        onChange={(event) => setNewTeamName(event.target.value)}
+                        placeholder="Enter a team name"
+                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={createTeam}
+                      disabled={!newTeamName.trim() || submitting}
+                      className="w-full btn-primary py-3 disabled:opacity-50"
+                    >
+                      {submitting ? 'Creating...' : 'Create Team'}
+                    </button>
+                  </>
+                )}
               </>
             )}
             <button

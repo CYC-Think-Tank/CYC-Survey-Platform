@@ -1,42 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-function getAllowedDomain() {
-  return (
-    process.env.ALLOWED_ADMIN_EMAIL_DOMAIN ||
-    process.env.NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN ||
-    ''
-  )
-    .replace(/^@/, '')
-    .toLowerCase();
-}
+import { authenticateAdminRequest } from '@/lib/server/adminDomain';
 
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-  const authHeader = request.headers.get('authorization') || '';
 
   if (!supabaseUrl || !anonKey) {
     return NextResponse.json({ error: 'Missing Supabase environment variables' }, { status: 500 });
   }
-  if (!authHeader.toLowerCase().startsWith('bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: anonKey, Authorization: authHeader },
-  });
-  if (!userRes.ok) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const user = await userRes.json();
-  const allowedDomain = getAllowedDomain();
-  const emailDomain = String(user.email || '')
-    .toLowerCase()
-    .split('@')[1];
-  if (allowedDomain && emailDomain !== allowedDomain) {
-    return NextResponse.json({ error: 'Unauthorized domain' }, { status: 403 });
-  }
+  const auth = await authenticateAdminRequest(request, supabaseUrl, anonKey);
+  if (auth.error) return auth.error;
+  const authHeader = request.headers.get('authorization') || '';
 
   const body = await request.json().catch(() => ({}));
   const teamId = String(body.team_id || '').trim();

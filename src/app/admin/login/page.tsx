@@ -19,6 +19,11 @@ export default function AdminLogin() {
     setError('');
     setMessage('');
 
+    if (!allowedDomain) {
+      setError('Admin email domain is not configured.');
+      return;
+    }
+
     if (!isAllowedAdminEmail(email)) {
       setError(`Use an email from ${allowedDomain}.`);
       return;
@@ -26,21 +31,42 @@ export default function AdminLogin() {
 
     setLoading(true);
     const credentials = { email: email.trim(), password };
-    const result =
-      mode === 'login'
-        ? await supabase.auth.signInWithPassword(credentials)
-        : await supabase.auth.signUp(credentials);
+    if (mode === 'signup') {
+      const response = await fetch('/admin-api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.error || 'Failed to create admin account.');
+        setLoading(false);
+        return;
+      }
 
-    if (result.error) {
-      setError(result.error.message);
-      setLoading(false);
-      return;
-    }
+      if (!data.session) {
+        setMessage('Check your email to confirm your account, then sign in.');
+        setLoading(false);
+        return;
+      }
 
-    if (mode === 'signup' && !result.data.session) {
-      setMessage('Check your email to confirm your account, then sign in.');
-      setLoading(false);
-      return;
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (sessionError) {
+        setError(sessionError.message);
+        setLoading(false);
+        return;
+      }
+    } else {
+      const result = await supabase.auth.signInWithPassword(credentials);
+
+      if (result.error) {
+        setError(result.error.message);
+        setLoading(false);
+        return;
+      }
     }
 
     router.push('/admin');

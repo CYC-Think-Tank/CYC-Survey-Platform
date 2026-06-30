@@ -8,6 +8,7 @@ const PUBLIC_ADMIN_PATHS = ['/admin/login', '/admin/unauthorized', '/admin/pendi
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
+  const [canRender, setCanRender] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -16,43 +17,63 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const checkAccess = async () => {
       setLoading(true);
+      setCanRender(false);
+
+      const allowCurrentPage = () => {
+        if (!cancelled) {
+          setCanRender(true);
+          setLoading(false);
+        }
+      };
+
       const { data } = await supabase.auth.getSession();
       const session = data.session;
 
       if (!session) {
         if (!PUBLIC_ADMIN_PATHS.includes(pathname)) {
-          router.push('/admin/login');
+          router.replace('/admin/login');
+          return;
         }
-        if (!cancelled) setLoading(false);
+        allowCurrentPage();
         return;
       }
 
       if (!isAllowedAdminEmail(session.user.email)) {
         await supabase.auth.signOut();
-        if (pathname !== '/admin/unauthorized') router.push('/admin/unauthorized');
-        if (!cancelled) setLoading(false);
+        if (pathname !== '/admin/unauthorized') {
+          router.replace('/admin/unauthorized');
+          return;
+        }
+        allowCurrentPage();
         return;
       }
 
       try {
         const me = await fetchAdminMe();
         if (me.teams.length === 0 && pathname !== '/admin/pending-team') {
-          router.push('/admin/pending-team');
+          router.replace('/admin/pending-team');
           return;
         }
         if (me.teams.length > 0 && PUBLIC_ADMIN_PATHS.includes(pathname)) {
-          router.push('/admin');
+          router.replace('/admin');
           return;
         }
+        allowCurrentPage();
       } catch (err) {
         if (err instanceof AdminFetchError && err.status === 403) {
-          router.push('/admin/unauthorized');
+          if (pathname === '/admin/unauthorized') {
+            allowCurrentPage();
+          } else {
+            router.replace('/admin/unauthorized');
+          }
         } else {
           await supabase.auth.signOut();
-          router.push('/admin/login');
+          if (pathname === '/admin/login') {
+            allowCurrentPage();
+          } else {
+            router.replace('/admin/login');
+          }
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     };
 
@@ -62,7 +83,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     };
   }, [pathname, router]);
 
-  if (loading) {
+  if (loading || !canRender) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-cyc-primary)]"></div>
