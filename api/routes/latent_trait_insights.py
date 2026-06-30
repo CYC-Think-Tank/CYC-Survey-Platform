@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
-from api.dependencies import supabase
+from api.dependencies import require_admin_context, require_survey_team_access, supabase
 from api.services.latent_trait_mapping_provider import (
     LatentTraitMappingError,
     get_trait_mapping_for_survey,
@@ -509,9 +509,11 @@ async def list_latent_trait_configs():
 
 
 @router.get("/api/surveys/{survey_id}/latent-traits/config")
-async def get_latent_trait_config(survey_id: UUID):
+async def get_latent_trait_config(survey_id: UUID, request: Request):
     survey_id = str(survey_id)
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         return _get_config_for_survey(survey_id)
     except HTTPException:
         raise
@@ -522,12 +524,15 @@ async def get_latent_trait_config(survey_id: UUID):
 @router.get("/api/surveys/{survey_id}/latent-traits")
 async def get_latent_trait_preview(
     survey_id: UUID,
+    request: Request,
     retry: bool = Query(
         False, description="Clear a failed job status and start a new fit."
     ),
 ):
     survey_id = str(survey_id)
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         mapping = _get_mapping_for_survey(survey_id)
         config = to_config_payload(mapping)
         if retry:

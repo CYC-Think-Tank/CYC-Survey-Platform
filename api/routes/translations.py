@@ -10,7 +10,7 @@ import pdfplumber
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from api.config import GEMINI_MODEL
-from api.dependencies import supabase
+from api.dependencies import require_admin_context, require_survey_team_access, supabase
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ def _save_to_legacy_ai_analyses(
 
 
 @router.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(request: Request, file: UploadFile = File(...)):
     """
     Upload a file to Supabase Storage and return its public URL.
 
@@ -61,6 +61,7 @@ async def upload_file(file: UploadFile = File(...)):
     endpoint returns the public URL and original filename.
     """
     try:
+        await require_admin_context(request)
         content = await file.read()
         ext = file.filename.split(".")[-1] if file.filename else "bin"
         filename = f"{uuid.uuid4()}.{ext}"
@@ -76,6 +77,8 @@ async def upload_file(file: UploadFile = File(...)):
 
         public_url = supabase.storage.from_("survey-assets").get_public_url(path)
         return {"url": public_url, "filename": file.filename}
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
 
@@ -194,6 +197,8 @@ async def get_survey_translation(survey_id: str):
                     }
 
         return legacy
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -202,6 +207,8 @@ async def get_survey_translation(survey_id: str):
 async def update_survey_translation(survey_id: str, request: Request):
     """Save translations to new table AND legacy ai_analyses (dual-write)."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         body = await request.json()
 
         # Support both new generic format and legacy format during transition
@@ -284,7 +291,7 @@ async def test_gemini():
 
 @router.post("/api/surveys/{survey_id}/translation/upload")
 async def upload_translation_pdf(
-    survey_id: str, language: str = "fr", file: UploadFile = File(...)
+    survey_id: str, request: Request, language: str = "fr", file: UploadFile = File(...)
 ):
     """Upload a PDF containing translated survey questions and auto-populate translations."""
 
@@ -296,6 +303,8 @@ async def upload_translation_pdf(
         raise HTTPException(status_code=400, detail="Language code is required")
 
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         print(
             f"[upload_translation_pdf] Starting upload for survey={survey_id}, language={language}, filename={file.filename}"
         )

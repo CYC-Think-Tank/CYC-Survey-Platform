@@ -1,8 +1,8 @@
 import random
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from api.dependencies import supabase
+from api.dependencies import require_admin_context, require_survey_team_access, supabase
 from api.utils.postal_geo import build_postal_geo_stats
 from api.utils.survey_utils import (
     calculate_median,
@@ -37,17 +37,20 @@ async def _get_random_email_position(num_emails: int = 9) -> list:
 
         num_to_select = min(num_emails, total_emails)
         return random.sample(range(total_emails), num_to_select)
+    except HTTPException:
+        raise
     except Exception as e:
         raise Exception(f"Failed to determine raffle position: {e}")
 
 
 @router.get("/api/admin/raffle-email")
-async def get_raffle_email():
+async def get_raffle_email(request: Request):
     """
     Returns a list of randomly selected email from the raffle_entries table for raffle purposes.
     Handles any exceptions that may occur during the database query.
     """
     try:
+        await require_admin_context(request)
         positions = await _get_random_email_position()
         emails = []
         for position in positions:
@@ -68,6 +71,8 @@ async def get_raffle_email():
             emails.append(email)
 
         return {"emails": emails}
+    except HTTPException:
+        raise
     except Exception as e:
         raise Exception(f"Failed to select raffle email: {e}")
 
@@ -91,7 +96,7 @@ def _fetch_all_event_rows(columns: str, event_code: str | None = None) -> list[d
 
 
 @router.get("/api/admin/event-raffle-entries")
-async def get_event_raffle_entries(event_code: str):
+async def get_event_raffle_entries(event_code: str, request: Request):
     """
     Return the tickets for a single in-person event raffle.
 
@@ -102,6 +107,7 @@ async def get_event_raffle_entries(event_code: str):
     draw a winner weighted by how many surveys each person did.
     """
     try:
+        await require_admin_context(request)
         rows = _fetch_all_event_rows("email", event_code=event_code)
         emails = [r["email"] for r in rows if r.get("email")]
         return {
@@ -109,14 +115,17 @@ async def get_event_raffle_entries(event_code: str):
             "count": len(emails),
             "participants": len(set(emails)),
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/admin/event-codes")
-async def get_event_codes():
+async def get_event_codes(request: Request):
     """List existing event codes with their participant counts (newest first)."""
     try:
+        await require_admin_context(request)
         rows = _fetch_all_event_rows("event_code, email, created_at")
         events: dict[str, dict] = {}
         for r in rows:
@@ -145,14 +154,18 @@ async def get_event_codes():
             reverse=True,
         )
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/surveys/{survey_id}/results")
-async def get_survey_results(survey_id: str):
+async def get_survey_results(survey_id: str, request: Request):
     """Get survey metadata and basic stats (no raw answers)."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         survey_res = supabase.table("surveys").select("*").eq("id", survey_id).execute()
         if not survey_res.data:
             raise HTTPException(status_code=404, detail="Survey not found")
@@ -211,16 +224,24 @@ async def get_survey_results(survey_id: str):
         }
     except HTTPException:
         raise
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/surveys/{survey_id}/responses/paginated")
 async def get_survey_responses_paginated(
-    survey_id: str, offset: int = 0, limit: int = 1, filter_failed: bool = False
+    survey_id: str,
+    request: Request,
+    offset: int = 0,
+    limit: int = 1,
+    filter_failed: bool = False,
 ):
     """Fetch individual responses with pagination."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         query = (
             supabase.table("response_sessions")
             .select("*")
@@ -277,14 +298,18 @@ async def get_survey_responses_paginated(
             )
 
         return {"responses": responses, "total": total}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/surveys/{survey_id}/summary")
-async def get_survey_summary(survey_id: str):
+async def get_survey_summary(survey_id: str, request: Request):
     """Calculate and return aggregate summary statistics for all questions on the backend."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         questions_res = (
             supabase.table("questions")
             .select("*")
@@ -481,6 +506,8 @@ async def get_survey_summary(survey_id: str):
                 }
 
         return stats
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
 
@@ -489,22 +516,36 @@ async def get_survey_summary(survey_id: str):
 
 
 @router.delete("/api/surveys/{survey_id}/responses")
-async def delete_all_responses(survey_id: str):
+async def delete_all_responses(survey_id: str, request: Request):
     """Delete all response sessions and their answers for a survey."""
     try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
         # Cascade: deleting sessions will auto-delete answers via ON DELETE CASCADE
         supabase.table("response_sessions").delete().eq(
             "survey_id", survey_id
         ).execute()
         return {"success": True, "message": "All responses deleted"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/api/responses/{session_id}")
-async def delete_single_response(session_id: str):
+async def delete_single_response(session_id: str, request: Request):
     """Delete a single response session and its answers."""
     try:
+        context = await require_admin_context(request)
+        session_res = (
+            supabase.table("response_sessions")
+            .select("survey_id")
+            .eq("id", session_id)
+            .execute()
+        )
+        if not session_res.data:
+            raise HTTPException(status_code=404, detail="Response not found")
+        require_survey_team_access(session_res.data[0]["survey_id"], context)
         supabase.table("response_sessions").delete().eq("id", session_id).execute()
         return {"success": True, "message": "Response deleted"}
     except Exception as e:

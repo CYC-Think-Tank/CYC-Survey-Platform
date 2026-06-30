@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminFetch } from '@/lib/adminAuth';
 import Link from 'next/link';
 import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
 import { RichTextEditor } from '@/components/RichTextEditor';
@@ -35,7 +36,7 @@ export default function CreateBlogPost() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await adminFetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       return await res.json();
     } catch {
@@ -79,7 +80,7 @@ export default function CreateBlogPost() {
     setError('');
 
     try {
-      const res = await fetch('/api/blog', {
+      const res = await adminFetch('/api/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

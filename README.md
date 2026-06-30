@@ -10,17 +10,19 @@ Copy `.env.example` to `.env.local` and fill in your credentials:
 cp .env.example .env.local
 ```
 
-| Variable                        | Description                                                                            |
-| ------------------------------- | -------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase project URL (browser, from Supabase dashboard)                                |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/publishable key (browser)                                                |
-| `SUPABASE_URL`                  | Supabase project URL (server, same as above)                                           |
-| `SUPABASE_KEY`                  | Supabase service_role key (server, **never exposed to client**)                        |
-| `NEXT_PUBLIC_SITE_URL`          | Public URL of your deployment (e.g. `https://example.vercel.app`)                      |
-| `GMAIL_USER`                    | Gmail address for sending survey reminder emails                                       |
-| `GMAIL_APP_PASSWORD`            | Gmail app password (enable 2FA → App Passwords in Google Account)                      |
-| `GOOGLE_AI_KEY`                 | Google Gemini API key for AI features (translation, insights)                          |
-| `CRON_SECRET`                   | Shared secret for securing the `/api/cron/reminders` endpoint (required in production) |
+| Variable                                 | Description                                                                            |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`               | Supabase project URL (browser, from Supabase dashboard)                                |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`          | Supabase anon/publishable key (browser)                                                |
+| `SUPABASE_URL`                           | Supabase project URL (server, same as above)                                           |
+| `SUPABASE_KEY`                           | Supabase service_role key (server, **never exposed to client**)                        |
+| `NEXT_PUBLIC_ALLOWED_ADMIN_EMAIL_DOMAIN` | Allowed email domain for admin Supabase Auth sign-in/sign-up, e.g. `thecyc.org`        |
+| `ALLOWED_ADMIN_EMAIL_DOMAIN`             | Server-side allowed admin email domain. Keep it aligned with the public value.         |
+| `NEXT_PUBLIC_SITE_URL`                   | Public URL of your deployment (e.g. `https://example.vercel.app`)                      |
+| `GMAIL_USER`                             | Gmail address for sending survey reminder emails                                       |
+| `GMAIL_APP_PASSWORD`                     | Gmail app password (enable 2FA → App Passwords in Google Account)                      |
+| `GOOGLE_AI_KEY`                          | Google Gemini API key for AI features (translation, insights)                          |
+| `CRON_SECRET`                            | Shared secret for securing the `/api/cron/reminders` endpoint (required in production) |
 
 ## Quick Start (Docker)
 
@@ -80,7 +82,50 @@ The admin panel is not linked from the main UI — access it directly at:
 
 **[https://thinktank.thecyc.org/admin](https://thinktank.thecyc.org/admin)**
 
-**Password:** `cycsurveyplatformadmin`
+Admin access uses Supabase Auth. Users must sign in with an email from the configured allowed
+domain and must belong to a team.
+
+Admin signup is enforced in three places: client validation, the server signup endpoint, and a
+Supabase `before_user_created` Auth hook. Both domain environment variables are required; admin
+authentication fails closed if the server-side value is missing. The Auth hook applies only to
+Supabase Auth account creation and does not affect public survey submissions or respondent emails.
+
+After applying the Auth-hook migration locally, restart local Supabase so `config.toml` is reloaded:
+
+```bash
+supabase migration up --local
+supabase stop
+supabase start
+```
+
+For hosted Supabase, configure the `public.restrict_admin_signup_domain` function as the project's
+Before User Created hook after applying the migration. Do not assume the local `config.toml` changes
+hosted project settings.
+
+Teams have two roles:
+
+- `team_leader`: can create, edit, view, and delete team surveys, and approve or reject team join requests.
+- `team_member`: can create, edit, and view team surveys, and request to join teams.
+
+Each account can belong to only one team. An unassigned user can create a team or request to join an
+existing team from onboarding. Regular members can leave and return to onboarding. Leaders must
+transfer leadership before leaving.
+
+Each team can have only one `team_leader`. The current leader can transfer leadership to another
+existing member from the Team Members panel. The transfer demotes the current leader and promotes
+the selected member in one database transaction.
+
+For the cloned local database, the repository includes a guarded backfill script that creates or
+reuses the `CYC Admin` team, assigns `sylvia.zhang@thecyc.org` as leader, and assigns the three
+original seeded surveys plus every currently inactive survey to that team. Review the file first,
+then run it only against local Supabase:
+
+```bash
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+  -f supabase/snippets/setup_legacy_survey_team.sql
+```
+
+Do not run `supabase/snippets/setup_legacy_survey_team.sql` against production.
 
 ## Tech Stack
 

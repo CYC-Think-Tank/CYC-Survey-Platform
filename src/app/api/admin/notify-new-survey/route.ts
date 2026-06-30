@@ -1,24 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import {
+  getServerAllowedAdminEmailDomain,
+  isServerAllowedAdminEmail,
+} from '@/lib/server/adminDomain';
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
-
-    // Verify admin
-    const adminPass = process.env.ADMIN_PASSWORD || 'cycsurveyplatformadmin';
-    if (password !== adminPass) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const SUPABASE_ANON_KEY =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || SUPABASE_KEY;
     const GMAIL_USER = process.env.GMAIL_USER;
     const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://cyc-survey-platform.vercel.app';
+    const allowedDomain = getServerAllowedAdminEmailDomain();
 
-    if (!SUPABASE_URL || !SUPABASE_KEY || !GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    if (
+      !SUPABASE_URL ||
+      !SUPABASE_KEY ||
+      !SUPABASE_ANON_KEY ||
+      !allowedDomain ||
+      !GMAIL_USER ||
+      !GMAIL_APP_PASSWORD
+    ) {
       return NextResponse.json({ error: 'Missing environment variables' }, { status: 500 });
+    }
+
+    const authHeader = request.headers.get('authorization') || '';
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: authHeader },
+    });
+    if (!userRes.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const user = await userRes.json();
+    if (!isServerAllowedAdminEmail(user.email)) {
+      return NextResponse.json({ error: 'Unauthorized domain' }, { status: 403 });
     }
 
     const headers = {
