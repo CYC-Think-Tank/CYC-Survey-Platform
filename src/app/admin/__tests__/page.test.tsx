@@ -126,6 +126,14 @@ describe('AdminDashboard', () => {
               user_email: 'leader@example.com',
               role: 'team_leader',
             },
+            {
+              id: 'member-2',
+              team_id: 'team-1',
+              team_name: 'CYC Admin',
+              user_id: 'user-2',
+              user_email: 'member@example.com',
+              role: 'team_member',
+            },
           ],
         } as Response);
       }
@@ -154,8 +162,9 @@ describe('AdminDashboard', () => {
     await waitFor(() => {
       expect(screen.getByText('Team Members')).toBeInTheDocument();
       expect(screen.getByText('leader@example.com')).toBeInTheDocument();
+      expect(screen.getByText('Transfer leadership')).toBeInTheDocument();
       expect(screen.getByText('Team Requests')).toBeInTheDocument();
-      expect(screen.getByText('member@example.com')).toBeInTheDocument();
+      expect(screen.getAllByText('member@example.com')).toHaveLength(2);
     });
 
     fireEvent.click(screen.getByText('Approve'));

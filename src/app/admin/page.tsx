@@ -28,6 +28,7 @@ import {
   Send,
   Trophy,
   FileText,
+  Crown,
 } from 'lucide-react';
 
 interface ReferralLeaderboardEntry {
@@ -87,6 +88,7 @@ export default function AdminDashboard() {
   const [teams, setTeams] = useState<AdminTeam[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
+  const [transferringMemberId, setTransferringMemberId] = useState<string | null>(null);
   const [joinRequests, setJoinRequests] = useState<TeamJoinRequest[]>([]);
   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
   const [updatingJoinRequestId, setUpdatingJoinRequestId] = useState<string | null>(null);
@@ -167,6 +169,9 @@ export default function AdminDashboard() {
 
   const currentUserIsTeamLeader = isTeamLeader(teams);
 
+  const currentUserLeadsTeam = (teamId: string) =>
+    teams.some((team) => team.id === teamId && team.role === 'team_leader');
+
   const teamMemberGroups = teams.map((team) => ({
     team,
     members: teamMembers.filter((member) => member.team_id === team.id),
@@ -191,6 +196,39 @@ export default function AdminDashboard() {
       alert(`Failed to ${action} request.`);
     } finally {
       setUpdatingJoinRequestId(null);
+    }
+  };
+
+  const transferLeadership = async (member: TeamMember) => {
+    const memberLabel = member.full_name || member.user_email || 'this member';
+    const confirmed = window.confirm(
+      `Transfer leadership to ${memberLabel}? You will become a regular team member and only the new leader will be able to manage requests or delete surveys.`
+    );
+    if (!confirmed) return;
+
+    setTransferringMemberId(member.id);
+    try {
+      const res = await adminFetch('/admin-api/team-members/transfer-leadership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          team_id: member.team_id,
+          new_leader_user_id: member.user_id,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || 'Failed to transfer leadership.');
+        return;
+      }
+      window.location.reload();
+    } catch (err) {
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
+      alert('Failed to transfer leadership.');
+    } finally {
+      setTransferringMemberId(null);
     }
   };
 
@@ -533,6 +571,20 @@ export default function AdminDashboard() {
                           <div className="mt-2 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-slate-700 dark:text-slate-200">
                             {member.role === 'team_leader' ? 'Team leader' : 'Team member'}
                           </div>
+                          {member.role === 'team_member' &&
+                            currentUserLeadsTeam(member.team_id) && (
+                              <button
+                                type="button"
+                                onClick={() => transferLeadership(member)}
+                                disabled={transferringMemberId === member.id}
+                                className="mt-3 inline-flex items-center text-xs font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700 disabled:opacity-50"
+                              >
+                                <Crown className="mr-1 h-3.5 w-3.5" />
+                                {transferringMemberId === member.id
+                                  ? 'Transferring...'
+                                  : 'Transfer leadership'}
+                              </button>
+                            )}
                         </div>
                       ))}
                     </div>

@@ -90,6 +90,10 @@ Teams have two roles:
 - `team_leader`: can create, edit, view, and delete team surveys, and approve or reject team join requests.
 - `team_member`: can create, edit, and view team surveys, and request to join teams.
 
+Each team can have only one `team_leader`. The current leader can transfer leadership to another
+existing member from the Team Members panel. The transfer demotes the current leader and promotes
+the selected member in one database transaction.
+
 After running the admin/team migration locally, create at least one team and leader membership in
 your cloned/local Supabase database. Example SQL, using the authenticated user's UUID:
 
@@ -107,6 +111,18 @@ set team_id = 'TEAM_UUID',
     owner_user_id = coalesce(owner_user_id, 'USER_UUID')
 where team_id is null;
 ```
+
+For the cloned local database, the repository includes a guarded backfill script that creates or
+reuses the `CYC Admin` team, assigns `sylvia.zhang@thecyc.org` as leader, and assigns the three
+original seeded surveys plus every currently inactive survey to that team. Review the file first,
+then run it only against local Supabase:
+
+```bash
+psql postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+  -f supabase/snippets/setup_legacy_survey_team.sql
+```
+
+Do not run `supabase/snippets/setup_legacy_survey_team.sql` against production.
 
 ## Tech Stack
 
