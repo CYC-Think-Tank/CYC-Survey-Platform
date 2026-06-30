@@ -180,8 +180,6 @@ async def get_or_create_referral_link(email: str):
         return res.data[0]
     except HTTPException:
         raise
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

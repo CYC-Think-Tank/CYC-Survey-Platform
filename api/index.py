@@ -5,13 +5,13 @@ from api.routes import (
     admin,
     ai_insights,
     blog,
+    judging,
     latent_trait_insights,
     results,
     sessions,
     share_links,
     surveys,
     translations,
-    judging,
 )
 
 app = FastAPI(title="CYC Survey Platform API")

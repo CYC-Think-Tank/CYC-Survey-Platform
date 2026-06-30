@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
-from fastapi import HTTPException, Request
 from dotenv import load_dotenv
+from fastapi import HTTPException, Request
 
 from supabase import Client, create_client
 
