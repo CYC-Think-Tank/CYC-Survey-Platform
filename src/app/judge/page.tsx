@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { ClipboardList, CheckCircle, LogOut, ChevronRight, Activity } from 'lucide-react';
 import Link from 'next/link';
 
@@ -51,8 +50,8 @@ export default function JudgeDashboard() {
 
   if (!profile || loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Activity className="w-8 h-8 text-indigo-500 animate-spin" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Activity className="w-8 h-8 text-[var(--color-cyc-primary)] animate-spin" />
       </div>
     );
   }
@@ -62,23 +61,21 @@ export default function JudgeDashboard() {
   const progress = total > 0 ? (completed / total) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500/30">
-      {/* Decorative header blur */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-indigo-900/20 to-transparent pointer-events-none" />
-
-      <div className="max-w-5xl mx-auto px-4 py-12 relative z-10">
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans selection:bg-[var(--color-cyc-primary)] selection:text-white">
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
-              Welcome, {profile.name}
+            <h1 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)]">
+              Judge Dashboard
             </h1>
-            <p className="text-slate-400 mt-2">
-              You have {total - completed} surveys left to evaluate.
+            <p className="text-gray-500 mt-1">
+              Welcome back, {profile.name}. You have {total - completed} surveys left to evaluate.
             </p>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors self-start md:self-auto"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors shadow-sm self-start md:self-auto font-medium"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
@@ -86,90 +83,79 @@ export default function JudgeDashboard() {
         </header>
 
         {/* Progress Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-900/60 backdrop-blur-md border border-slate-800 rounded-2xl p-6 mb-12 shadow-2xl"
-        >
-          <div className="flex justify-between items-end mb-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
+          <div className="flex justify-between items-end mb-3">
             <div>
-              <p className="text-sm text-slate-400 font-medium uppercase tracking-wider mb-1">
+              <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider mb-1">
                 Overall Progress
               </p>
-              <p className="text-2xl font-semibold text-white">
+              <p className="text-2xl font-bold text-[var(--color-cyc-secondary)]">
                 {completed} / {total}{' '}
-                <span className="text-slate-500 text-lg font-normal">Scored</span>
+                <span className="text-gray-400 text-lg font-normal">Scored</span>
               </p>
             </div>
-            <span className="text-indigo-400 font-medium">{Math.round(progress)}%</span>
+            <span className="text-[var(--color-cyc-primary)] font-bold text-lg">
+              {Math.round(progress)}%
+            </span>
           </div>
-          <div className="h-3 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
-              className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full"
+          <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div
+              style={{ width: `${progress}%` }}
+              className="h-full bg-[var(--color-cyc-primary)] rounded-full transition-all duration-1000 ease-out"
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Survey List */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-indigo-400" />
-            Assigned Surveys
-          </h2>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-[var(--color-cyc-primary)]" />
+              Assigned Surveys
+            </h2>
+          </div>
 
-          <div className="grid gap-4">
-            {surveys.map((survey, i) => (
-              <motion.div
+          <div className="divide-y divide-gray-200">
+            {surveys.map((survey) => (
+              <Link
+                href={`/judge/score/${survey.id}`}
                 key={survey.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
+                className="block hover:bg-gray-50 transition-colors"
               >
-                <Link href={`/judge/score/${survey.id}`}>
-                  <div className="group relative block bg-slate-900/40 backdrop-blur-sm border border-slate-800 rounded-xl p-5 hover:bg-slate-800/60 transition-all hover:border-indigo-500/30 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                    <div className="flex items-center justify-between relative z-10">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`p-3 rounded-lg ${survey.is_scored ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-400 group-hover:text-indigo-400 group-hover:bg-indigo-500/10 transition-colors'}`}
-                        >
-                          {survey.is_scored ? (
-                            <CheckCircle className="w-6 h-6" />
-                          ) : (
-                            <ClipboardList className="w-6 h-6" />
-                          )}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-medium text-slate-100 group-hover:text-white transition-colors">
-                            {survey.title}
-                          </h3>
-                          <p className="text-sm text-slate-400 line-clamp-1 mt-1">
-                            {survey.description || 'No description provided.'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {survey.is_scored && (
-                          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            Evaluated
-                          </span>
-                        )}
-                        <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
-                      </div>
+                <div className="px-6 py-5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`p-2 rounded-full ${survey.is_scored ? 'bg-green-100 text-green-600' : 'bg-blue-50 text-[var(--color-cyc-primary)]'}`}
+                    >
+                      {survey.is_scored ? (
+                        <CheckCircle className="w-5 h-5" />
+                      ) : (
+                        <ClipboardList className="w-5 h-5" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">{survey.title}</h3>
+                      <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
+                        {survey.description || 'No description provided.'}
+                      </p>
                     </div>
                   </div>
-                </Link>
-              </motion.div>
+
+                  <div className="flex items-center gap-4">
+                    {survey.is_scored && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Evaluated
+                      </span>
+                    )}
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                  </div>
+                </div>
+              </Link>
             ))}
 
             {surveys.length === 0 && (
-              <div className="text-center py-12 bg-slate-900/30 border border-slate-800 border-dashed rounded-2xl">
-                <p className="text-slate-400">No active surveys available to score.</p>
+              <div className="text-center py-12">
+                <p className="text-gray-500">No active surveys available to score.</p>
               </div>
             )}
           </div>

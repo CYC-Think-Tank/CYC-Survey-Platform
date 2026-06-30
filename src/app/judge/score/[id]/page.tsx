@@ -149,7 +149,7 @@ export default function ScorePage() {
       });
       if (res.ok) {
         setSuccess(true);
-        setTimeout(() => router.push('/judge'), 2000);
+        setTimeout(() => router.push('/judge'), 1500);
       }
     } catch (e) {
       console.error(e);
@@ -160,88 +160,92 @@ export default function ScorePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Activity className="w-8 h-8 text-indigo-500 animate-spin" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Activity className="w-8 h-8 text-[var(--color-cyc-primary)] animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col md:flex-row overflow-hidden font-sans text-slate-200">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row overflow-hidden font-sans text-gray-900">
       {/* Left: Survey Preview iframe */}
-      <div className="w-full md:w-1/2 h-[50vh] md:h-screen border-b md:border-b-0 md:border-r border-slate-800 relative bg-slate-900">
-        <div className="absolute top-0 w-full bg-gradient-to-b from-slate-950/80 to-transparent p-4 flex items-center gap-4 z-10">
-          <Link href="/judge" className="text-slate-400 hover:text-white transition-colors">
+      <div className="w-full md:w-1/2 h-[50vh] md:h-screen border-b md:border-b-0 md:border-r border-gray-200 relative bg-white">
+        <div className="absolute top-0 w-full bg-white/90 backdrop-blur-sm border-b border-gray-200 p-4 flex items-center gap-4 z-10">
+          <Link
+            href="/judge"
+            className="text-gray-500 hover:text-[var(--color-cyc-secondary)] transition-colors p-1 rounded-md hover:bg-gray-100"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <span className="font-medium text-sm tracking-wide text-indigo-300 uppercase">
+          <span className="font-bold text-sm tracking-wide text-[var(--color-cyc-secondary)] uppercase">
             Live Preview
           </span>
         </div>
-        <iframe src={`/survey/${id}`} className="w-full h-full opacity-90" />
+        <iframe src={`/survey/${id}`} className="w-full h-full pt-14" />
       </div>
 
       {/* Right: Scoring Form */}
-      <div className="w-full md:w-1/2 h-full md:h-screen overflow-y-auto custom-scrollbar relative">
-        <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-fuchsia-900/10 to-transparent pointer-events-none" />
-
-        <div className="p-8 max-w-2xl mx-auto pb-32">
+      <div className="w-full md:w-1/2 h-full md:h-screen overflow-y-auto custom-scrollbar bg-gray-50 relative pb-32">
+        <div className="p-8 max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Evaluation Form</h1>
-            <p className="text-slate-400">
+            <h1 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] mb-2">
+              Evaluation Form
+            </h1>
+            <p className="text-gray-600">
               Score this submission on a scale of 1 to 10 for each criterion.
             </p>
           </div>
 
           {/* Automated Scores Section */}
-          <section className="mb-12">
-            <h2 className="text-xl font-semibold text-cyan-400 mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5" />
+          <section className="mb-10">
+            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
+              <Activity className="w-5 h-5 text-[var(--color-cyc-primary)]" />
               Overall Reach (Automated)
             </h2>
-            <div className="bg-cyan-950/20 border border-cyan-900/50 rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-3 text-sm text-cyan-300/70 mb-2">
-                <Info className="w-4 h-4" />
-                These scores are computed automatically based on the live data.
+            <div className="bg-white border border-gray-200 shadow-sm rounded-xl p-5 space-y-4">
+              <div className="flex items-start gap-3 text-sm text-gray-500 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <Info className="w-5 h-5 text-[var(--color-cyc-primary)] shrink-0" />
+                These scores are computed automatically based on the live data from the survey
+                responses.
               </div>
 
               <div className="grid gap-4">
-                <div className="flex justify-between items-center p-3 rounded-lg bg-slate-900/50 border border-slate-800">
+                <div className="flex justify-between items-center p-4 rounded-lg bg-gray-50 border border-gray-100">
                   <div>
-                    <div className="text-white font-medium">Respondents</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-gray-900 font-bold">Respondents</div>
+                    <div className="text-sm text-gray-500">
                       {Number(autoScores?.total_responses || 0)} total
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-cyan-400">
+                  <div className="text-2xl font-black text-[var(--color-cyc-primary)]">
                     {Number(autoScores?.respondents_score || 0)}
-                    <span className="text-sm font-normal text-slate-500">/10</span>
+                    <span className="text-base font-medium text-gray-400">/10</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center p-3 rounded-lg bg-slate-900/50 border border-slate-800">
+                <div className="flex justify-between items-center p-4 rounded-lg bg-gray-50 border border-gray-100">
                   <div>
-                    <div className="text-white font-medium">Languages Supported</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-gray-900 font-bold">Languages Supported</div>
+                    <div className="text-sm text-gray-500">
                       {Number(autoScores?.language_count || 0)} languages
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-cyan-400">
+                  <div className="text-2xl font-black text-[var(--color-cyc-primary)]">
                     {Number(autoScores?.languages_score || 0)}
-                    <span className="text-sm font-normal text-slate-500">/10</span>
+                    <span className="text-base font-medium text-gray-400">/10</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center p-3 rounded-lg bg-slate-900/50 border border-slate-800">
+                <div className="flex justify-between items-center p-4 rounded-lg bg-gray-50 border border-gray-100">
                   <div>
-                    <div className="text-white font-medium">Geographic Coverage</div>
-                    <div className="text-xs text-slate-400">
+                    <div className="text-gray-900 font-bold">Geographic Coverage</div>
+                    <div className="text-sm text-gray-500">
                       {Number(autoScores?.valid_provinces || 0)} provinces (2+ responses)
                     </div>
                   </div>
-                  <div className="text-xl font-bold text-cyan-400">
+                  <div className="text-2xl font-black text-[var(--color-cyc-primary)]">
                     {Number(autoScores?.geographic_score || 0)}
-                    <span className="text-sm font-normal text-slate-500">/10</span>
+                    <span className="text-base font-medium text-gray-400">/10</span>
                   </div>
                 </div>
               </div>
@@ -250,22 +254,22 @@ export default function ScorePage() {
 
           {/* Manual Scoring Sections */}
           {Object.entries(CRITERIA).map(([catKey, items]) => (
-            <section key={catKey} className="mb-12">
-              <h2 className="text-xl font-semibold text-fuchsia-400 capitalize mb-4 border-b border-slate-800 pb-2">
+            <section key={catKey} className="mb-10">
+              <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] capitalize mb-4 border-b border-gray-200 pb-2">
                 {catKey}
               </h2>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-slate-900/40 rounded-xl p-5 border border-slate-800 hover:border-slate-700 transition-colors"
+                    className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-slate-200 font-medium">{item.label}</h3>
-                        <p className="text-sm text-slate-500 mt-1">{item.desc}</p>
+                        <h3 className="text-gray-900 font-bold text-lg">{item.label}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{item.desc}</p>
                       </div>
-                      <div className="bg-slate-950 px-3 py-1 rounded-md border border-slate-800 text-fuchsia-400 font-bold">
+                      <div className="bg-gray-50 px-3 py-1 rounded-md border border-gray-200 text-[var(--color-cyc-secondary)] font-black text-lg">
                         {scores[catKey]?.[item.id] || 0}
                       </div>
                     </div>
@@ -276,9 +280,9 @@ export default function ScorePage() {
                       max="10"
                       value={scores[catKey]?.[item.id] || 1}
                       onChange={(e) => updateScore(catKey, item.id, parseInt(e.target.value))}
-                      className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[var(--color-cyc-primary)] outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:ring-offset-2"
                     />
-                    <div className="flex justify-between text-xs text-slate-600 mt-2 font-medium">
+                    <div className="flex justify-between text-xs text-gray-500 mt-2 font-semibold">
                       <span>1 (Poor)</span>
                       <span>10 (Excellent)</span>
                     </div>
@@ -289,38 +293,38 @@ export default function ScorePage() {
           ))}
 
           {/* Feedback */}
-          <section className="mb-12">
-            <h2 className="text-xl font-semibold text-indigo-400 mb-4 border-b border-slate-800 pb-2">
+          <section className="mb-8">
+            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] mb-4 border-b border-gray-200 pb-2">
               General Feedback
             </h2>
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="Provide any additional rationale or qualitative feedback here..."
-              className="w-full h-32 bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none"
+              className="w-full h-32 bg-white border border-gray-300 rounded-xl p-4 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:border-transparent transition-shadow shadow-sm resize-none"
             />
           </section>
         </div>
 
         {/* Floating Action Bar */}
-        <div className="fixed bottom-0 right-0 w-full md:w-1/2 bg-slate-950/80 backdrop-blur-xl border-t border-slate-800 p-4 px-8 flex justify-between items-center z-50">
+        <div className="fixed bottom-0 right-0 w-full md:w-1/2 bg-white/90 backdrop-blur-md border-t border-gray-200 p-4 px-8 flex justify-between items-center z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
           <div>
-            <span className="text-slate-400 text-sm uppercase tracking-wider font-medium">
+            <span className="text-gray-500 text-sm uppercase tracking-wider font-bold">
               Total Score
             </span>
-            <div className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-fuchsia-400">
-              {calculateTotal()} <span className="text-lg text-slate-600 font-normal">pts</span>
+            <div className="text-3xl font-black text-[var(--color-cyc-secondary)]">
+              {calculateTotal()} <span className="text-lg text-gray-400 font-medium">pts</span>
             </div>
           </div>
 
           <button
             onClick={handleSubmit}
             disabled={submitting || success}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-medium hover:from-indigo-500 hover:to-fuchsia-500 transition-all shadow-lg shadow-fuchsia-500/20 disabled:opacity-50"
+            className="flex items-center gap-2 px-8 py-3 rounded-full bg-[var(--color-cyc-accent)] text-gray-900 font-extrabold hover:bg-yellow-400 transition-all shadow-sm disabled:opacity-50"
           >
             {success ? (
               <>
-                <CheckCircle className="w-5 h-5" /> Submitted!
+                <CheckCircle className="w-5 h-5 text-green-700" /> Saved!
               </>
             ) : submitting ? (
               <>
@@ -328,7 +332,7 @@ export default function ScorePage() {
               </>
             ) : (
               <>
-                <Save className="w-5 h-5" /> Submit Score
+                <Save className="w-5 h-5" /> Submit Evaluation
               </>
             )}
           </button>
