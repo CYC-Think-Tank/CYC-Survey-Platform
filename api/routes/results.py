@@ -224,8 +224,6 @@ async def get_survey_results(survey_id: str, request: Request):
         }
     except HTTPException:
         raise
-    except HTTPException:
-        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

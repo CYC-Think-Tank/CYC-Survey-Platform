@@ -1,4 +1,3 @@
-import json as json_module
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
