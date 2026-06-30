@@ -12,7 +12,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { Collaboration } from '@tiptap/extension-collaboration';
+import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration';
 import { CollaborationCaret } from '@tiptap/extension-collaboration-caret';
 import type { Doc as YDoc } from 'yjs';
 
@@ -50,6 +50,8 @@ interface CollabConfig {
   isSeeder: boolean;
   /** True once the shared doc is seeded — gates content seeding + onChange. */
   ready: boolean;
+  /** Called on local edits so peers can show a "typing…" indicator. */
+  onActivity?: () => void;
 }
 
 interface RichTextEditorProps {
@@ -64,6 +66,10 @@ interface RichTextEditorProps {
    * When omitted it behaves as a normal single-user editor.
    */
   collab?: CollabConfig;
+  /** Fired when the editor gains focus (used for per-field presence). */
+  onFocus?: () => void;
+  /** Fired when the editor loses focus. */
+  onBlur?: () => void;
 }
 
 export const RichTextEditor = ({
@@ -73,6 +79,8 @@ export const RichTextEditor = ({
   className = '',
   readOnly = false,
   collab,
+  onFocus,
+  onBlur,
 }: RichTextEditorProps) => {
   const [showColors, setShowColors] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -81,10 +89,16 @@ export const RichTextEditor = ({
   // updated after render (refs must not be written during render).
   const onChangeRef = useRef(onChange);
   const collabReadyRef = useRef(collab ? collab.ready : true);
+  const onActivityRef = useRef(collab?.onActivity);
+  const onFocusRef = useRef(onFocus);
+  const onBlurRef = useRef(onBlur);
   const seededContentRef = useRef(false);
   useEffect(() => {
     onChangeRef.current = onChange;
     collabReadyRef.current = collab ? collab.ready : true;
+    onActivityRef.current = collab?.onActivity;
+    onFocusRef.current = onFocus;
+    onBlurRef.current = onBlur;
   });
 
   const collabDoc = collab?.doc ?? null;
@@ -153,14 +167,19 @@ export const RichTextEditor = ({
           class: `prose prose-sm focus:outline-none min-h-[150px] px-3 py-2 text-sm max-w-none ${className} ${readOnly ? 'opacity-70 cursor-not-allowed bg-gray-50 dark:bg-slate-800' : ''}`,
         },
       },
-      onUpdate: ({ editor }) => {
+      onUpdate: ({ editor, transaction }) => {
         // Until the shared doc is seeded, the collaborative editor is empty;
         // don't propagate that emptiness back into React state (would wipe the
         // saved description). After seeding, mirror content so saving works.
         if (collab && !collabReadyRef.current) return;
         const html = editor.getHTML();
         onChangeRef.current(html === '<p></p>' ? '' : html);
+        // Only signal "typing" for the local user's own edits, not for remote
+        // updates the collaboration plugin applied to our editor.
+        if (collab && !isChangeOrigin(transaction)) onActivityRef.current?.();
       },
+      onFocus: () => onFocusRef.current?.(),
+      onBlur: () => onBlurRef.current?.(),
     },
     [collabDoc]
   );

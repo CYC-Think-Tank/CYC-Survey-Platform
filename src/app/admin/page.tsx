@@ -58,6 +58,9 @@ export default function AdminDashboard() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [hideZeroResponses, setHideZeroResponses] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [createModal, setCreateModal] = useState(false);
+  const [newSurveyTitle, setNewSurveyTitle] = useState('');
+  const [creatingSurvey, setCreatingSurvey] = useState(false);
   const router = useRouter();
 
   // Distinct categories actually in use, so new labels appear in the filter
@@ -97,6 +100,32 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchSurveys();
   }, []);
+
+  const handleCreateSurvey = async () => {
+    if (!newSurveyTitle.trim()) return;
+    setCreatingSurvey(true);
+    try {
+      const res = await fetch('/api/surveys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newSurveyTitle.trim(),
+          is_active: false,
+          questions: [],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        router.push(`/admin/edit/${data.id}`);
+      } else {
+        alert('Failed to create survey.');
+        setCreatingSurvey(false);
+      }
+    } catch {
+      alert('An error occurred.');
+      setCreatingSurvey(false);
+    }
+  };
 
   const handleToggleActive = async (survey: Survey) => {
     if (!survey.is_active) {
@@ -315,10 +344,10 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex space-x-4 flex-wrap gap-y-2">
-          <Link href="/admin/create" className="btn-primary flex items-center">
+          <button onClick={() => setCreateModal(true)} className="btn-primary flex items-center">
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
-          </Link>
+          </button>
 
           <Link
             href="/admin/blog"
@@ -681,6 +710,61 @@ export default function AdminDashboard() {
                     </div>
                   );
                 })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Survey Modal */}
+      {createModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+            <button
+              onClick={() => {
+                setCreateModal(false);
+                setNewSurveyTitle('');
+              }}
+              className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-400"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4 flex items-center">
+              <PlusCircle className="w-5 h-5 mr-2" />
+              Create New Survey
+            </h2>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
+                Survey Title
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={newSurveyTitle}
+                onChange={(e) => setNewSurveyTitle(e.target.value)}
+                placeholder="e.g. Employee Feedback 2024"
+                className="w-full p-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:border-transparent outline-none transition-all"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateSurvey();
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setCreateModal(false);
+                  setNewSurveyTitle('');
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateSurvey}
+                disabled={creatingSurvey || !newSurveyTitle.trim()}
+                className="px-4 py-2 bg-[var(--color-cyc-primary)] text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
+              >
+                {creatingSurvey ? 'Creating...' : 'Create Survey'}
+              </button>
             </div>
           </div>
         </div>
