@@ -2,7 +2,12 @@ import random
 
 from fastapi import APIRouter, HTTPException, Request
 
-from api.dependencies import require_admin_context, require_survey_team_access, supabase
+from api.dependencies import (
+    AdminContext,
+    require_admin_context,
+    require_survey_team_access,
+    supabase,
+)
 from api.utils.postal_geo import build_postal_geo_stats
 from api.utils.survey_utils import (
     calculate_median,
@@ -15,32 +20,48 @@ from api.utils.survey_utils import (
 router = APIRouter()
 
 
-async def _get_random_email_position(num_emails: int = 9) -> list:
-    """
-    Returns a randomly generated list of integers `x` such that 0 <= x <= length of collection of emails
-    without replacement.
+def _require_team_leader(context: AdminContext) -> str:
+    team = context.default_team
+    if team.role != "team_leader":
+        raise HTTPException(status_code=403, detail="Team leader permission required")
+    return team.team_id
 
-    Raises an exception if the collection of emails is empty or if any error occurs during the
-    retrieval of total number of emails from the database.
-    """
-    try:
-        # Queries the database to get the total count of emails in the raffle_entries table
-        count_res = (
-            supabase.table("raffle_entries").select("id", count="exact").execute()
-        )
-        total_emails = getattr(count_res, "count", None)
-        if total_emails is None:
-            total_emails = len(count_res.data) if count_res.data else 0
 
-        if total_emails == 0:
-            raise ValueError("No emails found in raffle_entries for raffle selection.")
+def _team_survey_ids(team_id: str) -> list[str]:
+    response = supabase.table("surveys").select("id").eq("team_id", team_id).execute()
+    return [row["id"] for row in response.data or [] if row.get("id")]
 
-        num_to_select = min(num_emails, total_emails)
-        return random.sample(range(total_emails), num_to_select)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise Exception(f"Failed to determine raffle position: {e}")
+
+def _fetch_all_raffle_rows(
+    table: str,
+    columns: str,
+    survey_ids: list[str],
+    *,
+    event_code: str | None = None,
+) -> list[dict]:
+    if not survey_ids:
+        return []
+
+    page_size = 1000
+    offset = 0
+    rows: list[dict] = []
+    while True:
+        query = supabase.table(table).select(columns).in_("survey_id", survey_ids)
+        if event_code:
+            query = query.eq("event_code", event_code)
+        response = query.range(offset, offset + page_size - 1).execute()
+        data = response.data or []
+        rows.extend(data)
+        if len(data) < page_size:
+            break
+        offset += page_size
+    return rows
+
+
+def _team_raffle_emails(context: AdminContext) -> list[str]:
+    team_id = _require_team_leader(context)
+    rows = _fetch_all_raffle_rows("raffle_entries", "email", _team_survey_ids(team_id))
+    return [row["email"] for row in rows if row.get("email")]
 
 
 @router.get("/api/admin/raffle-email")
@@ -50,49 +71,32 @@ async def get_raffle_email(request: Request):
     Handles any exceptions that may occur during the database query.
     """
     try:
-        await require_admin_context(request)
-        positions = await _get_random_email_position()
-        emails = []
-        for position in positions:
-            response = (
-                supabase.table("raffle_entries")
-                .select("email")
-                .order("id")
-                .range(position, position)
-                .execute()
-            )
-            if not response.data or not response.data[0]:
-                raise ValueError("No email row returned for raffle selection.")
-
-            email = response.data[0].get("email")
-            if not email:
-                raise ValueError("Selected raffle row does not contain an email.")
-
-            emails.append(email)
-
-        return {"emails": emails}
+        context = await require_admin_context(request)
+        emails = _team_raffle_emails(context)
+        if not emails:
+            raise HTTPException(status_code=404, detail="No raffle entries found")
+        return {"emails": random.sample(emails, min(9, len(emails)))}
     except HTTPException:
         raise
     except Exception as e:
         raise Exception(f"Failed to select raffle email: {e}")
 
 
-def _fetch_all_event_rows(columns: str, event_code: str | None = None) -> list[dict]:
-    """Page through event_raffle_entries so we are not capped by the row limit."""
-    page_size = 1000
-    offset = 0
-    rows: list[dict] = []
-    while True:
-        query = supabase.table("event_raffle_entries").select(columns)
-        if event_code:
-            query = query.eq("event_code", event_code)
-        res = query.range(offset, offset + page_size - 1).execute()
-        data = res.data or []
-        rows.extend(data)
-        if len(data) < page_size:
-            break
-        offset += page_size
-    return rows
+@router.get("/api/admin/raffle-entries")
+async def get_raffle_entries(request: Request):
+    """Return the current team raffle's weighted email ticket pool."""
+    try:
+        context = await require_admin_context(request)
+        emails = _team_raffle_emails(context)
+        return {
+            "entries": emails,
+            "count": len(emails),
+            "participants": len(set(emails)),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/admin/event-raffle-entries")
@@ -107,8 +111,14 @@ async def get_event_raffle_entries(event_code: str, request: Request):
     draw a winner weighted by how many surveys each person did.
     """
     try:
-        await require_admin_context(request)
-        rows = _fetch_all_event_rows("email", event_code=event_code)
+        context = await require_admin_context(request)
+        team_id = _require_team_leader(context)
+        rows = _fetch_all_raffle_rows(
+            "event_raffle_entries",
+            "email",
+            _team_survey_ids(team_id),
+            event_code=event_code,
+        )
         emails = [r["email"] for r in rows if r.get("email")]
         return {
             "entries": emails,
@@ -125,8 +135,13 @@ async def get_event_raffle_entries(event_code: str, request: Request):
 async def get_event_codes(request: Request):
     """List existing event codes with their participant counts (newest first)."""
     try:
-        await require_admin_context(request)
-        rows = _fetch_all_event_rows("event_code, email, created_at")
+        context = await require_admin_context(request)
+        team_id = _require_team_leader(context)
+        rows = _fetch_all_raffle_rows(
+            "event_raffle_entries",
+            "event_code, email, created_at",
+            _team_survey_ids(team_id),
+        )
         events: dict[str, dict] = {}
         for r in rows:
             code = r.get("event_code")

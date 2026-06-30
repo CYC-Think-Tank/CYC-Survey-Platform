@@ -33,6 +33,8 @@ interface EventCode {
   latest: string | null;
 }
 
+type RaffleMode = 'general' | 'event';
+
 // Max wedges drawn on the wheel; the winner is chosen first, then placed on the
 // wheel, so sampling the display for readability does not affect fairness.
 const MAX_WHEEL_SEGMENTS = 24;
@@ -76,6 +78,7 @@ function truncate(str: string, max: number): string {
 }
 
 export default function AdminRafflePage() {
+  const [raffleMode, setRaffleMode] = useState<RaffleMode>('general');
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<string>('all');
   const [eventCode, setEventCode] = useState<string>('');
@@ -143,10 +146,14 @@ export default function AdminRafflePage() {
   // ---- Entries loading -------------------------------------------------
   const loadEntries = useCallback(
     (silent = false) => {
-      if (!eventCode) return;
+      if (raffleMode === 'event' && !eventCode) return;
       if (!silent) setLoadingEntries(true);
       setEntriesError(null);
-      adminFetch(`/api/admin/event-raffle-entries?event_code=${encodeURIComponent(eventCode)}`)
+      const endpoint =
+        raffleMode === 'general'
+          ? '/api/admin/raffle-entries'
+          : `/api/admin/event-raffle-entries?event_code=${encodeURIComponent(eventCode)}`;
+      adminFetch(endpoint)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -156,13 +163,13 @@ export default function AdminRafflePage() {
           if (!isAdminFetchError(err)) {
             console.error(err);
           }
-          if (!silent) setEntriesError('Failed to load event entries.');
+          if (!silent) setEntriesError(`Failed to load ${raffleMode} raffle entries.`);
         })
         .finally(() => {
           if (!silent) setLoadingEntries(false);
         });
     },
-    [eventCode]
+    [eventCode, raffleMode]
   );
 
   useEffect(() => {
@@ -173,10 +180,10 @@ export default function AdminRafflePage() {
 
   // Auto-refresh entries while the event is running
   useEffect(() => {
-    if (!autoRefresh || spinning) return;
+    if (raffleMode !== 'event' || !autoRefresh || spinning) return;
     const interval = setInterval(() => loadEntries(true), 8000);
     return () => clearInterval(interval);
-  }, [autoRefresh, spinning, loadEntries]);
+  }, [raffleMode, autoRefresh, spinning, loadEntries]);
 
   // ---- Derived values --------------------------------------------------
   const remainingPool = entries.filter((e) => !winners.includes(e));
@@ -436,87 +443,161 @@ export default function AdminRafflePage() {
         </Link>
         <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center">
           <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
-          Event Raffle
+          {raffleMode === 'general' ? 'General Raffle' : 'Event Raffle'}
         </h1>
         <p className="text-gray-500 dark:text-slate-500 mt-1">
-          Only people who complete the survey by scanning <strong>this</strong> event&apos;s QR code
-          are entered into the wheel — separate from your general raffle.
+          {raffleMode === 'general'
+            ? "Draw from raffle tickets earned across your team's surveys."
+            : "Only people who complete a survey through this event's QR code enter this wheel."}
         </p>
       </div>
 
-      {/* Event setup */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-5 mb-6">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="flex flex-col">
-            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
-              Event code
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={eventCode}
-                onChange={(e) => setEventCode(e.target.value.trim())}
-                className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm font-mono w-44"
-              />
-              <button
-                onClick={startNewEvent}
-                className="btn-secondary flex items-center whitespace-nowrap"
-                title="Generate a fresh event code"
-              >
-                <Sparkles className="w-4 h-4 mr-1.5" />
-                New event
-              </button>
-            </div>
-          </div>
+      <div className="inline-flex border border-gray-300 dark:border-slate-700 rounded-lg p-1 mb-6 bg-gray-100 dark:bg-slate-900">
+        {(['general', 'event'] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setRaffleMode(mode)}
+            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+              raffleMode === mode
+                ? 'bg-white dark:bg-slate-700 text-[var(--color-cyc-secondary)] dark:text-white shadow-sm'
+                : 'text-gray-500 dark:text-slate-400'
+            }`}
+          >
+            {mode === 'general' ? 'General raffle' : 'Event raffle'}
+          </button>
+        ))}
+      </div>
 
-          {knownEvents.length > 0 && (
+      {/* Event setup */}
+      {raffleMode === 'event' && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-5 mb-6">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col">
               <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
-                Past events
+                Event code
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={eventCode}
+                  onChange={(e) => setEventCode(e.target.value.trim())}
+                  className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm font-mono w-44"
+                />
+                <button
+                  onClick={startNewEvent}
+                  className="btn-secondary flex items-center whitespace-nowrap"
+                  title="Generate a fresh event code"
+                >
+                  <Sparkles className="w-4 h-4 mr-1.5" />
+                  New event
+                </button>
+              </div>
+            </div>
+
+            {knownEvents.length > 0 && (
+              <div className="flex flex-col">
+                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                  Past events
+                </label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) setEventCode(e.target.value);
+                  }}
+                  className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm"
+                >
+                  <option value="">Load existing…</option>
+                  {knownEvents.map((ev) => (
+                    <option key={ev.event_code} value={ev.event_code}>
+                      {ev.event_code} ({ev.count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex flex-col">
+              <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                QR links to
               </label>
               <select
-                value=""
-                onChange={(e) => {
-                  if (e.target.value) setEventCode(e.target.value);
-                }}
+                value={selectedSurvey}
+                onChange={(e) => setSelectedSurvey(e.target.value)}
                 className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm"
               >
-                <option value="">Load existing…</option>
-                {knownEvents.map((ev) => (
-                  <option key={ev.event_code} value={ev.event_code}>
-                    {ev.event_code} ({ev.count})
+                <option value="all">Landing page (all surveys)</option>
+                {surveys.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.title}
+                    {s.is_active ? '' : ' (inactive)'}
                   </option>
                 ))}
               </select>
             </div>
-          )}
 
-          <div className="flex flex-col">
-            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
-              QR links to
-            </label>
-            <select
-              value={selectedSurvey}
-              onChange={(e) => setSelectedSurvey(e.target.value)}
-              className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm"
-            >
-              <option value="all">Landing page (all surveys)</option>
-              {surveys.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                  {s.is_active ? '' : ' (inactive)'}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="flex items-center text-sm text-gray-600 dark:text-slate-400">
+                <Users className="w-4 h-4 mr-1.5 text-[var(--color-cyc-primary)]" />
+                {totalUnique} {totalUnique !== 1 ? 'people' : 'person'}
+                <span className="mx-1.5 text-gray-300 dark:text-slate-600">·</span>
+                {totalTickets} ticket{totalTickets !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={() => loadEntries()}
+                className="btn-secondary flex items-center"
+                disabled={loadingEntries}
+              >
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${loadingEntries ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="flex items-center text-sm text-gray-600 dark:text-slate-400">
-              <Users className="w-4 h-4 mr-1.5 text-[var(--color-cyc-primary)]" />
-              {totalUnique} {totalUnique !== 1 ? 'people' : 'person'}
-              <span className="mx-1.5 text-gray-300 dark:text-slate-600">·</span>
-              {totalTickets} ticket{totalTickets !== 1 ? 's' : ''}
-            </span>
+          <div className="flex flex-wrap items-center gap-4 mt-4 text-sm">
+            <label className="flex items-center text-gray-600 dark:text-slate-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="mr-2 rounded border-gray-300 text-[var(--color-cyc-primary)] focus:ring-[var(--color-cyc-primary)]"
+              />
+              Auto-refresh entries (every 8s)
+            </label>
+            <button
+              onClick={() => setMaskEmails((m) => !m)}
+              className="flex items-center text-gray-600 dark:text-slate-400 hover:text-[var(--color-cyc-primary)]"
+            >
+              {maskEmails ? (
+                <Eye className="w-4 h-4 mr-1.5" />
+              ) : (
+                <EyeOff className="w-4 h-4 mr-1.5" />
+              )}
+              {maskEmails ? 'Show emails' : 'Mask emails on wheel'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {raffleMode === 'general' && (
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <span className="flex items-center text-sm text-gray-600 dark:text-slate-400">
+            <Users className="w-4 h-4 mr-1.5 text-[var(--color-cyc-primary)]" />
+            {totalUnique} {totalUnique !== 1 ? 'people' : 'person'}
+            <span className="mx-1.5 text-gray-300 dark:text-slate-600">·</span>
+            {totalTickets} ticket{totalTickets !== 1 ? 's' : ''}
+          </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMaskEmails((masked) => !masked)}
+              className="flex items-center text-sm text-gray-600 dark:text-slate-400 hover:text-[var(--color-cyc-primary)]"
+            >
+              {maskEmails ? (
+                <Eye className="w-4 h-4 mr-1.5" />
+              ) : (
+                <EyeOff className="w-4 h-4 mr-1.5" />
+              )}
+              {maskEmails ? 'Show emails' : 'Mask emails'}
+            </button>
             <button
               onClick={() => loadEntries()}
               className="btn-secondary flex items-center"
@@ -527,75 +608,56 @@ export default function AdminRafflePage() {
             </button>
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-4 mt-4 text-sm">
-          <label className="flex items-center text-gray-600 dark:text-slate-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="mr-2 rounded border-gray-300 text-[var(--color-cyc-primary)] focus:ring-[var(--color-cyc-primary)]"
-            />
-            Auto-refresh entries (every 8s)
-          </label>
-          <button
-            onClick={() => setMaskEmails((m) => !m)}
-            className="flex items-center text-gray-600 dark:text-slate-400 hover:text-[var(--color-cyc-primary)]"
-          >
-            {maskEmails ? (
-              <Eye className="w-4 h-4 mr-1.5" />
-            ) : (
-              <EyeOff className="w-4 h-4 mr-1.5" />
-            )}
-            {maskEmails ? 'Show emails' : 'Mask emails on wheel'}
-          </button>
-        </div>
-      </div>
+      )}
 
       {entriesError && (
         <div className="mb-6 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-          {entriesError} — make sure the <code>event_raffle_entries</code> table exists in Supabase.
+          {entriesError}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* QR Panel */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center">
-          <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-1 flex items-center self-start">
-            <QrCode className="w-5 h-5 mr-2" />
-            Scan to Enter
-          </h2>
-          <p className="text-xs text-gray-500 dark:text-slate-500 mb-4 self-start">
-            Completing the survey via this code enters them into the wheel.
-          </p>
-          <div className="bg-white p-4 rounded-xl border border-gray-200">
-            <QRCodeCanvas value={qrUrl} size={200} level="M" marginSize={4} />
+        {raffleMode === 'event' && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center">
+            <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-1 flex items-center self-start">
+              <QrCode className="w-5 h-5 mr-2" />
+              Scan to Enter
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-slate-500 mb-4 self-start">
+              Completing the survey via this code enters them into the wheel.
+            </p>
+            <div className="bg-white p-4 rounded-xl border border-gray-200">
+              <QRCodeCanvas value={qrUrl} size={200} level="M" marginSize={4} />
+            </div>
+            <button
+              onClick={copyUrl}
+              className="mt-3 text-xs text-gray-500 dark:text-slate-400 hover:text-[var(--color-cyc-primary)] flex items-center"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 mr-1" /> Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3.5 h-3.5 mr-1" /> Copy link
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setFullscreenQr(true)}
+              className="mt-4 btn-primary flex items-center text-sm"
+            >
+              <Maximize2 className="w-4 h-4 mr-1.5" />
+              Display fullscreen
+            </button>
           </div>
-          <button
-            onClick={copyUrl}
-            className="mt-3 text-xs text-gray-500 dark:text-slate-400 hover:text-[var(--color-cyc-primary)] flex items-center"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 mr-1" /> Copied
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5 mr-1" /> Copy link
-              </>
-            )}
-          </button>
-          <button
-            onClick={() => setFullscreenQr(true)}
-            className="mt-4 btn-primary flex items-center text-sm"
-          >
-            <Maximize2 className="w-4 h-4 mr-1.5" />
-            Display fullscreen
-          </button>
-        </div>
+        )}
 
         {/* Wheel Panel */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center">
+        <div
+          className={`${raffleMode === 'general' ? 'lg:col-span-3' : 'lg:col-span-2'} bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center`}
+        >
           <button
             onClick={() => setFullscreenWheel(true)}
             className="self-end btn-secondary flex items-center text-sm mb-2"
@@ -631,7 +693,9 @@ export default function AdminRafflePage() {
               )}
               {entries.length === 0 && !loadingEntries && (
                 <p className="text-sm text-gray-500 dark:text-slate-400 mt-3 text-center">
-                  No entries yet. Display the QR code so attendees can complete the survey.
+                  {raffleMode === 'general'
+                    ? 'No raffle tickets exist yet for your team surveys.'
+                    : 'No entries yet. Display the QR code so attendees can complete the survey.'}
                 </p>
               )}
             </>
@@ -696,19 +760,21 @@ export default function AdminRafflePage() {
           </button>
 
           {/* Slide to the QR code */}
-          <button
-            onClick={() => {
-              setFullscreenWheel(false);
-              setFullscreenQr(true);
-            }}
-            className="group absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 text-gray-400 hover:text-[var(--color-cyc-primary)] transition-colors"
-            title="Show the QR code"
-          >
-            <span className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-[var(--color-cyc-primary)]/10 shadow-md">
-              <ChevronLeft className="w-8 h-8" />
-            </span>
-            <span className="text-xs font-semibold">QR code</span>
-          </button>
+          {raffleMode === 'event' && (
+            <button
+              onClick={() => {
+                setFullscreenWheel(false);
+                setFullscreenQr(true);
+              }}
+              className="group absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 text-gray-400 hover:text-[var(--color-cyc-primary)] transition-colors"
+              title="Show the QR code"
+            >
+              <span className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-[var(--color-cyc-primary)]/10 shadow-md">
+                <ChevronLeft className="w-8 h-8" />
+              </span>
+              <span className="text-xs font-semibold">QR code</span>
+            </button>
+          )}
 
           <h2 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4 flex items-center">
             <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
