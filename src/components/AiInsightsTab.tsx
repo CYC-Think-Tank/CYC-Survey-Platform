@@ -13,6 +13,7 @@ import {
   Eye,
   Search,
 } from 'lucide-react';
+import { adminFetch } from '@/lib/adminAuth';
 import type { LucideIcon } from 'lucide-react';
 
 type AiModuleKey = 'persuadability' | 'mood' | 'beliefs' | 'minority' | 'archetypes' | 'blindspots';
@@ -130,7 +131,7 @@ export default function AiInsightsTab({
     if (aiData[mod.key] && !force) return;
     setAiLoading((prev) => ({ ...prev, [mod.key]: true }));
     setAiErrors((prev) => ({ ...prev, [mod.key]: '' }));
-    fetch(`/api/surveys/${surveyId}/${mod.endpoint}`, {
+    adminFetch(`/api/surveys/${surveyId}/${mod.endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force_refresh: force }),

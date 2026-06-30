@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
 import { RichTextEditor } from '@/components/RichTextEditor';
+import { adminFetch } from '@/lib/adminAuth';
 
 export default function EditBlogPost() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export default function EditBlogPost() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`/api/blog/${id}`)
+    adminFetch(`/api/blog/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error('Post not found');
         return res.json();
@@ -64,7 +65,7 @@ export default function EditBlogPost() {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await adminFetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       return await res.json();
     } catch {
@@ -108,7 +109,7 @@ export default function EditBlogPost() {
     setError('');
 
     try {
-      const res = await fetch(`/api/blog/${id}`, {
+      const res = await adminFetch(`/api/blog/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

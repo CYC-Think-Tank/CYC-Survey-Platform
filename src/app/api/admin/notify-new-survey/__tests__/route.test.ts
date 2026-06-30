@@ -16,46 +16,58 @@ describe('Notify New Survey API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.ADMIN_PASSWORD = 'test-password';
     process.env.SUPABASE_URL = 'http://test-supabase.com';
     process.env.SUPABASE_KEY = 'test-key';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+    process.env.ALLOWED_ADMIN_EMAIL_DOMAIN = 'test.com';
     process.env.GMAIL_USER = 'test@test.com';
     process.env.GMAIL_APP_PASSWORD = 'test-app-password';
     process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000';
   });
 
-  const createRequest = (body: any) => {
+  const createRequest = (body: any, token = 'valid-token') => {
     return new NextRequest('http://localhost:3000/api/admin/notify-new-survey', {
       method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
     });
   };
 
-  it('rejects invalid password', async () => {
-    const req = createRequest({ password: 'wrong-password' });
+  it('rejects missing or invalid Supabase session', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false });
+    const req = createRequest({});
     const res = await POST(req);
     expect(res.status).toBe(401);
   });
 
   it('rejects if missing env vars', async () => {
     delete process.env.SUPABASE_URL;
-    const req = createRequest({ password: 'test-password' });
+    const req = createRequest({});
     const res = await POST(req);
     expect(res.status).toBe(500);
   });
 
   it('returns 404 if no active surveys found', async () => {
     mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ email: 'admin@test.com' }),
+    });
+    mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve([]),
     });
 
-    const req = createRequest({ password: 'test-password' });
+    const req = createRequest({});
     const res = await POST(req);
     expect(res.status).toBe(404);
   });
 
   it('sends emails only to users with remaining surveys', async () => {
     mockFetch
+      // 0. auth user
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ email: 'admin@test.com' }),
+      })
       // 1. active surveys
       .mockResolvedValueOnce({
         json: () => Promise.resolve([{ id: 'survey1' }, { id: 'survey2' }]),
@@ -79,7 +91,7 @@ describe('Notify New Survey API', () => {
         json: () => Promise.resolve(),
       });
 
-    const req = createRequest({ password: 'test-password' });
+    const req = createRequest({});
     const res = await POST(req);
 
     expect(res.status).toBe(200);

@@ -1,18 +1,25 @@
 import json as json_module
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
+from api.dependencies import require_admin_context, require_survey_team_access
 from api.models import AIAnalysisRequest
 from api.services.ai_analysis import handle_ai_analysis
 
 router = APIRouter()
 
 
+async def _require_survey_access(survey_id: str, request: Request) -> None:
+    context = await require_admin_context(request)
+    require_survey_team_access(survey_id, context)
+
+
 @router.post("/api/surveys/{survey_id}/ai-analysis")
 async def ai_persuadability_analysis(
-    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+    survey_id: str, request: Request, body: AIAnalysisRequest = AIAnalysisRequest()
 ):
     try:
+        await _require_survey_access(survey_id, request)
         prompt_suffix = """
 
 Produce a Persuadability Detection report as JSON with EXACTLY this structure:
@@ -45,9 +52,10 @@ Guidelines: High variance in rating/likert = persuadable. Split multiple choice 
 
 @router.post("/api/surveys/{survey_id}/ai-mood")
 async def ai_mood_heatmap(
-    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+    survey_id: str, request: Request, body: AIAnalysisRequest = AIAnalysisRequest()
 ):
     try:
+        await _require_survey_access(survey_id, request)
         prompt_suffix = """
 
 Produce a Public Mood Heatmap report as JSON with EXACTLY this structure:
@@ -81,9 +89,10 @@ Guidelines: Focus on emotional valence and intensity across responses. Look for 
 
 @router.post("/api/surveys/{survey_id}/ai-beliefs")
 async def ai_belief_network(
-    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+    survey_id: str, request: Request, body: AIAnalysisRequest = AIAnalysisRequest()
 ):
     try:
+        await _require_survey_access(survey_id, request)
         prompt_suffix = """
 
 Produce a Hidden Belief Network report as JSON with EXACTLY this structure:
@@ -117,9 +126,10 @@ Guidelines: Look for correlations in how people answer seemingly unrelated quest
 
 @router.post("/api/surveys/{survey_id}/ai-minority")
 async def ai_minority_insights(
-    survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()
+    survey_id: str, request: Request, body: AIAnalysisRequest = AIAnalysisRequest()
 ):
     try:
+        await _require_survey_access(survey_id, request)
         prompt_suffix = """
 
 Produce a Minority Insight Amplifier report as JSON with EXACTLY this structure:
@@ -159,8 +169,11 @@ Guidelines: Focus on issues raised by <25% of respondents but with unusually hig
 
 
 @router.post("/api/surveys/{survey_id}/ai-archetypes")
-async def ai_archetypes(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_archetypes(
+    survey_id: str, request: Request, body: AIAnalysisRequest = AIAnalysisRequest()
+):
     try:
+        await _require_survey_access(survey_id, request)
         prompt_suffix = """
 
 Produce a Behavioural Archetypes report as JSON with EXACTLY this structure:
@@ -203,8 +216,11 @@ Guidelines: Cluster respondents by recurring patterns in attitudes, values, and 
 
 
 @router.post("/api/surveys/{survey_id}/ai-blindspots")
-async def ai_blindspots(survey_id: str, body: AIAnalysisRequest = AIAnalysisRequest()):
+async def ai_blindspots(
+    survey_id: str, request: Request, body: AIAnalysisRequest = AIAnalysisRequest()
+):
     try:
+        await _require_survey_access(survey_id, request)
         prompt_suffix = """
 
 Produce a Survey Blind Spot Analyzer report as JSON with EXACTLY this structure:

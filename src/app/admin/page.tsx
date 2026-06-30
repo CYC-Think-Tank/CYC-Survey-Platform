@@ -4,6 +4,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UNCATEGORIZED_LABEL } from '@/config/categories';
 import {
+  adminFetch,
+  ensureArray,
+  fetchAdminMe,
+  isAdminFetchError,
+  parseJsonResponse,
+  type AdminTeam,
+} from '@/lib/adminAuth';
+import { supabase } from '@/lib/supabase';
+import {
   PlusCircle,
   Users,
   Clock,
@@ -20,6 +29,7 @@ import {
   Send,
   Trophy,
   FileText,
+  Crown,
 } from 'lucide-react';
 
 interface ReferralLeaderboardEntry {
@@ -36,6 +46,7 @@ interface Survey {
   category?: string | null;
   response_count?: number;
   estimated_minutes?: number;
+  team_id?: string | null;
 }
 
 interface ShareLink {
@@ -43,6 +54,25 @@ interface ShareLink {
   code: string;
   label?: string | null;
   response_count?: number;
+}
+
+interface TeamJoinRequest {
+  id: string;
+  team_id: string;
+  team_name?: string | null;
+  user_id: string;
+  user_email?: string | null;
+  requested_at?: string;
+}
+
+interface TeamMember {
+  id: string;
+  team_id: string;
+  team_name?: string | null;
+  user_id: string;
+  user_email?: string | null;
+  full_name?: string | null;
+  role: 'team_leader' | 'team_member';
 }
 
 export default function AdminDashboard() {
@@ -61,6 +91,15 @@ export default function AdminDashboard() {
   const [createModal, setCreateModal] = useState(false);
   const [newSurveyTitle, setNewSurveyTitle] = useState('');
   const [creatingSurvey, setCreatingSurvey] = useState(false);
+  const [teams, setTeams] = useState<AdminTeam[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
+  const [transferringMemberId, setTransferringMemberId] = useState<string | null>(null);
+  const [leavingTeam, setLeavingTeam] = useState(false);
+  const [joinRequests, setJoinRequests] = useState<TeamJoinRequest[]>([]);
+  const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
+  const [updatingJoinRequestId, setUpdatingJoinRequestId] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const router = useRouter();
 
   // Distinct categories actually in use, so new labels appear in the filter
@@ -85,27 +124,87 @@ export default function AdminDashboard() {
   }, [surveys, categoryFilter]);
 
   const fetchSurveys = () => {
-    fetch('/api/surveys?include_inactive=true')
-      .then((res) => res.json())
+    adminFetch('/api/surveys?include_inactive=true')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to fetch surveys'))
+      .then((data) => ensureArray<Survey>(data, 'Unexpected survey response from API'))
       .then((data) => {
         setSurveys(data);
+        setError('');
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Failed to fetch surveys', err);
+        if (!isAdminFetchError(err)) {
+          console.error('Failed to fetch surveys', err);
+        }
+        setSurveys([]);
+        setError(err instanceof Error ? err.message : 'Failed to fetch surveys');
         setLoading(false);
       });
   };
 
+  const isTeamLeader = (adminTeams: AdminTeam[]) =>
+    adminTeams.some((team) => team.role === 'team_leader');
+
+  const fetchJoinRequests = () => {
+    setLoadingJoinRequests(true);
+    adminFetch('/admin-api/team-join-requests')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load team requests'))
+      .then((data) =>
+        setJoinRequests(ensureArray<TeamJoinRequest>(data, 'Unexpected team-request response'))
+      )
+      .catch((err) => {
+        if (!isAdminFetchError(err)) {
+          console.error('Failed to load team requests', err);
+        }
+        setJoinRequests([]);
+      })
+      .finally(() => setLoadingJoinRequests(false));
+  };
+
+  const fetchTeamMembers = () => {
+    setLoadingTeamMembers(true);
+    adminFetch('/admin-api/team-members')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load team members'))
+      .then((data) =>
+        setTeamMembers(ensureArray<TeamMember>(data, 'Unexpected team-member response'))
+      )
+      .catch((err) => {
+        if (!isAdminFetchError(err)) {
+          console.error('Failed to load team members', err);
+        }
+        setTeamMembers([]);
+      })
+      .finally(() => setLoadingTeamMembers(false));
+  };
+
   useEffect(() => {
-    fetchSurveys();
+    fetchAdminMe()
+      .then((me) => {
+        setTeams(me.teams);
+        if (me.teams.length === 0) {
+          setSurveys([]);
+          setLoading(false);
+          return;
+        }
+
+        fetchSurveys();
+        fetchTeamMembers();
+        if (isTeamLeader(me.teams)) {
+          fetchJoinRequests();
+        }
+      })
+      .catch(() => {
+        setTeams([]);
+        setSurveys([]);
+        setLoading(false);
+      });
   }, []);
 
   const handleCreateSurvey = async () => {
     if (!newSurveyTitle.trim()) return;
     setCreatingSurvey(true);
     try {
-      const res = await fetch('/api/surveys', {
+      const res = await adminFetch('/api/surveys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -127,6 +226,99 @@ export default function AdminDashboard() {
     }
   };
 
+  const canDeleteSurvey = (survey: Survey) =>
+    teams.some((team) => team.id === survey.team_id && team.role === 'team_leader');
+
+  const currentUserIsTeamLeader = isTeamLeader(teams);
+
+  const currentUserLeadsTeam = (teamId: string) =>
+    teams.some((team) => team.id === teamId && team.role === 'team_leader');
+
+  const teamMemberGroups = teams.map((team) => ({
+    team,
+    members: teamMembers.filter((member) => member.team_id === team.id),
+  }));
+
+  const handleJoinRequest = async (requestId: string, action: 'approve' | 'reject') => {
+    setUpdatingJoinRequestId(requestId);
+    try {
+      const res = await adminFetch(`/admin-api/team-join-requests/${requestId}/${action}`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || `Failed to ${action} request.`);
+        return;
+      }
+      fetchJoinRequests();
+    } catch (err) {
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
+      alert(`Failed to ${action} request.`);
+    } finally {
+      setUpdatingJoinRequestId(null);
+    }
+  };
+
+  const transferLeadership = async (member: TeamMember) => {
+    const memberLabel = member.full_name || member.user_email || 'this member';
+    const confirmed = window.confirm(
+      `Transfer leadership to ${memberLabel}? You will become a regular team member and only the new leader will be able to manage requests or delete surveys.`
+    );
+    if (!confirmed) return;
+
+    setTransferringMemberId(member.id);
+    try {
+      const res = await adminFetch('/admin-api/team-members/transfer-leadership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          team_id: member.team_id,
+          new_leader_user_id: member.user_id,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || 'Failed to transfer leadership.');
+        return;
+      }
+      window.location.reload();
+    } catch (err) {
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
+      alert('Failed to transfer leadership.');
+    } finally {
+      setTransferringMemberId(null);
+    }
+  };
+
+  const leaveTeam = async () => {
+    const confirmed = window.confirm(
+      'Leave this team? You will lose access to its surveys and return to team onboarding.'
+    );
+    if (!confirmed) return;
+
+    setLeavingTeam(true);
+    try {
+      const res = await adminFetch('/admin-api/team-members/leave', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || 'Failed to leave team.');
+        return;
+      }
+      window.location.href = '/admin/pending-team';
+    } catch (err) {
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
+      alert('Failed to leave team.');
+    } finally {
+      setLeavingTeam(false);
+    }
+  };
+
   const handleToggleActive = async (survey: Survey) => {
     if (!survey.is_active) {
       const confirmed = window.confirm(
@@ -136,7 +328,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`/api/surveys/${survey.id}/toggle`, {
+      const res = await adminFetch(`/api/surveys/${survey.id}/toggle`, {
         method: 'PATCH',
       });
       if (res.ok) {
@@ -145,7 +337,9 @@ export default function AdminDashboard() {
         alert('Failed to toggle survey status.');
       }
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('An error occurred while toggling.');
     }
   };
@@ -167,7 +361,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`/api/surveys/${survey.id}`, {
+      const res = await adminFetch(`/api/surveys/${survey.id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -176,14 +370,16 @@ export default function AdminDashboard() {
         alert('Failed to delete survey.');
       }
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('An error occurred while deleting.');
     }
   };
 
   const handleDuplicate = async (survey: Survey) => {
     try {
-      const res = await fetch(`/api/surveys/${survey.id}/duplicate`, {
+      const res = await adminFetch(`/api/surveys/${survey.id}/duplicate`, {
         method: 'POST',
       });
       if (res.ok) {
@@ -192,7 +388,9 @@ export default function AdminDashboard() {
         alert('Failed to duplicate survey.');
       }
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('An error occurred while duplicating.');
     }
   };
@@ -203,18 +401,13 @@ export default function AdminDashboard() {
     );
     if (!confirm) return;
 
-    const pwd = window.prompt('Please enter the admin password to authorize this email blast:');
-    if (!pwd) return;
-
     try {
-      const res = await fetch('/api/admin/notify-new-survey', {
+      const res = await adminFetch('/api/admin/notify-new-survey', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          password: pwd,
-        }),
+        body: JSON.stringify({}),
       });
 
       if (res.ok) {
@@ -225,13 +418,15 @@ export default function AdminDashboard() {
         alert(`Failed to notify users: ${data.error || 'Unknown error'}`);
       }
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('An error occurred while trying to send notifications.');
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('cyc_admin_auth');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     router.push('/admin/login');
   };
 
@@ -248,9 +443,9 @@ export default function AdminDashboard() {
     // Fetch existing share links
     try {
       const url = survey ? `/api/surveys/${survey.id}/share-links` : `/api/global-share-links`;
-      const res = await fetch(url);
-      const data = await res.json();
-      setShareLinks(data);
+      const res = await adminFetch(url);
+      const data = await parseJsonResponse<unknown>(res, 'Failed to load share links');
+      setShareLinks(ensureArray<ShareLink>(data, 'Unexpected share link response from API'));
     } catch {
       /* ignore */
     }
@@ -260,11 +455,15 @@ export default function AdminDashboard() {
     setLeaderboardModal(true);
     setLoadingLeaderboard(true);
     try {
-      const res = await fetch('/api/admin/referrals/leaderboard');
-      const data = await res.json();
-      setLeaderboard(data);
+      const res = await adminFetch('/api/admin/referrals/leaderboard');
+      const data = await parseJsonResponse<unknown>(res, 'Failed to load leaderboard');
+      setLeaderboard(
+        ensureArray<ReferralLeaderboardEntry>(data, 'Unexpected leaderboard response from API')
+      );
     } catch (err) {
-      console.error(err);
+      if (!isAdminFetchError(err)) {
+        console.error(err);
+      }
       alert('Failed to load leaderboard');
     } finally {
       setLoadingLeaderboard(false);
@@ -280,12 +479,12 @@ export default function AdminDashboard() {
         ? `/api/global-share-links`
         : `/api/surveys/${shareModal.id}/share-links`;
 
-      const res = await fetch(apiUrl, {
+      const res = await adminFetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ label: shareLabel.trim() || null }),
       });
-      const newLink = await res.json();
+      const newLink = await parseJsonResponse<ShareLink>(res, 'Failed to generate link');
       newLink.response_count = 0;
       setShareLinks((prev) => [newLink, ...prev]);
       setShareLabel('');
@@ -304,7 +503,7 @@ export default function AdminDashboard() {
 
   const handleDeleteLink = async (linkId: string) => {
     try {
-      await fetch(`/api/share-links/${linkId}`, { method: 'DELETE' });
+      await adminFetch(`/api/share-links/${linkId}`, { method: 'DELETE' });
       setShareLinks((prev) => prev.filter((l) => l.id !== linkId));
     } catch {
       alert('Failed to delete link.');
@@ -431,6 +630,179 @@ export default function AdminDashboard() {
             );
           })}
         </div>
+      )}
+
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {error}
+        </div>
+      )}
+      {teams.length > 0 && (
+        <section className="mb-6 bg-white dark:bg-slate-800 rounded-xl shadow border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <div>
+              <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                Team Members
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-slate-500">
+                View who has access to your team surveys.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {!currentUserIsTeamLeader && (
+                <button
+                  type="button"
+                  onClick={leaveTeam}
+                  disabled={leavingTeam}
+                  className="text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50"
+                >
+                  {leavingTeam ? 'Leaving...' : 'Leave team'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={fetchTeamMembers}
+                disabled={loadingTeamMembers}
+                className="text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700 disabled:opacity-50"
+              >
+                {loadingTeamMembers ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
+            {currentUserIsTeamLeader && (
+              <div className="bg-yellow-50 px-6 py-3 text-sm text-yellow-800">
+                Transfer leadership to another member before leaving this team.
+              </div>
+            )}
+            {loadingTeamMembers ? (
+              <div className="px-6 py-5 text-sm text-gray-500 dark:text-slate-500">
+                Loading team members...
+              </div>
+            ) : teamMembers.length === 0 ? (
+              <div className="px-6 py-5 text-sm text-gray-500 dark:text-slate-500">
+                No team members found.
+              </div>
+            ) : (
+              teamMemberGroups.map(({ team, members }) => (
+                <div key={team.id} className="px-6 py-4">
+                  <div className="mb-3 text-sm font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                    {team.name || 'Unnamed team'}
+                  </div>
+                  {members.length === 0 ? (
+                    <div className="text-sm text-gray-500 dark:text-slate-500">
+                      No members found for this team.
+                    </div>
+                  ) : (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {members.map((member) => (
+                        <div
+                          key={member.id}
+                          className="rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2"
+                        >
+                          <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                            {member.full_name || member.user_email || 'Unknown user'}
+                          </div>
+                          {member.full_name && member.user_email && (
+                            <div className="text-xs text-gray-500 dark:text-slate-500">
+                              {member.user_email}
+                            </div>
+                          )}
+                          <div className="mt-2 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-slate-700 dark:text-slate-200">
+                            {member.role === 'team_leader' ? 'Team leader' : 'Team member'}
+                          </div>
+                          {member.role === 'team_member' &&
+                            currentUserLeadsTeam(member.team_id) && (
+                              <button
+                                type="button"
+                                onClick={() => transferLeadership(member)}
+                                disabled={transferringMemberId === member.id}
+                                className="mt-3 inline-flex items-center text-xs font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700 disabled:opacity-50"
+                              >
+                                <Crown className="mr-1 h-3.5 w-3.5" />
+                                {transferringMemberId === member.id
+                                  ? 'Transferring...'
+                                  : 'Transfer leadership'}
+                              </button>
+                            )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+      {currentUserIsTeamLeader && (
+        <section className="mb-6 bg-white dark:bg-slate-800 rounded-xl shadow border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+            <div>
+              <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                Team Requests
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-slate-500">
+                Approve or reject pending requests to join your teams.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchJoinRequests}
+              disabled={loadingJoinRequests}
+              className="text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700 disabled:opacity-50"
+            >
+              {loadingJoinRequests ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-slate-700">
+            {loadingJoinRequests ? (
+              <div className="px-6 py-5 text-sm text-gray-500 dark:text-slate-500">
+                Loading team requests...
+              </div>
+            ) : joinRequests.length === 0 ? (
+              <div className="px-6 py-5 text-sm text-gray-500 dark:text-slate-500">
+                No pending team requests.
+              </div>
+            ) : (
+              joinRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4"
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                      {request.user_email || 'Unknown user'}
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-slate-500">
+                      Wants to join {request.team_name || 'Unknown team'}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleJoinRequest(request.id, 'approve')}
+                      disabled={updatingJoinRequestId === request.id}
+                      className="inline-flex items-center rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleJoinRequest(request.id, 'reject')}
+                      disabled={updatingJoinRequestId === request.id}
+                      className="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
       )}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow border border-gray-200 dark:border-slate-700 overflow-x-auto overflow-y-hidden">
         <table className="min-w-full divide-y divide-gray-200">
@@ -562,13 +934,15 @@ export default function AdminDashboard() {
                       Duplicate
                     </button>
 
-                    <button
-                      onClick={() => handleDelete(survey)}
-                      className="text-red-500 hover:text-red-700 ml-2"
-                      title="Delete Survey"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDeleteSurvey(survey) && (
+                      <button
+                        onClick={() => handleDelete(survey)}
+                        className="text-red-500 hover:text-red-700 ml-2"
+                        title="Delete Survey"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
