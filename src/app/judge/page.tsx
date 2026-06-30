@@ -136,7 +136,9 @@ export default function JudgeDashboard() {
                     <div>
                       <h3 className="text-base font-bold text-gray-900">{survey.title}</h3>
                       <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
-                        {survey.description || 'No description provided.'}
+                        {survey.description
+                          ? survey.description.replace(/<[^>]*>?/gm, '')
+                          : 'No description provided.'}
                       </p>
                     </div>
                   </div>
