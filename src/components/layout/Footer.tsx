@@ -28,7 +28,7 @@ export function Footer() {
   const pathname = usePathname();
   const { t } = useLanguage();
 
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/student')) return null;
 
   return (
     <motion.footer

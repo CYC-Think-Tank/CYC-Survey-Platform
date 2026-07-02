@@ -36,7 +36,7 @@ describe('AdminLogin', () => {
 
   it('renders login form', () => {
     render(<AdminLogin />);
-    expect(screen.getByText('Admin Access')).toBeInTheDocument();
+    expect(screen.getByText('Student Access')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('name@thecyc.org')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
   });
@@ -53,7 +53,7 @@ describe('AdminLogin', () => {
     expect(mocks.signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it('redirects to admin after successful sign in', async () => {
+  it('redirects to student dashboard after successful sign in', async () => {
     render(<AdminLogin />);
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'person@thecyc.org' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } });
@@ -64,7 +64,7 @@ describe('AdminLogin', () => {
         email: 'person@thecyc.org',
         password: 'password123',
       });
-      expect(mocks.mockPush).toHaveBeenCalledWith('/admin');
+      expect(mocks.mockPush).toHaveBeenCalledWith('/student');
     });
   });
 

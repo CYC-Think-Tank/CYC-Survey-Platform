@@ -44,6 +44,16 @@ export async function POST(request: NextRequest) {
       Authorization: `Bearer ${SUPABASE_KEY}`,
     };
 
+    // Only global admins may send blasts (not team-scoped students).
+    const profileRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${user.id}&select=is_admin`,
+      { headers }
+    );
+    const profiles = await profileRes.json().catch(() => []);
+    if (!Array.isArray(profiles) || !profiles[0]?.is_admin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     // 1. Fetch all active surveys
     const activeSurveysRes = await fetch(
       `${SUPABASE_URL}/rest/v1/surveys?is_active=eq.true&select=id`,

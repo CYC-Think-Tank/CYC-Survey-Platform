@@ -34,7 +34,9 @@ async def get_surveys(request: Request, include_inactive: bool = False):
             context = await require_admin_context(request, require_team=False)
 
         query = supabase.table("surveys").select("*, response_sessions(count)")
-        if context and context.teams:
+        if context and context.is_admin:
+            pass  # admins manage every survey, no team filter
+        elif context and context.teams:
             query = query.in_("team_id", context.team_ids())
         elif not include_inactive:
             query = query.eq("is_active", True)
@@ -93,11 +95,11 @@ async def get_survey(survey_id: str, request: Request):
             raise HTTPException(status_code=404, detail="Survey not found")
 
         survey = survey_res.data[0]
-        if context:
+        if context and not context.is_admin:
             team_id = survey.get("team_id")
             if not team_id or not context.is_team_member(team_id):
                 raise HTTPException(status_code=404, detail="Survey not found")
-        elif not survey.get("is_active"):
+        elif not context and not survey.get("is_active"):
             raise HTTPException(status_code=404, detail="Survey not found")
 
         # Fetch questions
@@ -128,9 +130,13 @@ async def create_survey(survey: SurveyCreate, request: Request):
     """
     try:
         context = await require_admin_context(request)
-        selected_team_id = survey.team_id or context.default_team.team_id
-        if not context.is_team_member(selected_team_id):
-            raise HTTPException(status_code=403, detail="Team access required")
+        if context.is_admin:
+            # Admins may create unassigned (team_id=None) surveys, or target any team.
+            selected_team_id = survey.team_id
+        else:
+            selected_team_id = survey.team_id or context.default_team.team_id
+            if not context.is_team_member(selected_team_id):
+                raise HTTPException(status_code=403, detail="Team access required")
         has_been_published = survey.is_active
 
         # 1. Create Survey

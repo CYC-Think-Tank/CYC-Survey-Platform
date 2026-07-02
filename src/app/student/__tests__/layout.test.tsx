@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import AdminLayout from '../layout';
+import StudentLayout from '../layout';
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: mocks.replace }),
-  usePathname: () => '/admin',
+  usePathname: () => '/student',
 }));
 vi.mock('@/lib/adminAuth', () => ({
   AdminFetchError: class AdminFetchError extends Error {
@@ -28,7 +28,7 @@ vi.mock('@/lib/supabase', () => ({
   supabase: { auth: { getSession: mocks.getSession, signOut: mocks.signOut } },
 }));
 
-describe('AdminLayout', () => {
+describe('StudentLayout', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.getSession.mockResolvedValue({
@@ -37,16 +37,16 @@ describe('AdminLayout', () => {
   });
 
   it('does not render dashboard children while redirecting an unassigned user', async () => {
-    mocks.fetchAdminMe.mockResolvedValue({ teams: [], pending_requests: [] });
+    mocks.fetchAdminMe.mockResolvedValue({ is_admin: false, teams: [], pending_requests: [] });
 
     render(
-      <AdminLayout>
+      <StudentLayout>
         <div>Dashboard child mounted</div>
-      </AdminLayout>
+      </StudentLayout>
     );
 
     await waitFor(() => {
-      expect(mocks.replace).toHaveBeenCalledWith('/admin/pending-team');
+      expect(mocks.replace).toHaveBeenCalledWith('/student/pending-team');
     });
     expect(screen.queryByText('Dashboard child mounted')).not.toBeInTheDocument();
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();
@@ -54,16 +54,32 @@ describe('AdminLayout', () => {
 
   it('renders dashboard children after membership is confirmed', async () => {
     mocks.fetchAdminMe.mockResolvedValue({
+      is_admin: false,
       teams: [{ id: 'team-1', name: 'CYC Admin', role: 'team_member' }],
     });
 
     render(
-      <AdminLayout>
+      <StudentLayout>
         <div>Dashboard child mounted</div>
-      </AdminLayout>
+      </StudentLayout>
     );
 
     expect(await screen.findByText('Dashboard child mounted')).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('redirects a global admin to the admin area', async () => {
+    mocks.fetchAdminMe.mockResolvedValue({ is_admin: true, teams: [], pending_requests: [] });
+
+    render(
+      <StudentLayout>
+        <div>Dashboard child mounted</div>
+      </StudentLayout>
+    );
+
+    await waitFor(() => {
+      expect(mocks.replace).toHaveBeenCalledWith('/admin');
+    });
+    expect(screen.queryByText('Dashboard child mounted')).not.toBeInTheDocument();
   });
 });

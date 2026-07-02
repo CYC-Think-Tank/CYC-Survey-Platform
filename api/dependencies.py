@@ -39,6 +39,7 @@ class TeamMembership:
 class AdminContext:
     user: AdminUser
     teams: list[TeamMembership]
+    is_admin: bool = False
 
     @property
     def default_team(self) -> TeamMembership:
@@ -112,6 +113,13 @@ def ensure_profile(user: AdminUser) -> None:
     ).execute()
 
 
+def get_profile_is_admin(user_id: str) -> bool:
+    response = supabase.table("profiles").select("is_admin").eq("id", user_id).execute()
+    if response.data:
+        return bool(response.data[0].get("is_admin"))
+    return False
+
+
 def get_team_memberships(user_id: str) -> list[TeamMembership]:
     response = (
         supabase.table("team_members")
@@ -138,14 +146,22 @@ async def require_admin_context(
 ) -> AdminContext:
     user = await get_admin_user(request)
     ensure_profile(user)
+    is_admin = get_profile_is_admin(user.id)
     teams = get_team_memberships(user.id)
     if len(teams) > 1:
         raise HTTPException(
             status_code=409, detail="Account belongs to more than one team"
         )
-    if require_team and not teams:
+    # Global admins are not bound to a team; only students need a team assignment.
+    if require_team and not is_admin and not teams:
         raise HTTPException(status_code=403, detail="No team assignment")
-    return AdminContext(user=user, teams=teams)
+    return AdminContext(user=user, teams=teams, is_admin=is_admin)
+
+
+def require_admin_only(context: AdminContext) -> None:
+    """Guard for endpoints that only global admins may access."""
+    if not context.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
 
 
 def require_survey_team_access(
@@ -157,6 +173,9 @@ def require_survey_team_access(
     if not survey_res.data:
         raise HTTPException(status_code=404, detail="Survey not found")
     survey = survey_res.data[0]
+    # Global admins can act on any survey regardless of team ownership.
+    if context.is_admin:
+        return survey
     team_id = survey.get("team_id")
     if not team_id or not context.is_team_member(team_id):
         raise HTTPException(status_code=404, detail="Survey not found")

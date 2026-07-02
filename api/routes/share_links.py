@@ -3,7 +3,12 @@ import string
 
 from fastapi import APIRouter, HTTPException, Request
 
-from api.dependencies import require_admin_context, require_survey_team_access, supabase
+from api.dependencies import (
+    require_admin_context,
+    require_admin_only,
+    require_survey_team_access,
+    supabase,
+)
 from api.models import ShareLinkCreate
 
 router = APIRouter()
@@ -73,7 +78,8 @@ async def get_share_links(survey_id: str, request: Request):
 async def create_global_share_link(body: ShareLinkCreate, request: Request):
     """Generate a unique global share link code."""
     try:
-        await require_admin_context(request)
+        context = await require_admin_context(request, require_team=False)
+        require_admin_only(context)
         code = "".join(random.choices(string.ascii_letters + string.digits, k=7))
         row = {"survey_id": None, "code": code, "label": body.label or None}
         res = supabase.table("share_links").insert(row).execute()
@@ -88,7 +94,8 @@ async def create_global_share_link(body: ShareLinkCreate, request: Request):
 async def get_global_share_links(request: Request):
     """Get all global share links with their response counts."""
     try:
-        await require_admin_context(request)
+        context = await require_admin_context(request, require_team=False)
+        require_admin_only(context)
         links_res = (
             supabase.table("share_links")
             .select("*")
@@ -188,7 +195,8 @@ async def get_or_create_referral_link(email: str):
 async def get_referral_leaderboard(request: Request):
     """Get a leaderboard of users who referred the most people."""
     try:
-        await require_admin_context(request)
+        context = await require_admin_context(request, require_team=False)
+        require_admin_only(context)
         # Fetch raffle entries that are referrals
         res = (
             supabase.table("raffle_entries")

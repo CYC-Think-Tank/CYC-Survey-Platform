@@ -17,6 +17,7 @@ async def get_admin_me(request: Request):
     )
     return {
         "user": {"id": context.user.id, "email": context.user.email},
+        "is_admin": context.is_admin,
         "teams": [
             {"id": team.team_id, "name": team.team_name, "role": team.role}
             for team in context.teams
