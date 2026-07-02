@@ -47,10 +47,29 @@ describe('Notify New Survey API', () => {
     expect(res.status).toBe(500);
   });
 
+  it('rejects non-admin accounts with 403', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ id: 'student-id', email: 'student@test.com' }),
+    });
+    // profile is_admin lookup returns a non-admin
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve([{ is_admin: false }]),
+    });
+
+    const req = createRequest({});
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+  });
+
   it('returns 404 if no active surveys found', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ email: 'admin@test.com' }),
+      json: () => Promise.resolve({ id: 'admin-id', email: 'admin@test.com' }),
+    });
+    // profile is_admin lookup
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve([{ is_admin: true }]),
     });
     mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve([]),
@@ -66,9 +85,13 @@ describe('Notify New Survey API', () => {
       // 0. auth user
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ email: 'admin@test.com' }),
+        json: () => Promise.resolve({ id: 'admin-id', email: 'admin@test.com' }),
       })
-      // 1. active surveys
+      // 1. profile is_admin lookup
+      .mockResolvedValueOnce({
+        json: () => Promise.resolve([{ is_admin: true }]),
+      })
+      // 2. active surveys
       .mockResolvedValueOnce({
         json: () => Promise.resolve([{ id: 'survey1' }, { id: 'survey2' }]),
       })

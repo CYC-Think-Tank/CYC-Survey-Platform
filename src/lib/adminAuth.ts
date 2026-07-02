@@ -8,6 +8,7 @@ export interface AdminTeam {
 
 export interface AdminMe {
   user: { id: string; email: string };
+  is_admin: boolean;
   teams: AdminTeam[];
   pending_requests: unknown[];
 }

@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { fetchAdminMe, getAllowedAdminEmailDomain, isAllowedAdminEmail } from '@/lib/adminAuth';
+import { getAllowedAdminEmailDomain, isAllowedAdminEmail } from '@/lib/adminAuth';
 
 export default function AdminLogin() {
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const allowedDomain = getAllowedAdminEmailDomain();
@@ -15,41 +17,59 @@ export default function AdminLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setMessage('');
 
     if (!allowedDomain) {
       setError('Admin email domain is not configured.');
       return;
     }
+
     if (!isAllowedAdminEmail(email)) {
       setError(`Use an email from ${allowedDomain}.`);
       return;
     }
 
     setLoading(true);
-    const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (result.error) {
-      setError(result.error.message);
-      setLoading(false);
-      return;
-    }
-
-    // Only global admins may enter /admin; students must use the student login.
-    try {
-      const me = await fetchAdminMe();
-      if (!me.is_admin) {
-        await supabase.auth.signOut();
-        setError('This account is not an admin. Use the student login instead.');
+    const credentials = { email: email.trim(), password };
+    if (mode === 'signup') {
+      const response = await fetch('/admin-api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(data.error || 'Failed to create admin account.');
         setLoading(false);
         return;
       }
-    } catch {
-      await supabase.auth.signOut();
-      setError('Could not verify admin access. Please try again.');
-      setLoading(false);
-      return;
+
+      if (!data.session) {
+        setMessage('Check your email to confirm your account, then sign in.');
+        setLoading(false);
+        return;
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+      if (sessionError) {
+        setError(sessionError.message);
+        setLoading(false);
+        return;
+      }
+    } else {
+      const result = await supabase.auth.signInWithPassword(credentials);
+
+      if (result.error) {
+        setError(result.error.message);
+        setLoading(false);
+        return;
+      }
     }
 
-    router.push('/admin');
+    router.push('/student');
     router.refresh();
   };
 
@@ -57,12 +77,21 @@ export default function AdminLogin() {
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="card w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[var(--color-cyc-secondary)]">Admin Access</h1>
-          <p className="text-gray-500 mt-2">Sign in to manage all surveys</p>
+          <h1 className="text-2xl font-bold text-[var(--color-cyc-secondary)]">Student Access</h1>
+          <p className="text-gray-500 mt-2">
+            {mode === 'login'
+              ? 'Sign in to manage your team surveys'
+              : 'Create your student account'}
+          </p>
         </div>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-medium">{error}</div>
+        )}
+        {message && (
+          <div className="bg-teal-50 text-teal-700 p-3 rounded mb-4 text-sm font-medium">
+            {message}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,16 +127,21 @@ export default function AdminLogin() {
             />
           </div>
           <button type="submit" disabled={loading} className="w-full btn-primary py-3 mt-6 text-lg">
-            {loading ? 'Verifying...' : 'Sign In'}
+            {loading ? 'Verifying...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
-        <a
-          href="/student/login"
-          className="mt-5 block text-center text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700"
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === 'login' ? 'signup' : 'login');
+            setError('');
+            setMessage('');
+          }}
+          className="mt-5 w-full text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700"
         >
-          Not an admin? Student login
-        </a>
+          {mode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
+        </button>
       </div>
     </div>
   );

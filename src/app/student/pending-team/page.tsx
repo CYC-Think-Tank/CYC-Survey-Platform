@@ -83,7 +83,7 @@ export default function PendingTeamPage() {
         setError(data.detail || data.error || 'Failed to create team.');
         return;
       }
-      window.location.href = '/admin';
+      window.location.href = '/student';
     } catch {
       setError('Failed to create team.');
     } finally {
@@ -93,7 +93,7 @@ export default function PendingTeamPage() {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
+    router.push('/student/login');
   };
 
   const filteredTeams = teams.filter((team) =>

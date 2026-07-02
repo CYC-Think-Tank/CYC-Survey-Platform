@@ -50,6 +50,14 @@ export function Header() {
             >
               Publications
             </Link>
+            {!pathname.startsWith('/admin') && !pathname.startsWith('/student') && (
+              <Link
+                href="/student/login"
+                className="text-gray-700 hover:text-[var(--color-cyc-primary)] text-sm sm:text-base font-semibold transition-colors"
+              >
+                Student Login
+              </Link>
+            )}
             <div className="relative">
               <button
                 onClick={() => setLangDropdownOpen(!langDropdownOpen)}

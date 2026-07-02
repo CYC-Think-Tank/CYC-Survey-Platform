@@ -4,9 +4,9 @@ import { useRouter, usePathname } from 'next/navigation';
 import { AdminFetchError, fetchAdminMe, isAllowedAdminEmail } from '@/lib/adminAuth';
 import { supabase } from '@/lib/supabase';
 
-const PUBLIC_ADMIN_PATHS = ['/admin/login', '/admin/unauthorized'];
+const PUBLIC_STUDENT_PATHS = ['/student/login', '/student/unauthorized', '/student/pending-team'];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [canRender, setCanRender] = useState(false);
   const router = useRouter();
@@ -30,8 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const session = data.session;
 
       if (!session) {
-        if (!PUBLIC_ADMIN_PATHS.includes(pathname)) {
-          router.replace('/admin/login');
+        if (!PUBLIC_STUDENT_PATHS.includes(pathname)) {
+          router.replace('/student/login');
           return;
         }
         allowCurrentPage();
@@ -40,8 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       if (!isAllowedAdminEmail(session.user.email)) {
         await supabase.auth.signOut();
-        if (pathname !== '/admin/unauthorized') {
-          router.replace('/admin/unauthorized');
+        if (pathname !== '/student/unauthorized') {
+          router.replace('/student/unauthorized');
           return;
         }
         allowCurrentPage();
@@ -50,29 +50,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       try {
         const me = await fetchAdminMe();
-        // Only global admins may use /admin; everyone else is a student.
-        if (!me.is_admin) {
-          router.replace('/student');
+        // Global admins belong in the /admin area, not the student team space.
+        if (me.is_admin) {
+          router.replace('/admin');
           return;
         }
-        if (PUBLIC_ADMIN_PATHS.includes(pathname)) {
-          router.replace('/admin');
+        if (me.teams.length === 0 && pathname !== '/student/pending-team') {
+          router.replace('/student/pending-team');
+          return;
+        }
+        if (me.teams.length > 0 && PUBLIC_STUDENT_PATHS.includes(pathname)) {
+          router.replace('/student');
           return;
         }
         allowCurrentPage();
       } catch (err) {
         if (err instanceof AdminFetchError && err.status === 403) {
-          if (pathname === '/admin/unauthorized') {
+          if (pathname === '/student/unauthorized') {
             allowCurrentPage();
           } else {
-            router.replace('/admin/unauthorized');
+            router.replace('/student/unauthorized');
           }
         } else {
           await supabase.auth.signOut();
-          if (pathname === '/admin/login') {
+          if (pathname === '/student/login') {
             allowCurrentPage();
           } else {
-            router.replace('/admin/login');
+            router.replace('/student/login');
           }
         }
       }

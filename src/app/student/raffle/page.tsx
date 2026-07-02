@@ -435,7 +435,7 @@ export default function AdminRafflePage() {
     <div className="max-w-6xl mx-auto py-8 px-4">
       <div className="mb-6">
         <Link
-          href="/admin"
+          href="/student"
           className="text-sm text-gray-500 dark:text-slate-400 hover:text-[var(--color-cyc-primary)] flex items-center mb-2"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
