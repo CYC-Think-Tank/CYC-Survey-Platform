@@ -4,6 +4,7 @@ import pytest
 
 from api.services.latent_trait_mapping_provider import (
     LatentTraitMappingError,
+    LatentTraitMappingNotFoundError,
     get_trait_mapping_for_survey,
     load_all_trait_mappings,
     normalize_survey_id,
@@ -54,8 +55,18 @@ def test_get_trait_mapping_for_survey_rejects_duplicates(tmp_path):
         get_trait_mapping_for_survey(SURVEY_ID, tmp_path)
 
 
-def test_get_trait_mapping_for_survey_raises_lookup_error_when_missing(tmp_path):
+def test_get_trait_mapping_for_survey_raises_not_found_when_missing(tmp_path):
     write_config(tmp_path / "survey.json")
 
-    with pytest.raises(LookupError):
+    with pytest.raises(LatentTraitMappingNotFoundError):
         get_trait_mapping_for_survey("22222222-2222-4222-8222-222222222222", tmp_path)
+
+
+def test_get_trait_mapping_for_survey_raises_not_found_for_missing_directory(tmp_path):
+    with pytest.raises(LatentTraitMappingNotFoundError):
+        get_trait_mapping_for_survey(SURVEY_ID, tmp_path / "missing")
+
+
+def test_get_trait_mapping_for_survey_raises_not_found_for_empty_directory(tmp_path):
+    with pytest.raises(LatentTraitMappingNotFoundError):
+        get_trait_mapping_for_survey(SURVEY_ID, tmp_path)

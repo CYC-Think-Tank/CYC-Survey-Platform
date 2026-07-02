@@ -12,6 +12,10 @@ class LatentTraitMappingError(ValueError):
     pass
 
 
+class LatentTraitMappingNotFoundError(LookupError):
+    """Raised when a survey has no available latent-trait mapping."""
+
+
 @dataclass(frozen=True)
 class LatentTraitMapping:
     survey_id: str
@@ -94,14 +98,19 @@ def get_trait_mapping_for_survey(
     config_dir: Path = CONFIG_DIR,
 ) -> LatentTraitMapping:
     normalized_survey_id = normalize_survey_id(survey_id)
+    try:
+        mappings = load_all_trait_mappings(config_dir)
+    except FileNotFoundError as e:
+        raise LatentTraitMappingNotFoundError(
+            f"No latent trait config found for survey_id {normalized_survey_id}"
+        ) from e
+
     matches = [
-        mapping
-        for mapping in load_all_trait_mappings(config_dir)
-        if mapping.survey_id == normalized_survey_id
+        mapping for mapping in mappings if mapping.survey_id == normalized_survey_id
     ]
 
     if not matches:
-        raise LookupError(
+        raise LatentTraitMappingNotFoundError(
             f"No latent trait config found for survey_id {normalized_survey_id}"
         )
     if len(matches) > 1:
