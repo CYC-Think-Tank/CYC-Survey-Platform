@@ -146,7 +146,7 @@ interface LatentTraitDimensionStats {
 }
 
 interface LatentTraitFitStats {
-  status: 'preview' | 'ready' | 'running' | 'complete' | 'error';
+  status: 'preview' | 'ready' | 'running' | 'complete' | 'error' | 'unavailable';
   model: string;
   itemTypes: string[];
   estimatedItems: number;
@@ -195,7 +195,14 @@ interface LatentTraitPredictiveModels {
 }
 
 interface LatentTraitData {
-  status?: 'preview' | 'running' | 'complete' | 'error' | 'fit_complete' | 'config_ready';
+  status?:
+    | 'preview'
+    | 'running'
+    | 'complete'
+    | 'error'
+    | 'fit_complete'
+    | 'config_ready'
+    | 'unavailable';
   message?: string | null;
   dimensions: LatentTraitDimensionStats[];
   fit: LatentTraitFitStats;
@@ -1157,6 +1164,15 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
   }
 
   function renderLatentTraitTab() {
+    if (latentTraitStats?.status === 'unavailable') {
+      return (
+        <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-xl p-6">
+          <p className="font-semibold">Latent trait analysis unavailable</p>
+          <p className="text-sm mt-1">{latentTraitStats.message}</p>
+        </div>
+      );
+    }
+
     if (latentTraitError) {
       return (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-6">

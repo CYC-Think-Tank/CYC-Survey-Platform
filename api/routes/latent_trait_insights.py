@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from api.dependencies import require_admin_context, require_survey_team_access, supabase
 from api.services.latent_trait_mapping_provider import (
     LatentTraitMappingError,
+    LatentTraitMappingNotFoundError,
     get_trait_mapping_for_survey,
     load_all_trait_mappings,
     normalize_survey_id,
@@ -40,6 +41,10 @@ SUPABASE_IN_FILTER_CHUNK_SIZE = 50
 SUPABASE_PAGE_SIZE = 1000
 _running_jobs: set[str] = set()
 _running_jobs_lock = threading.Lock()
+LATENT_TRAIT_UNAVAILABLE_MESSAGE = (
+    "This service is not available because a configuration file has not been set up "
+    "for this survey yet."
+)
 
 
 def _safe_json_path(base_dir: Path, survey_id: str | UUID) -> Path:
@@ -60,11 +65,6 @@ def _load_all_configs() -> list[dict[str, Any]]:
 def _get_config_for_survey(survey_id: str) -> dict[str, Any]:
     try:
         return to_config_payload(get_trait_mapping_for_survey(survey_id))
-    except LookupError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No latent trait config found for survey_id {survey_id}",
-        )
     except LatentTraitMappingError as e:
         raise HTTPException(
             status_code=500,
@@ -75,11 +75,6 @@ def _get_config_for_survey(survey_id: str) -> dict[str, Any]:
 def _get_mapping_for_survey(survey_id: str):
     try:
         return get_trait_mapping_for_survey(survey_id)
-    except LookupError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No latent trait config found for survey_id {survey_id}",
-        )
     except LatentTraitMappingError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -393,6 +388,30 @@ def _build_status_response(
     }
 
 
+def _build_unavailable_response(survey_id: str) -> dict[str, Any]:
+    return {
+        "survey_id": survey_id,
+        "status": "unavailable",
+        "message": LATENT_TRAIT_UNAVAILABLE_MESSAGE,
+        "dimensions": [],
+        "fit": {
+            "status": "unavailable",
+            "model": "Not configured",
+            "itemTypes": [],
+            "estimatedItems": 0,
+            "logLikelihood": None,
+            "aic": None,
+            "bic": None,
+            "lastRun": None,
+        },
+        "predictiveModels": {
+            "status": "unavailable",
+            "message": LATENT_TRAIT_UNAVAILABLE_MESSAGE,
+            "traits": [],
+        },
+    }
+
+
 def _run_latent_trait_script(survey_id: str, config: dict[str, Any]) -> None:
     if not GENERAL_SCRIPT_PATH.exists():
         raise FileNotFoundError(
@@ -514,7 +533,10 @@ async def get_latent_trait_config(survey_id: UUID, request: Request):
     try:
         context = await require_admin_context(request)
         require_survey_team_access(survey_id, context)
-        return _get_config_for_survey(survey_id)
+        try:
+            return _get_config_for_survey(survey_id)
+        except LatentTraitMappingNotFoundError:
+            return _build_unavailable_response(survey_id)
     except HTTPException:
         raise
     except Exception as e:
@@ -533,7 +555,11 @@ async def get_latent_trait_preview(
     try:
         context = await require_admin_context(request)
         require_survey_team_access(survey_id, context)
-        mapping = _get_mapping_for_survey(survey_id)
+        try:
+            mapping = _get_mapping_for_survey(survey_id)
+        except LatentTraitMappingNotFoundError:
+            return _build_unavailable_response(survey_id)
+
         config = to_config_payload(mapping)
         if retry:
             _clear_fitted_result(survey_id)

@@ -1,9 +1,16 @@
 import os
+from uuid import UUID
+
+import pytest
 
 os.environ.setdefault("SUPABASE_URL", "http://127.0.0.1:54321")
 os.environ.setdefault("SUPABASE_KEY", "test-key")
 
 from api.routes import latent_trait_insights
+from api.services.latent_trait_mapping_provider import (
+    LatentTraitMappingError,
+    LatentTraitMappingNotFoundError,
+)
 
 
 class Query:
@@ -142,3 +149,67 @@ def test_build_latent_trait_input_rows_uses_read_only_selects(monkeypatch):
         "questions",
         "answers",
     }
+
+
+@pytest.mark.asyncio
+async def test_missing_config_returns_unavailable_without_starting_job(monkeypatch):
+    survey_id = UUID("11111111-1111-4111-8111-111111111111")
+
+    async def allow_request(_request):
+        return object()
+
+    def missing_mapping(_survey_id):
+        raise LatentTraitMappingNotFoundError("missing")
+
+    def unexpected_call(*_args, **_kwargs):
+        raise AssertionError("Missing config must not touch fit state or start a job")
+
+    monkeypatch.setattr(latent_trait_insights, "require_admin_context", allow_request)
+    monkeypatch.setattr(
+        latent_trait_insights, "require_survey_team_access", lambda *_: None
+    )
+    monkeypatch.setattr(
+        latent_trait_insights, "_get_mapping_for_survey", missing_mapping
+    )
+    monkeypatch.setattr(latent_trait_insights, "_clear_fitted_result", unexpected_call)
+    monkeypatch.setattr(latent_trait_insights, "_clear_job_status", unexpected_call)
+    monkeypatch.setattr(latent_trait_insights, "_load_fitted_result", unexpected_call)
+    monkeypatch.setattr(
+        latent_trait_insights, "_start_latent_trait_job", unexpected_call
+    )
+
+    response = await latent_trait_insights.get_latent_trait_preview(
+        survey_id,
+        object(),
+        retry=True,
+    )
+
+    assert response["status"] == "unavailable"
+    assert response["fit"]["status"] == "unavailable"
+    assert response["dimensions"] == []
+    assert response["message"] == latent_trait_insights.LATENT_TRAIT_UNAVAILABLE_MESSAGE
+
+
+@pytest.mark.asyncio
+async def test_invalid_config_remains_server_error(monkeypatch):
+    survey_id = UUID("11111111-1111-4111-8111-111111111111")
+
+    async def allow_request(_request):
+        return object()
+
+    def invalid_mapping(_survey_id):
+        raise LatentTraitMappingError("invalid mapping")
+
+    monkeypatch.setattr(latent_trait_insights, "require_admin_context", allow_request)
+    monkeypatch.setattr(
+        latent_trait_insights, "require_survey_team_access", lambda *_: None
+    )
+    monkeypatch.setattr(
+        latent_trait_insights, "get_trait_mapping_for_survey", invalid_mapping
+    )
+
+    with pytest.raises(latent_trait_insights.HTTPException) as exc_info:
+        await latent_trait_insights.get_latent_trait_preview(survey_id, object())
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "invalid mapping"
