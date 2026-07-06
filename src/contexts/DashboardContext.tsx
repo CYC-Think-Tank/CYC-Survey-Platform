@@ -15,6 +15,7 @@ import {
   fetchAdminMe,
   isAdminFetchError,
   parseJsonResponse,
+  type AdminTeam,
 } from '@/lib/adminAuth';
 import { supabase } from '@/lib/supabase';
 
@@ -47,9 +48,33 @@ export interface TrendPoint {
   count: number;
 }
 
+export interface TeamJoinRequest {
+  id: string;
+  team_id: string;
+  team_name?: string | null;
+  user_id: string;
+  user_email?: string | null;
+  requested_at?: string;
+}
+
+export interface TeamMember {
+  id: string;
+  team_id: string;
+  team_name?: string | null;
+  user_id: string;
+  user_email?: string | null;
+  full_name?: string | null;
+  role: 'team_leader' | 'team_member';
+}
+
+export type DashboardRole = 'admin' | 'student';
+
 const TREND_DAYS = 30;
 
-interface AdminDashboardValue {
+interface DashboardValue {
+  role: DashboardRole;
+  basePath: string;
+
   surveys: Survey[];
   loading: boolean;
   error: string;
@@ -72,6 +97,7 @@ interface AdminDashboardValue {
   handleToggleActive: (survey: Survey) => Promise<void>;
   handleDelete: (survey: Survey) => Promise<void>;
   handleDuplicate: (survey: Survey) => Promise<void>;
+  canDeleteSurvey: (survey: Survey) => boolean;
   handleNotifyUsers: () => Promise<void>;
   handleLogout: () => Promise<void>;
 
@@ -95,11 +121,33 @@ interface AdminDashboardValue {
   loadingLeaderboard: boolean;
   openLeaderboard: () => Promise<void>;
   closeLeaderboard: () => void;
+
+  // Student/team-scoped state. Empty/no-ops when role === 'admin'.
+  teams: AdminTeam[];
+  isTeamLeader: boolean;
+  teamMembers: TeamMember[];
+  loadingTeamMembers: boolean;
+  refetchTeamMembers: () => void;
+  joinRequests: TeamJoinRequest[];
+  loadingJoinRequests: boolean;
+  updatingJoinRequestId: string | null;
+  handleJoinRequest: (requestId: string, action: 'approve' | 'reject') => Promise<void>;
+  transferringMemberId: string | null;
+  transferLeadership: (member: TeamMember) => Promise<void>;
+  leavingTeam: boolean;
+  leaveTeam: () => Promise<void>;
 }
 
-const AdminDashboardContext = createContext<AdminDashboardValue | null>(null);
+const DashboardContext = createContext<DashboardValue | null>(null);
 
-export function AdminDashboardProvider({ children }: { children: ReactNode }) {
+export function DashboardProvider({ children }: { children: ReactNode }) {
+  const [role, setRole] = useState<DashboardRole>(() =>
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/student')
+      ? 'student'
+      : 'admin'
+  );
+  const basePath = role === 'admin' ? '/admin' : '/student';
+
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -123,6 +171,15 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
 
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(true);
+
+  const [teams, setTeams] = useState<AdminTeam[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
+  const [joinRequests, setJoinRequests] = useState<TeamJoinRequest[]>([]);
+  const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
+  const [updatingJoinRequestId, setUpdatingJoinRequestId] = useState<string | null>(null);
+  const [transferringMemberId, setTransferringMemberId] = useState<string | null>(null);
+  const [leavingTeam, setLeavingTeam] = useState(false);
 
   const router = useRouter();
 
@@ -149,10 +206,51 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     fetchSurveys();
   }, [fetchSurveys]);
 
+  const fetchTeamMembers = useCallback(() => {
+    setLoadingTeamMembers(true);
+    adminFetch('/admin-api/team-members')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load team members'))
+      .then((data) =>
+        setTeamMembers(ensureArray<TeamMember>(data, 'Unexpected team-member response'))
+      )
+      .catch((err) => {
+        if (!isAdminFetchError(err)) console.error('Failed to load team members', err);
+        setTeamMembers([]);
+      })
+      .finally(() => setLoadingTeamMembers(false));
+  }, []);
+
+  const fetchJoinRequests = useCallback(() => {
+    setLoadingJoinRequests(true);
+    adminFetch('/admin-api/team-join-requests')
+      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load team requests'))
+      .then((data) =>
+        setJoinRequests(ensureArray<TeamJoinRequest>(data, 'Unexpected team-request response'))
+      )
+      .catch((err) => {
+        if (!isAdminFetchError(err)) console.error('Failed to load team requests', err);
+        setJoinRequests([]);
+      })
+      .finally(() => setLoadingJoinRequests(false));
+  }, []);
+
   useEffect(() => {
     fetchAdminMe()
-      .then((me) => setAdminEmail(me.user.email))
+      .then((me) => {
+        setAdminEmail(me.user.email);
+        setRole(me.is_admin ? 'admin' : 'student');
+        setTeams(me.teams);
+        if (!me.is_admin && me.teams.length > 0) {
+          fetchTeamMembers();
+          if (me.teams.some((t) => t.role === 'team_leader')) {
+            fetchJoinRequests();
+          }
+        }
+      })
       .catch(() => setAdminEmail(null));
+    // Only ever needs to run once per mount; role/teams are re-derived from
+    // this same call, not from external deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Response Trend: the survey list endpoint has no per-day breakdown, so we
@@ -227,7 +325,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
-        router.push(`/admin/edit/${data.id}`);
+        router.push(`${basePath}/edit/${data.id}`);
       } else {
         alert('Failed to create survey.');
         setCreatingSurvey(false);
@@ -236,7 +334,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       alert('An error occurred.');
       setCreatingSurvey(false);
     }
-  }, [newSurveyTitle, router]);
+  }, [newSurveyTitle, router, basePath]);
 
   const handleToggleActive = useCallback(
     async (survey: Survey) => {
@@ -310,6 +408,14 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     [fetchSurveys]
   );
 
+  const canDeleteSurvey = useCallback(
+    (survey: Survey) => {
+      if (role === 'admin') return true;
+      return teams.some((team) => team.id === survey.team_id && team.role === 'team_leader');
+    },
+    [role, teams]
+  );
+
   const handleNotifyUsers = useCallback(async () => {
     const confirmed = window.confirm(
       `Send a reminder email blast to all users who still have active surveys remaining?`
@@ -337,8 +443,8 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
-  }, [router]);
+    router.push(`${basePath}/login`);
+  }, [router, basePath]);
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -425,8 +531,88 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setCopiedLink(null), 2000);
   }, []);
 
-  const value = useMemo<AdminDashboardValue>(
+  const isTeamLeader = teams.some((team) => team.role === 'team_leader');
+
+  const refetchTeamMembers = useCallback(() => fetchTeamMembers(), [fetchTeamMembers]);
+
+  const handleJoinRequest = useCallback(
+    async (requestId: string, action: 'approve' | 'reject') => {
+      setUpdatingJoinRequestId(requestId);
+      try {
+        const res = await adminFetch(`/admin-api/team-join-requests/${requestId}/${action}`, {
+          method: 'POST',
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.detail || data.error || `Failed to ${action} request.`);
+          return;
+        }
+        fetchJoinRequests();
+      } catch (err) {
+        if (!isAdminFetchError(err)) console.error(err);
+        alert(`Failed to ${action} request.`);
+      } finally {
+        setUpdatingJoinRequestId(null);
+      }
+    },
+    [fetchJoinRequests]
+  );
+
+  const transferLeadership = useCallback(async (member: TeamMember) => {
+    const memberLabel = member.full_name || member.user_email || 'this member';
+    const confirmed = window.confirm(
+      `Transfer leadership to ${memberLabel}? You will become a regular team member and only the new leader will be able to manage requests or delete surveys.`
+    );
+    if (!confirmed) return;
+
+    setTransferringMemberId(member.id);
+    try {
+      const res = await adminFetch('/admin-api/team-members/transfer-leadership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ team_id: member.team_id, new_leader_user_id: member.user_id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || 'Failed to transfer leadership.');
+        return;
+      }
+      window.location.reload();
+    } catch (err) {
+      if (!isAdminFetchError(err)) console.error(err);
+      alert('Failed to transfer leadership.');
+    } finally {
+      setTransferringMemberId(null);
+    }
+  }, []);
+
+  const leaveTeam = useCallback(async () => {
+    const confirmed = window.confirm(
+      'Leave this team? You will lose access to its surveys and return to team onboarding.'
+    );
+    if (!confirmed) return;
+
+    setLeavingTeam(true);
+    try {
+      const res = await adminFetch('/admin-api/team-members/leave', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.detail || data.error || 'Failed to leave team.');
+        return;
+      }
+      window.location.href = '/student/pending-team';
+    } catch (err) {
+      if (!isAdminFetchError(err)) console.error(err);
+      alert('Failed to leave team.');
+    } finally {
+      setLeavingTeam(false);
+    }
+  }, []);
+
+  const value = useMemo<DashboardValue>(
     () => ({
+      role,
+      basePath,
       surveys,
       loading,
       error,
@@ -446,6 +632,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       handleToggleActive,
       handleDelete,
       handleDuplicate,
+      canDeleteSurvey,
       handleNotifyUsers,
       handleLogout,
       shareModal,
@@ -467,8 +654,23 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       loadingLeaderboard,
       openLeaderboard,
       closeLeaderboard,
+      teams,
+      isTeamLeader,
+      teamMembers,
+      loadingTeamMembers,
+      refetchTeamMembers,
+      joinRequests,
+      loadingJoinRequests,
+      updatingJoinRequestId,
+      handleJoinRequest,
+      transferringMemberId,
+      transferLeadership,
+      leavingTeam,
+      leaveTeam,
     }),
     [
+      role,
+      basePath,
       surveys,
       loading,
       error,
@@ -486,6 +688,7 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       handleToggleActive,
       handleDelete,
       handleDuplicate,
+      canDeleteSurvey,
       handleNotifyUsers,
       handleLogout,
       shareModal,
@@ -505,16 +708,29 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       loadingLeaderboard,
       openLeaderboard,
       closeLeaderboard,
+      teams,
+      isTeamLeader,
+      teamMembers,
+      loadingTeamMembers,
+      refetchTeamMembers,
+      joinRequests,
+      loadingJoinRequests,
+      updatingJoinRequestId,
+      handleJoinRequest,
+      transferringMemberId,
+      transferLeadership,
+      leavingTeam,
+      leaveTeam,
     ]
   );
 
-  return <AdminDashboardContext.Provider value={value}>{children}</AdminDashboardContext.Provider>;
+  return <DashboardContext.Provider value={value}>{children}</DashboardContext.Provider>;
 }
 
-export function useAdminDashboard() {
-  const ctx = useContext(AdminDashboardContext);
+export function useDashboard() {
+  const ctx = useContext(DashboardContext);
   if (!ctx) {
-    throw new Error('useAdminDashboard must be used within an AdminDashboardProvider');
+    throw new Error('useDashboard must be used within a DashboardProvider');
   }
   return ctx;
 }

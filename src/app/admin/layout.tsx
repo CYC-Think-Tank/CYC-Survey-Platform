@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AdminFetchError, fetchAdminMe, isAllowedAdminEmail } from '@/lib/adminAuth';
 import { supabase } from '@/lib/supabase';
-import { AdminDashboardProvider } from '@/contexts/AdminDashboardContext';
-import { AdminShell } from '@/components/admin/AdminShell';
-import { AdminModals } from '@/components/admin/AdminModals';
+import { DashboardProvider } from '@/contexts/DashboardContext';
+import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { DashboardModals } from '@/components/dashboard/DashboardModals';
 
 const PUBLIC_ADMIN_PATHS = ['/admin/login', '/admin/unauthorized'];
 
@@ -100,9 +100,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <AdminDashboardProvider>
-      <AdminShell>{children}</AdminShell>
-      <AdminModals />
-    </AdminDashboardProvider>
+    <DashboardProvider>
+      <DashboardShell>{children}</DashboardShell>
+      <DashboardModals />
+    </DashboardProvider>
   );
 }

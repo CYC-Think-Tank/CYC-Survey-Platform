@@ -14,61 +14,76 @@ import {
   PlusCircle,
   LogOut,
   Newspaper,
+  Home,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useAdminDashboard } from '@/contexts/AdminDashboardContext';
+import { useDashboard } from '@/contexts/DashboardContext';
 import { cn } from '@/lib/utils';
 
-const NAV_ITEMS = [
-  { href: '/admin', label: 'Overview', icon: LayoutGrid, match: (p: string) => p === '/admin' },
-  {
-    href: '/admin/surveys',
-    label: 'Surveys',
-    icon: FileText,
-    match: (p: string) =>
-      p.startsWith('/admin/surveys') ||
-      p.startsWith('/admin/edit') ||
-      p.startsWith('/admin/results'),
-  },
-  {
-    href: '/admin/blog',
-    label: 'Blog',
-    icon: Newspaper,
-    match: (p: string) => p.startsWith('/admin/blog'),
-  },
-  {
-    href: '/admin/analytics',
-    label: 'Analytics',
-    icon: BarChart3,
-    match: (p: string) => p.startsWith('/admin/analytics'),
-  },
-  {
-    href: '/admin/audience',
-    label: 'Audience',
-    icon: Users,
-    match: (p: string) => p.startsWith('/admin/audience'),
-  },
-  {
-    href: '/admin/settings',
-    label: 'Settings',
-    icon: Settings,
-    match: (p: string) => p.startsWith('/admin/settings'),
-  },
-];
+function buildNavItems(basePath: string) {
+  return [
+    {
+      href: basePath,
+      label: 'Overview',
+      icon: LayoutGrid,
+      match: (p: string) => p === basePath,
+      adminOnly: false,
+    },
+    {
+      href: `${basePath}/surveys`,
+      label: 'Surveys',
+      icon: FileText,
+      match: (p: string) =>
+        p.startsWith(`${basePath}/surveys`) ||
+        p.startsWith(`${basePath}/edit`) ||
+        p.startsWith(`${basePath}/results`),
+      adminOnly: false,
+    },
+    {
+      href: '/admin/blog',
+      label: 'Blog',
+      icon: Newspaper,
+      match: (p: string) => p.startsWith('/admin/blog'),
+      adminOnly: true,
+    },
+    {
+      href: `${basePath}/analytics`,
+      label: 'Analytics',
+      icon: BarChart3,
+      match: (p: string) => p.startsWith(`${basePath}/analytics`),
+      adminOnly: false,
+    },
+    {
+      href: `${basePath}/audience`,
+      label: 'Audience',
+      icon: Users,
+      match: (p: string) => p.startsWith(`${basePath}/audience`),
+      adminOnly: false,
+    },
+    {
+      href: `${basePath}/settings`,
+      label: 'Settings',
+      icon: Settings,
+      match: (p: string) => p.startsWith(`${basePath}/settings`),
+      adminOnly: false,
+    },
+  ];
+}
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { searchQuery, setSearchQuery, openCreateModal, adminEmail, handleLogout } =
-    useAdminDashboard();
+  const { role, basePath, searchQuery, setSearchQuery, openCreateModal, adminEmail, handleLogout } =
+    useDashboard();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const initials = adminEmail ? adminEmail.slice(0, 2).toUpperCase() : '··';
+  const navItems = buildNavItems(basePath).filter((item) => !item.adminOnly || role === 'admin');
 
   return (
     <div className="flex min-h-screen w-full bg-cream">
       {/* Sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex">
-        <div className="flex items-center gap-2 px-6 py-6">
+        <div className="flex items-center justify-between gap-2 px-6 py-6">
           <Image
             src="/logo.png"
             alt="CYC"
@@ -76,10 +91,17 @@ export function AdminShell({ children }: { children: ReactNode }) {
             height={34}
             className="h-7 w-auto object-contain dark:brightness-110"
           />
+          <Link
+            href="/"
+            title="Back to site"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink dark:hover:bg-white/10"
+          >
+            <Home className="h-[18px] w-[18px]" />
+          </Link>
         </div>
 
         <nav className="flex-1 space-y-1 px-3">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = item.match(pathname);
             const Icon = item.icon;
             return (
@@ -112,7 +134,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <span className="block truncate text-sm font-semibold text-ink">
                 {adminEmail || 'Loading…'}
               </span>
-              <span className="block text-xs text-ink-soft">Admin</span>
+              <span className="block text-xs text-ink-soft">
+                {role === 'admin' ? 'Admin' : 'Team member'}
+              </span>
             </span>
           </button>
 
@@ -147,14 +171,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
       {/* Main column */}
       <div className="flex min-h-screen flex-1 flex-col">
         <header className="flex items-center justify-between gap-4 border-b border-border px-6 py-4 sm:px-8">
-          <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search surveys…"
-              className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-soft focus:border-ink focus:outline-none transition-colors"
-            />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              title="Back to site"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink dark:hover:bg-white/10 md:hidden"
+            >
+              <Home className="h-[18px] w-[18px]" />
+            </Link>
+            <div className="relative w-full max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search surveys…"
+                className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-soft focus:border-ink focus:outline-none transition-colors"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

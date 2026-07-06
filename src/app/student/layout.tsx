@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AdminFetchError, fetchAdminMe, isAllowedAdminEmail } from '@/lib/adminAuth';
 import { supabase } from '@/lib/supabase';
+import { DashboardProvider } from '@/contexts/DashboardContext';
+import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { DashboardModals } from '@/components/dashboard/DashboardModals';
 
 const PUBLIC_STUDENT_PATHS = ['/student/login', '/student/unauthorized', '/student/pending-team'];
 
@@ -96,5 +99,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     );
   }
 
-  return <div className="h-full overflow-y-auto w-full pb-20">{children}</div>;
+  if (PUBLIC_STUDENT_PATHS.includes(pathname)) {
+    return <div className="h-full overflow-y-auto w-full pb-20">{children}</div>;
+  }
+
+  return (
+    <DashboardProvider>
+      <DashboardShell>{children}</DashboardShell>
+      <DashboardModals />
+    </DashboardProvider>
+  );
 }

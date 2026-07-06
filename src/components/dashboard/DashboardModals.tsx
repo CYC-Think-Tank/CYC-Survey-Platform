@@ -1,9 +1,9 @@
 'use client';
 import { motion, AnimatePresence } from 'motion/react';
 import { PlusCircle, Share2, Trophy, X, Check, Copy, Trash2 } from 'lucide-react';
-import { useAdminDashboard } from '@/contexts/AdminDashboardContext';
+import { useDashboard } from '@/contexts/DashboardContext';
 
-export function AdminModals() {
+export function DashboardModals() {
   const {
     createModalOpen,
     closeCreateModal,
@@ -28,7 +28,7 @@ export function AdminModals() {
     closeLeaderboard,
     leaderboard,
     loadingLeaderboard,
-  } = useAdminDashboard();
+  } = useDashboard();
 
   return (
     <>

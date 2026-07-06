@@ -33,11 +33,20 @@ export function Header() {
     overHero ? 'text-white/90 hover:text-white' : 'text-ink-soft hover:text-teal'
   );
 
-  // The admin dashboard (everything except its own login/unauthorized
-  // screens) has its own sidebar shell with its own nav — this marketing
-  // header would just duplicate/clash with it.
-  const ADMIN_PUBLIC_PATHS = ['/admin/login', '/admin/unauthorized'];
-  if (pathname.startsWith('/admin') && !ADMIN_PUBLIC_PATHS.includes(pathname)) {
+  // The admin/student dashboards (everything except their own
+  // login/unauthorized/pending screens) have their own sidebar shell with
+  // their own nav — this marketing header would just duplicate/clash with it.
+  const DASHBOARD_PUBLIC_PATHS = [
+    '/admin/login',
+    '/admin/unauthorized',
+    '/student/login',
+    '/student/unauthorized',
+    '/student/pending-team',
+  ];
+  if (
+    (pathname.startsWith('/admin') || pathname.startsWith('/student')) &&
+    !DASHBOARD_PUBLIC_PATHS.includes(pathname)
+  ) {
     return null;
   }
 
