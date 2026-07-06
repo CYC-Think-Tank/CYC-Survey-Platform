@@ -28,14 +28,18 @@ export function Header() {
   // over it, then switch to the normal glass bar once scrolled.
   const overHero = pathname === '/' && !isScrolled;
 
-  // On the admin side, header links should stay on the managing side rather
-  // than bouncing back out to the public-facing pages.
-  const isAdmin = pathname.startsWith('/admin');
-
   const navLink = cn(
     'font-display text-sm font-semibold transition-colors',
     overHero ? 'text-white/90 hover:text-white' : 'text-ink-soft hover:text-teal'
   );
+
+  // The admin dashboard (everything except its own login/unauthorized
+  // screens) has its own sidebar shell with its own nav — this marketing
+  // header would just duplicate/clash with it.
+  const ADMIN_PUBLIC_PATHS = ['/admin/login', '/admin/unauthorized'];
+  if (pathname.startsWith('/admin') && !ADMIN_PUBLIC_PATHS.includes(pathname)) {
+    return null;
+  }
 
   return (
     <motion.header
@@ -74,8 +78,8 @@ export function Header() {
         {/* right: nav links + language + actions */}
         <div className="flex items-center gap-5 sm:gap-8">
           <nav className="flex items-center gap-4 sm:gap-7">
-            <Link href={isAdmin ? '/admin/blog' : '/blog'} className={navLink}>
-              {isAdmin ? 'Manage Blog' : 'Publications'}
+            <Link href="/blog" className={navLink}>
+              Publications
             </Link>
             {!pathname.startsWith('/admin') && !pathname.startsWith('/student') && (
               <Link href="/student/login" className={navLink}>
