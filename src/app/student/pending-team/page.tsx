@@ -106,7 +106,7 @@ export default function PendingTeamPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="card w-full max-w-lg">
-        <h1 className="text-2xl font-bold text-[var(--color-cyc-secondary)]">
+        <h1 className="font-display text-2xl font-medium tracking-tight text-ink">
           Admin Account Ready
         </h1>
         <p className="text-gray-600 mt-3">

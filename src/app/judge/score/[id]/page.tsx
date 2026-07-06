@@ -173,11 +173,11 @@ export default function ScorePage() {
         <div className="absolute top-0 w-full bg-white/90 backdrop-blur-sm border-b border-gray-200 p-4 flex items-center gap-4 z-10">
           <Link
             href="/judge"
-            className="text-gray-500 hover:text-[var(--color-cyc-secondary)] transition-colors p-1 rounded-md hover:bg-gray-100"
+            className="text-gray-500 hover:text-ink transition-colors p-1 rounded-md hover:bg-gray-100"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <span className="font-bold text-sm tracking-wide text-[var(--color-cyc-secondary)] uppercase">
+          <span className="font-semibold text-sm tracking-wide text-ink uppercase">
             Live Preview
           </span>
         </div>
@@ -188,7 +188,7 @@ export default function ScorePage() {
       <div className="w-full md:w-1/2 h-full md:h-screen overflow-y-auto custom-scrollbar bg-gray-50 relative pb-32">
         <div className="p-8 max-w-2xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] mb-2">
+            <h1 className="font-display text-3xl font-medium tracking-tight text-ink mb-2">
               Evaluation Form
             </h1>
             <p className="text-gray-600">
@@ -198,7 +198,7 @@ export default function ScorePage() {
 
           {/* Automated Scores Section */}
           <section className="mb-10">
-            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
+            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-4 flex items-center gap-2 border-b border-gray-200 pb-2">
               <Activity className="w-5 h-5 text-[var(--color-cyc-primary)]" />
               Overall Reach (Automated)
             </h2>
@@ -217,7 +217,7 @@ export default function ScorePage() {
                       {Number(autoScores?.total_responses || 0)} total
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-[var(--color-cyc-primary)]">
+                  <div className="font-display text-2xl font-semibold text-[var(--color-cyc-primary)]">
                     {Number(autoScores?.respondents_score || 0)}
                     <span className="text-base font-medium text-gray-400">/10</span>
                   </div>
@@ -230,7 +230,7 @@ export default function ScorePage() {
                       {Number(autoScores?.language_count || 0)} languages
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-[var(--color-cyc-primary)]">
+                  <div className="font-display text-2xl font-semibold text-[var(--color-cyc-primary)]">
                     {Number(autoScores?.languages_score || 0)}
                     <span className="text-base font-medium text-gray-400">/10</span>
                   </div>
@@ -243,7 +243,7 @@ export default function ScorePage() {
                       {Number(autoScores?.valid_provinces || 0)} provinces (2+ responses)
                     </div>
                   </div>
-                  <div className="text-2xl font-black text-[var(--color-cyc-primary)]">
+                  <div className="font-display text-2xl font-semibold text-[var(--color-cyc-primary)]">
                     {Number(autoScores?.geographic_score || 0)}
                     <span className="text-base font-medium text-gray-400">/10</span>
                   </div>
@@ -255,7 +255,7 @@ export default function ScorePage() {
           {/* Manual Scoring Sections */}
           {Object.entries(CRITERIA).map(([catKey, items]) => (
             <section key={catKey} className="mb-10">
-              <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] capitalize mb-4 border-b border-gray-200 pb-2">
+              <h2 className="font-display text-xl font-medium tracking-tight text-ink capitalize mb-4 border-b border-gray-200 pb-2">
                 {catKey}
               </h2>
               <div className="space-y-4">
@@ -266,10 +266,12 @@ export default function ScorePage() {
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-gray-900 font-bold text-lg">{item.label}</h3>
+                        <h3 className="font-display text-lg font-medium tracking-tight text-ink">
+                          {item.label}
+                        </h3>
                         <p className="text-sm text-gray-600 mt-1">{item.desc}</p>
                       </div>
-                      <div className="bg-gray-50 px-3 py-1 rounded-md border border-gray-200 text-[var(--color-cyc-secondary)] font-black text-lg">
+                      <div className="bg-gray-50 px-3 py-1 rounded-md border border-gray-200 font-display text-lg font-semibold text-ink">
                         {scores[catKey]?.[item.id] || 0}
                       </div>
                     </div>
@@ -294,7 +296,7 @@ export default function ScorePage() {
 
           {/* Feedback */}
           <section className="mb-8">
-            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] mb-4 border-b border-gray-200 pb-2">
+            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-4 border-b border-gray-200 pb-2">
               General Feedback
             </h2>
             <textarea
@@ -312,7 +314,7 @@ export default function ScorePage() {
             <span className="text-gray-500 text-sm uppercase tracking-wider font-bold">
               Total Score
             </span>
-            <div className="text-3xl font-black text-[var(--color-cyc-secondary)]">
+            <div className="font-display text-3xl font-semibold text-ink">
               {calculateTotal()} <span className="text-lg text-gray-400 font-medium">pts</span>
             </div>
           </div>
@@ -320,7 +322,7 @@ export default function ScorePage() {
           <button
             onClick={handleSubmit}
             disabled={submitting || success}
-            className="flex items-center gap-2 px-8 py-3 rounded-full bg-[var(--color-cyc-accent)] text-gray-900 font-extrabold hover:bg-yellow-400 transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-8 py-3 rounded-full bg-[var(--color-cyc-accent)] text-gray-900 font-bold hover:bg-yellow-400 transition-all shadow-sm disabled:opacity-50"
           >
             {success ? (
               <>

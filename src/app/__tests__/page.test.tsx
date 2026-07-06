@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import HomePage from '../page';
 
@@ -17,72 +17,64 @@ vi.mock('@/contexts/LanguageContext', () => ({
   }),
 }));
 
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    img: ({ alt, ...props }: any) => <img alt={alt || ''} {...props} />,
+    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
     h1: ({ children, ...props }: any) => <h1 {...props}>{children}</h1>,
-    form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+    h2: ({ children, ...props }: any) => <h2 {...props}>{children}</h2>,
+    p: ({ children, ...props }: any) => <p {...props}>{children}</p>,
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
-  useMotionValue: () => ({ set: vi.fn() }),
-  useTransform: () => ({ get: () => '0deg' }),
+  LayoutGroup: ({ children }: any) => <>{children}</>,
+  useReducedMotion: () => true,
+  useScroll: () => ({ scrollYProgress: { get: () => 0, on: () => () => {} } }),
+  useTransform: () => ({ get: () => 0, on: () => () => {} }),
+  useSpring: (v: unknown) => v,
+  useMotionValue: (initial: number) => ({
+    get: () => initial,
+    set: () => {},
+    on: () => () => {},
+  }),
+  useAnimationFrame: () => {},
 }));
 
-global.fetch = vi.fn();
+vi.mock('@/components/EventRaffleBanner', () => ({
+  EventRaffleBanner: () => null,
+}));
+
+// The macbook showcase and its demo are a visual flourish with no
+// user-facing assertions of their own — keep the landing test focused on
+// the hero/CTA and avoid dragging in the scroll-linked animation machinery.
+vi.mock('@/components/ui/macbook-scroll', () => ({
+  MacbookScroll: ({ children }: any) => <div>{children}</div>,
+}));
 
 describe('HomePage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    Object.defineProperty(window, 'localStorage', {
-      value: {
-        getItem: vi.fn(() => '[]'),
-        setItem: vi.fn(),
-      },
-      writable: true,
-    });
   });
 
-  it('renders loading state initially', () => {
-    vi.mocked(fetch).mockImplementation(() => new Promise(() => {}));
+  it('renders hero heading', () => {
     render(<HomePage />);
-    expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(screen.getByText(/Make Your Voice/)).toBeInTheDocument();
+    // FlipWords renders the word letter-by-letter, so match on combined text.
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading.textContent?.replace(/\s+/g, '')).toContain('Heard.');
   });
 
-  it('renders hero section after loading', async () => {
-    vi.mocked(fetch).mockResolvedValue({ json: async () => [] } as Response);
+  it('renders CTA button linking to /surveys', () => {
     render(<HomePage />);
-    await waitFor(() => {
-      expect(screen.getByText(/Make Your Voice/)).toBeInTheDocument();
-      expect(screen.getByText(/Heard/)).toBeInTheDocument();
-    });
-  });
-
-  it('renders CTA button linking to /surveys', async () => {
-    vi.mocked(fetch).mockResolvedValue({ json: async () => [] } as Response);
-    render(<HomePage />);
-    await waitFor(() => {
-      const cta = screen.getByText('START NOW');
-      expect(cta).toBeInTheDocument();
+    // "Browse surveys" appears in both the hero and the closing CTA band.
+    const ctas = screen.getAllByText('Browse surveys');
+    expect(ctas.length).toBeGreaterThan(0);
+    for (const cta of ctas) {
       expect(cta.closest('a')).toHaveAttribute('href', '/surveys');
-    });
+    }
   });
 
-  it('renders survey cards when surveys are available', async () => {
-    const mockSurveys = [
-      {
-        id: 'survey-1',
-        title: 'Test Survey',
-        description: 'A test survey',
-        estimated_minutes: 5,
-        is_active: true,
-      },
-    ];
-    vi.mocked(fetch).mockResolvedValue({ json: async () => mockSurveys } as Response);
+  it('renders the raffle incentive line', () => {
     render(<HomePage />);
-    await waitFor(() => {
-      expect(screen.getByText('Test Survey')).toBeInTheDocument();
-    });
+    expect(screen.getByText(/1 Survey = 1 Entry/)).toBeInTheDocument();
   });
 });

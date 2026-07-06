@@ -57,7 +57,9 @@ export default function AdminLogin() {
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="card w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-[var(--color-cyc-secondary)]">Admin Access</h1>
+          <h1 className="font-display text-2xl font-medium tracking-tight text-ink">
+            Admin Access
+          </h1>
           <p className="text-gray-500 mt-2">Sign in to manage all surveys</p>
         </div>
 

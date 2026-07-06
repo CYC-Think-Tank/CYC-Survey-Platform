@@ -44,7 +44,7 @@ export default function JudgeLogin() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-[var(--color-cyc-secondary)]">
+        <h2 className="mt-6 text-center font-display text-3xl font-medium tracking-tight text-ink">
           Judge Portal
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">

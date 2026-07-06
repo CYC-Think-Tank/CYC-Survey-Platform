@@ -2,8 +2,10 @@
 import { CheckCircle2, Clock, ArrowRight, Copy, Gift } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import Reveal from '@/components/Reveal';
+import { Card } from '@/components/ui/Card';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 interface Survey {
   id: string;
@@ -81,98 +83,96 @@ export default function ThankYouPage() {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gray-50 dark:bg-slate-900/50 py-12 px-4">
-      {/* Thank You Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl mx-auto bg-white dark:bg-slate-800 p-8 md:p-12 rounded-2xl shadow-xl border-t-4 border-t-[var(--color-cyc-accent)] text-center mb-12"
-      >
-        <div className="mx-auto flex justify-center items-center w-24 h-24 bg-teal-50 rounded-full mb-6">
-          <CheckCircle2 className="w-14 h-14 text-[var(--color-cyc-primary)]" />
-        </div>
-        <h1 className="text-3xl md:text-5xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-6">
-          {t('Thank You!')}
-        </h1>
-        <p className="text-lg md:text-xl text-gray-600 dark:text-slate-400 leading-relaxed max-w-2xl mx-auto">
-          {t(
-            'Your responses have been successfully submitted. We greatly appreciate you taking the time to share your voice and help empower Canadian youth.'
-          )}
-        </p>
-        <p className="text-base md:text-lg text-[#0CA7A1] font-semibold leading-relaxed max-w-2xl mx-auto mt-4 bg-teal-50 dark:bg-teal-900/20 p-4 rounded-xl">
-          {t(
-            'Thanks for filling out the survey, we would really appreciate if you could share this survey with a friend in order to represent as many voices as possible.'
-          )}
-        </p>
-      </motion.div>
+    <div className="flex-1 w-full flex flex-col items-center pb-24">
+      <div className="w-full max-w-4xl mx-auto px-5 pt-10 md:pt-16 mb-20 text-center flex flex-col items-center">
+        <Reveal>
+          <div className="mx-auto flex justify-center items-center w-24 h-24 bg-teal-soft rounded-full mb-8">
+            <CheckCircle2 className="w-12 h-12 text-teal" />
+          </div>
+          <h1 className="font-display text-5xl md:text-6xl font-normal tracking-tighter text-ink mb-6">
+            {t('Thank You!')}
+          </h1>
+          <p className="text-lg md:text-xl text-ink-soft leading-relaxed max-w-2xl mx-auto">
+            {t(
+              'Your responses have been successfully submitted. We greatly appreciate you taking the time to share your voice and help empower Canadian youth.'
+            )}
+          </p>
+          <div className="mt-8 bg-gold-soft border border-gold/20 p-5 rounded-2xl max-w-2xl mx-auto shadow-sm">
+            <p className="text-base text-gold-deep font-semibold leading-relaxed">
+              {t(
+                'Thanks for filling out the survey, we would really appreciate if you could share this survey with a friend in order to represent as many voices as possible.'
+              )}
+            </p>
+          </div>
+        </Reveal>
+      </div>
 
       {/* Referral Link Section */}
       {referralCode && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="w-full max-w-4xl mx-auto bg-gradient-to-r from-teal-500 to-[#0CA7A1] p-8 md:p-10 rounded-2xl shadow-xl text-center mb-12 text-white relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-            <Gift className="w-48 h-48" />
-          </div>
-          <div className="relative z-10">
-            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 flex justify-center items-center drop-shadow-md">
-              <Gift className="w-10 h-10 mr-4" />
-              {t('Boost Your Chances to Win $100!')}
-            </h2>
-
-            <div className="bg-white/20 backdrop-blur-sm border border-white/30 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-inner">
-              <div className="text-2xl md:text-3xl font-black text-white mb-2 tracking-wide drop-shadow-sm">
-                {t('1 Referral = +1 Extra Raffle Entry')}
+        <div className="w-full max-w-4xl mx-auto px-5 mb-20">
+          <Reveal>
+            <div className="bg-linear-to-r from-teal to-teal-deep p-8 md:p-10 rounded-2xl shadow-cute text-center text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                <Gift className="w-48 h-48" />
               </div>
-              <p className="text-base md:text-lg text-teal-50 leading-relaxed font-medium mt-3">
-                {t(
-                  'Share your personal link below. There is no limit to how many entries you can earn. The more friends who complete the survey, the higher your chances of winning the $100 prize!'
-                )}
-              </p>
+              <div className="relative z-10">
+                <h2 className="font-display text-3xl md:text-5xl font-normal tracking-tighter mb-6 flex justify-center items-center drop-shadow-md">
+                  <Gift className="w-10 h-10 mr-4" />
+                  {t('Boost Your Chances to Win $100!')}
+                </h2>
+
+                <div className="bg-white/20 backdrop-blur-sm border border-white/30 p-6 rounded-2xl mb-8 max-w-2xl mx-auto shadow-inner">
+                  <div className="font-display text-2xl md:text-3xl font-semibold text-white mb-2 tracking-tight drop-shadow-sm">
+                    {t('1 Referral = +1 Extra Raffle Entry')}
+                  </div>
+                  <p className="text-base md:text-lg text-white/90 leading-relaxed font-medium mt-3">
+                    {t(
+                      'Share your personal link below. There is no limit to how many entries you can earn. The more friends who complete the survey, the higher your chances of winning the $100 prize!'
+                    )}
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <code className="bg-white/10 px-4 py-3 rounded-xl text-base sm:text-lg font-mono tracking-wide backdrop-blur-md border border-white/20 select-all">
+                    {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
+                  </code>
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center px-6 py-3 bg-white text-teal-deep font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all w-full sm:w-auto justify-center"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                        {t('Copied!')}
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-5 h-5 mr-2" />
+                        {t('Copy Link')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <code className="bg-white/10 px-4 py-3 rounded-xl text-base sm:text-lg font-mono tracking-wide backdrop-blur-md border border-white/20 select-all">
-                {`${typeof window !== 'undefined' ? window.location.origin : ''}?ref=${referralCode}`}
-              </code>
-              <button
-                onClick={handleCopy}
-                className="flex items-center px-6 py-3 bg-white text-[#0CA7A1] font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 transition-all w-full sm:w-auto justify-center"
-              >
-                {copied ? (
-                  <>
-                    <CheckCircle2 className="w-5 h-5 mr-2" />
-                    {t('Copied!')}
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-5 h-5 mr-2" />
-                    {t('Copy Link')}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </motion.div>
+          </Reveal>
+        </div>
       )}
 
-      {/* Cross-Promotion Section */}
-      <div className="w-full max-w-6xl mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-3">
-            {t('Keep Your Voice Heard')}
-          </h2>
-          <p className="text-gray-600 dark:text-slate-400 text-lg">
+      <div className="w-full max-w-6xl mx-auto px-5">
+        <SectionHeading
+          eyebrow={t('Active Surveys')}
+          title={t('Keep Your Voice Heard')}
+          className="mb-4 text-center items-center"
+        />
+        <Reveal>
+          <p className="text-ink-soft text-lg text-center mb-12">
             {t('If you have a few more minutes, consider contributing to another active survey.')}
           </p>
-        </div>
+        </Reveal>
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-cyc-primary)]"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gold"></div>
           </div>
         ) : surveys.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -187,17 +187,13 @@ export default function ThankYouPage() {
                 (language === 'fr' && survey.description_fr) ||
                 (language === 'zh' && survey.description_zh) ||
                 survey.description;
+
               return (
-                <motion.div
-                  key={survey.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                >
+                <Reveal key={survey.id} delay={i * 0.1}>
                   <Link href={`/survey/${survey.id}`} className="block h-full group">
-                    <div className="border border-gray-200 dark:border-slate-700 rounded-2xl overflow-hidden h-full flex flex-col hover:border-[var(--color-cyc-primary)] hover:shadow-xl transition-all duration-300 bg-white dark:bg-slate-800">
+                    <Card className="flex flex-col h-full hover:-translate-y-2 transition-transform duration-500 relative grayscale-[80%] hover:grayscale-0 overflow-hidden p-0 border-border group-hover:border-teal/30 group-hover:shadow-cute">
                       {survey.thumbnail_url ? (
-                        <div className="h-48 w-full overflow-hidden">
+                        <div className="h-48 w-full overflow-hidden border-b border-border">
                           <img
                             src={survey.thumbnail_url}
                             alt={survey.title}
@@ -205,43 +201,46 @@ export default function ThankYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className="h-48 w-full bg-gradient-to-br from-[#0CA7A1] to-[#0A8A85] flex items-center justify-center relative overflow-hidden">
-                          <span className="text-6xl font-black text-white drop-shadow-lg select-none tracking-wider">
+                        <div className="h-48 w-full bg-navy-soft flex items-center justify-center relative overflow-hidden group-hover:bg-navy transition-colors duration-500 border-b border-border">
+                          <span className="font-display text-6xl font-semibold text-white/30 drop-shadow-sm select-none tracking-tight">
                             CYC
                           </span>
-                          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                         </div>
                       )}
+
                       <div className="p-6 flex flex-col flex-grow">
-                        <h3 className="font-bold text-xl text-gray-900 mb-3 group-hover:text-[var(--color-cyc-primary)] transition-colors line-clamp-2">
+                        <h3 className="font-display text-xl font-medium tracking-tight text-ink mb-3 group-hover:text-teal transition-colors line-clamp-2">
                           {displayTitle}
                         </h3>
-                        <p className="text-gray-500 dark:text-slate-500 text-base mb-6 line-clamp-2 flex-grow leading-relaxed">
+                        <p className="text-ink-soft text-base mb-6 line-clamp-2 flex-grow leading-relaxed">
                           {displayDescription?.replace(/<[^>]*>?/gm, '') ||
                             t('Participate in this survey to share your perspectives.')}
                         </p>
-                        <div className="flex items-center justify-between text-sm font-semibold text-gray-500 dark:text-slate-500 mt-auto pt-5 border-t border-gray-100">
-                          <span className="flex items-center text-[var(--color-cyc-primary)] bg-teal-50 px-3 py-1.5 rounded-lg">
+
+                        <div className="flex items-center justify-between text-sm font-semibold text-ink-soft mt-auto pt-4 border-t border-border">
+                          <span className="flex items-center text-teal bg-teal-soft px-3 py-1.5 rounded-lg">
                             <Clock className="w-4 h-4 mr-1.5" />
                             {survey.estimated_minutes} {t('MIN')}
                           </span>
-                          <span className="flex items-center text-white bg-[var(--color-cyc-primary)] px-4 py-1.5 rounded-lg group-hover:bg-[#0A8A85] transition-colors shadow-sm">
+                          <span className="flex items-center text-white bg-teal px-4 py-1.5 rounded-lg group-hover:bg-teal-deep transition-colors shadow-sm">
                             {t('Take Survey')} <ArrowRight className="w-4 h-4 ml-1.5" />
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   </Link>
-                </motion.div>
+                </Reveal>
               );
             })}
           </div>
         ) : (
-          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700">
-            <p className="text-gray-500 dark:text-slate-500 font-medium text-lg">
-              {t('There are no other active surveys at the moment. Please check back later!')}
-            </p>
-          </div>
+          <Reveal>
+            <Card className="text-center py-16 w-full max-w-2xl mx-auto border-border">
+              <p className="text-ink-soft font-medium text-lg">
+                {t('There are no other active surveys at the moment. Please check back later!')}
+              </p>
+            </Card>
+          </Reveal>
         )}
       </div>
     </div>

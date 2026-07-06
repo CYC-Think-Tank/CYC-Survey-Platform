@@ -112,7 +112,7 @@ export default function CreateBlogPost() {
       </Link>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 sm:p-8">
-        <h1 className="text-2xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-6">
+        <h1 className="font-display text-2xl font-medium tracking-tight text-ink mb-6">
           Create New Blog Post
         </h1>
 

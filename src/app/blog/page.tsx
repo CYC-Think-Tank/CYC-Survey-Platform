@@ -60,10 +60,10 @@ export default function BlogList() {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4">
+        <h1 className="font-display text-4xl md:text-5xl font-normal tracking-tighter text-ink mb-4">
           Publications
         </h1>
-        <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
+        <p className="text-lg text-ink-soft max-w-2xl mx-auto">
           Explore our latest insights, publications, and updates on issues that matter.
         </p>
       </div>
@@ -72,7 +72,7 @@ export default function BlogList() {
         {/* Sidebar filters */}
         <div className="w-full md:w-64 flex-shrink-0">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 sticky top-24">
-            <h2 className="font-semibold text-lg mb-4 text-gray-900 dark:text-slate-100">Tags</h2>
+            <h2 className="font-display text-lg font-medium tracking-tight mb-4 text-ink">Tags</h2>
             <ul className="space-y-2">
               {tags.map((tag) => {
                 const isSelected = selectedTags.includes(tag);
@@ -161,10 +161,10 @@ export default function BlogList() {
                       <span>&bull;</span>
                       <span>{post.author || 'Anonymous'}</span>
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 group-hover:text-[var(--color-cyc-primary)] transition-colors line-clamp-2">
+                    <h3 className="font-display text-xl font-medium tracking-tight text-ink mb-3 group-hover:text-[var(--color-cyc-primary)] transition-colors line-clamp-2">
                       {post.title}
                     </h3>
-                    <p className="text-gray-600 dark:text-slate-400 text-sm line-clamp-3 mb-4 flex-1">
+                    <p className="text-ink-soft text-sm line-clamp-3 mb-4 flex-1">
                       {post.description || getExcerpt(post.content)}
                     </p>
                     <div className="mt-auto pt-4 border-t border-gray-100 dark:border-slate-700">

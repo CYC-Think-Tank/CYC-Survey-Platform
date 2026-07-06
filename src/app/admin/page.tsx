@@ -350,7 +350,7 @@ export default function AdminDashboard() {
     <div className="max-w-6xl mx-auto py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center">
+          <h1 className="font-display text-3xl font-medium tracking-tight text-ink flex items-center">
             Dashboard Overview
             <span className="ml-4 text-sm font-medium bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-3 py-1 rounded-full border border-[var(--color-cyc-primary)]/20">
               {totalActiveResponses} total active responses
@@ -491,7 +491,7 @@ export default function AdminDashboard() {
                 className="hover:bg-gray-50 dark:bg-slate-900/50 transition-colors"
               >
                 <td className="px-6 py-4">
-                  <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center gap-2">
+                  <div className="text-sm font-semibold text-ink flex items-center gap-2">
                     {survey.title}
                     {survey.category?.trim() && (
                       <span className="text-[10px] font-semibold uppercase tracking-wide bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-2 py-0.5 rounded-full border border-[var(--color-cyc-primary)]/20">
@@ -526,7 +526,7 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-end space-x-3">
                     <Link
                       href={`/admin/results/${survey.id}`}
-                      className="text-[var(--color-cyc-secondary)] dark:text-slate-100 hover:text-blue-700 flex items-center"
+                      className="text-ink hover:text-blue-700 flex items-center"
                     >
                       <BarChart3 className="w-4 h-4 mr-1" />
                       Results
@@ -615,7 +615,7 @@ export default function AdminDashboard() {
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-1 flex items-center">
+            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-1 flex items-center">
               <Share2 className="w-5 h-5 mr-2" />
               Share Links
             </h2>
@@ -679,7 +679,7 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                          <span className="text-sm font-semibold text-ink">
                             {link.label || (
                               <span className="text-gray-400 dark:text-slate-500 italic">
                                 Unlabeled
@@ -744,7 +744,7 @@ export default function AdminDashboard() {
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4 flex items-center">
+            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-4 flex items-center">
               <PlusCircle className="w-5 h-5 mr-2" />
               Create New Survey
             </h2>
@@ -796,7 +796,7 @@ export default function AdminDashboard() {
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-5 flex items-center">
+            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-5 flex items-center">
               <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
               Referrals Leaderboard
             </h2>
@@ -823,7 +823,7 @@ export default function AdminDashboard() {
                         >
                           #{idx + 1}
                         </span>
-                        <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100 truncate max-w-[200px]">
+                        <span className="text-sm font-semibold text-ink truncate max-w-[200px]">
                           {entry.email}
                         </span>
                       </div>

@@ -441,7 +441,7 @@ export default function AdminRafflePage() {
           <ArrowLeft className="w-4 h-4 mr-1" />
           Back to Dashboard
         </Link>
-        <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center">
+        <h1 className="font-display text-3xl font-medium tracking-tight text-ink flex items-center">
           <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
           {raffleMode === 'general' ? 'General Raffle' : 'Event Raffle'}
         </h1>
@@ -459,7 +459,7 @@ export default function AdminRafflePage() {
             onClick={() => setRaffleMode(mode)}
             className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
               raffleMode === mode
-                ? 'bg-white dark:bg-slate-700 text-[var(--color-cyc-secondary)] dark:text-white shadow-sm'
+                ? 'bg-white dark:bg-slate-700 text-ink shadow-sm'
                 : 'text-gray-500 dark:text-slate-400'
             }`}
           >
@@ -620,7 +620,7 @@ export default function AdminRafflePage() {
         {/* QR Panel */}
         {raffleMode === 'event' && (
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center">
-            <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-1 flex items-center self-start">
+            <h2 className="font-display text-lg font-medium tracking-tight text-ink mb-1 flex items-center self-start">
               <QrCode className="w-5 h-5 mr-2" />
               Scan to Enter
             </h2>
@@ -709,7 +709,7 @@ export default function AdminRafflePage() {
           <p className="text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
             🎉 Winner 🎉
           </p>
-          <p className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 break-all">
+          <p className="font-display text-3xl font-semibold tracking-tight text-ink break-all">
             {currentWinner}
           </p>
         </div>
@@ -719,7 +719,7 @@ export default function AdminRafflePage() {
       {winners.length > 0 && (
         <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 flex items-center">
+            <h2 className="font-display text-lg font-medium tracking-tight text-ink flex items-center">
               <Trophy className="w-5 h-5 mr-2 text-[var(--color-cyc-accent)]" />
               Winners ({winners.length})
             </h2>
@@ -740,9 +740,7 @@ export default function AdminRafflePage() {
                 <span className="font-bold w-8 text-center text-[var(--color-cyc-accent)]">
                   #{idx + 1}
                 </span>
-                <span className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100 break-all">
-                  {email}
-                </span>
+                <span className="text-sm font-semibold text-ink break-all">{email}</span>
               </li>
             ))}
           </ol>
@@ -776,7 +774,7 @@ export default function AdminRafflePage() {
             </button>
           )}
 
-          <h2 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4 flex items-center">
+          <h2 className="font-display text-3xl font-normal tracking-tighter text-ink mb-4 flex items-center">
             <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
             Raffle
           </h2>
@@ -788,7 +786,7 @@ export default function AdminRafflePage() {
               <p className="text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
                 🎉 Winner 🎉
               </p>
-              <p className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 break-all">
+              <p className="font-display text-3xl font-semibold tracking-tight text-ink break-all">
                 {currentWinner}
               </p>
             </div>
@@ -846,7 +844,7 @@ export default function AdminRafflePage() {
             <span className="text-xs font-semibold">Spinner</span>
           </button>
 
-          <h2 className="text-4xl font-extrabold text-[var(--color-cyc-secondary)] mb-2 text-center">
+          <h2 className="font-display text-4xl font-normal tracking-tighter text-ink mb-2 text-center">
             {selectedTitle}
           </h2>
           <p className="text-xl text-gray-600 mb-8 text-center">
