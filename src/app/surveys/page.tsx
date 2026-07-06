@@ -145,20 +145,24 @@ export default function SurveysPage() {
                           : 'linear-gradient(135deg, #101014 0%, #04377e 48%, #0cb7c4 100%)',
                       }}
                     />
-                    <div className="absolute inset-0 bg-white/35 dark:bg-black/45" />
-                    <div className="absolute inset-0 bg-linear-to-t from-white/85 via-white/40 to-white/10 dark:from-black/90 dark:via-black/45 dark:to-black/20" />
-                    <div className="absolute inset-0 bg-radial from-transparent via-white/5 to-white/40 dark:via-black/5 dark:to-black/45" />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent opacity-70 dark:from-white/10" />
+                    {/* Base wash, radial vignette, and top sheen are dark-mode-
+                        only depth cues; in light mode only the bottom-anchored
+                        gradient below applies, so the photo's true color shows
+                        through everywhere except right behind the text. */}
+                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-black/45" />
+                    <div className="absolute inset-0 bg-linear-to-t from-white/75 via-white/10 to-transparent dark:from-black/90 dark:via-black/45 dark:to-black/20" />
+                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-radial dark:from-transparent dark:via-black/5 dark:to-black/45" />
+                    <div className="hidden dark:block dark:pointer-events-none dark:absolute dark:inset-x-0 dark:top-0 dark:h-24 dark:bg-linear-to-b dark:from-white/10 dark:to-transparent dark:opacity-70" />
 
                     <div className="relative z-10 flex w-full flex-col justify-between p-5 text-ink sm:p-6 dark:text-white">
                       <div>
                         <div className="mb-4 flex min-h-8 items-center justify-between gap-3">
                           {item.category && (
-                            <span className="max-w-[70%] truncate rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:border-white/20 dark:bg-white/12 dark:text-white/85">
+                            <span className="max-w-[70%] truncate rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:border dark:border-white/20 dark:bg-white/12 dark:text-white/85">
                               {item.category}
                             </span>
                           )}
-                          <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-white/60 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:bg-black/25 dark:text-white/75">
+                          <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:bg-black/25 dark:text-white/75">
                             <Clock className="mr-1.5 h-3.5 w-3.5" />
                             {item.estimated_minutes} {t('MIN')}
                           </span>
@@ -172,7 +176,7 @@ export default function SurveysPage() {
                         </p>
                       </div>
 
-                      <div className="mt-10 flex items-center justify-between gap-3 rounded-2xl border border-black/10 bg-white/50 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-md dark:border-white/12 dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
+                      <div className="mt-10 flex items-center justify-between gap-3 rounded-2xl bg-white/60 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-md dark:border dark:border-white/12 dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
                         {isCompleted ? (
                           <span className="inline-flex items-center rounded-full bg-teal-soft px-3 py-2 text-sm font-bold text-teal-deep">
                             <CheckCircle2 className="mr-1.5 h-4 w-4" />
@@ -181,7 +185,7 @@ export default function SurveysPage() {
                         ) : (
                           <Link
                             href={`/survey/${item.id}`}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-cream shadow-cute-sm transition-all duration-200 hover:bg-ink/90 active:scale-[0.98] sm:w-auto dark:bg-white dark:text-black dark:hover:bg-white/90"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-cute-sm transition-all duration-200 hover:bg-white/90 active:scale-[0.98] sm:w-auto"
                           >
                             {t('Start Survey')}
                             <ArrowRight className="h-4 w-4" />
