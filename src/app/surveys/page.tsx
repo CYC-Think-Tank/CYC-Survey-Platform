@@ -132,43 +132,47 @@ export default function SurveysPage() {
 
               return (
                 <Reveal key={item.id} delay={idx * 0.1}>
-                  <article className="group relative flex min-h-[28rem] overflow-hidden rounded-2xl border border-white/10 bg-[#101014] shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)] transition-transform duration-500 hover:-translate-y-2">
+                  {/* Light mode: clean white card, bounded photo, ink text.
+                      Dark mode: full-bleed cinematic photo card with a dark
+                      scrim and white text. Both live in the same markup via
+                      dark: variants so there's no layout flash on toggle. */}
+                  <article className="group relative flex min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-cute-sm transition-transform duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-[#101014] dark:shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)]">
                     <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                      className="relative h-48 w-full shrink-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105 dark:absolute dark:inset-0 dark:h-full"
                       style={{
                         backgroundImage: item.thumbnail_url
                           ? `url(${item.thumbnail_url})`
                           : 'linear-gradient(135deg, #101014 0%, #04377e 48%, #0cb7c4 100%)',
                       }}
                     />
-                    <div className="absolute inset-0 bg-black/45" />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/45 to-black/20" />
-                    <div className="absolute inset-0 bg-radial from-transparent via-black/5 to-black/45" />
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-white/10 to-transparent opacity-70" />
+                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-black/45" />
+                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-linear-to-t dark:from-black/90 dark:via-black/45 dark:to-black/20" />
+                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-radial dark:from-transparent dark:via-black/5 dark:to-black/45" />
+                    <div className="hidden dark:block dark:pointer-events-none dark:absolute dark:inset-x-0 dark:top-0 dark:h-24 dark:bg-linear-to-b dark:from-white/10 dark:to-transparent dark:opacity-70" />
 
-                    <div className="relative z-10 flex w-full flex-col justify-between p-5 text-white sm:p-6">
+                    <div className="relative z-10 flex w-full flex-1 flex-col justify-between p-5 text-ink sm:p-6 dark:text-white">
                       <div>
                         <div className="mb-4 flex min-h-8 items-center justify-between gap-3">
                           {item.category && (
-                            <span className="max-w-[70%] truncate rounded-full border border-white/20 bg-white/12 px-3 py-1 text-xs font-semibold text-white/85 backdrop-blur-md">
+                            <span className="max-w-[70%] truncate rounded-full bg-teal-soft px-3 py-1 text-xs font-semibold text-teal-deep dark:border dark:border-white/20 dark:bg-white/12 dark:text-white/85 dark:backdrop-blur-md">
                               {item.category}
                             </span>
                           )}
-                          <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-black/25 px-3 py-1 text-xs font-semibold text-white/75 backdrop-blur-md">
+                          <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-cream-deep px-3 py-1 text-xs font-semibold text-ink-soft dark:bg-black/25 dark:text-white/75 dark:backdrop-blur-md">
                             <Clock className="mr-1.5 h-3.5 w-3.5" />
                             {item.estimated_minutes} {t('MIN')}
                           </span>
                         </div>
 
-                        <h2 className="line-clamp-2 font-display text-2xl font-medium leading-tight tracking-tight text-white">
+                        <h2 className="line-clamp-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink dark:text-white">
                           {displayTitle}
                         </h2>
-                        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-white/72">
+                        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft dark:text-white/72">
                           {descriptionText}
                         </p>
                       </div>
 
-                      <div className="mt-10 flex items-center justify-between gap-3 rounded-2xl border border-white/12 bg-white/10 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-md">
+                      <div className="mt-10 flex items-center justify-between gap-3 border-t border-border pt-4 dark:rounded-2xl dark:border dark:border-white/12 dark:border-t-0 dark:bg-white/10 dark:p-3 dark:pt-3 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] dark:backdrop-blur-md">
                         {isCompleted ? (
                           <span className="inline-flex items-center rounded-full bg-teal-soft px-3 py-2 text-sm font-bold text-teal-deep">
                             <CheckCircle2 className="mr-1.5 h-4 w-4" />
@@ -177,7 +181,7 @@ export default function SurveysPage() {
                         ) : (
                           <Link
                             href={`/survey/${item.id}`}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-cute-sm transition-all duration-200 hover:bg-white/90 active:scale-[0.98] sm:w-auto"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-teal px-4 py-2.5 text-sm font-bold text-white shadow-cute-sm transition-all duration-200 hover:bg-teal-deep active:scale-[0.98] sm:w-auto dark:bg-white dark:text-black dark:hover:bg-white/90"
                           >
                             {t('Start Survey')}
                             <ArrowRight className="h-4 w-4" />
