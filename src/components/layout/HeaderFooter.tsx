@@ -41,7 +41,7 @@ export function Header() {
     '/admin/unauthorized',
     '/student/login',
     '/student/unauthorized',
-    '/student/pending-team',
+    '/student/teams',
   ];
   if (
     (pathname.startsWith('/admin') || pathname.startsWith('/student')) &&

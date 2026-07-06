@@ -54,7 +54,7 @@ describe('StudentLayout', () => {
     );
 
     await waitFor(() => {
-      expect(mocks.replace).toHaveBeenCalledWith('/student/pending-team');
+      expect(mocks.replace).toHaveBeenCalledWith('/student/teams');
     });
     expect(screen.queryByText('Dashboard child mounted')).not.toBeInTheDocument();
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();

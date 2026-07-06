@@ -7,7 +7,13 @@ import { DashboardProvider } from '@/contexts/DashboardContext';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { DashboardModals } from '@/components/dashboard/DashboardModals';
 
-const PUBLIC_STUDENT_PATHS = ['/student/login', '/student/unauthorized', '/student/pending-team'];
+// Rendered without the sidebar dashboard shell. /student/teams is the teams
+// hub (invites, join/create/leave a team) — always a valid destination, even
+// for a student who already belongs to a team, so it is intentionally not
+// force-redirected away from below.
+const NO_SHELL_PATHS = ['/student/login', '/student/unauthorized', '/student/teams'];
+// Redirect away from these once the user is authenticated and allowed in.
+const AUTH_ENTRY_PATHS = ['/student/login', '/student/unauthorized'];
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -33,7 +39,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       const session = data.session;
 
       if (!session) {
-        if (!PUBLIC_STUDENT_PATHS.includes(pathname)) {
+        if (!NO_SHELL_PATHS.includes(pathname)) {
           router.replace('/student/login');
           return;
         }
@@ -58,12 +64,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           router.replace('/admin');
           return;
         }
-        if (me.teams.length === 0 && pathname !== '/student/pending-team') {
-          router.replace('/student/pending-team');
+        // The survey dashboard requires a team; send teamless students to
+        // the hub to join/create one first.
+        if (me.teams.length === 0 && !NO_SHELL_PATHS.includes(pathname)) {
+          router.replace('/student/teams');
           return;
         }
-        if (me.teams.length > 0 && PUBLIC_STUDENT_PATHS.includes(pathname)) {
-          router.replace('/student');
+        // Login always lands on the hub first — the dashboard is reached by
+        // explicitly clicking through from there.
+        if (AUTH_ENTRY_PATHS.includes(pathname)) {
+          router.replace('/student/teams');
           return;
         }
         allowCurrentPage();
@@ -99,7 +109,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     );
   }
 
-  if (PUBLIC_STUDENT_PATHS.includes(pathname)) {
+  if (NO_SHELL_PATHS.includes(pathname)) {
     return <div className="h-full overflow-y-auto w-full pb-20">{children}</div>;
   }
 

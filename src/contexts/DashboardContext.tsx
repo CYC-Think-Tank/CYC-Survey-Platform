@@ -48,25 +48,6 @@ export interface TrendPoint {
   count: number;
 }
 
-export interface TeamJoinRequest {
-  id: string;
-  team_id: string;
-  team_name?: string | null;
-  user_id: string;
-  user_email?: string | null;
-  requested_at?: string;
-}
-
-export interface TeamMember {
-  id: string;
-  team_id: string;
-  team_name?: string | null;
-  user_id: string;
-  user_email?: string | null;
-  full_name?: string | null;
-  role: 'team_leader' | 'team_member';
-}
-
 export type DashboardRole = 'admin' | 'student';
 
 const TREND_DAYS = 30;
@@ -80,6 +61,7 @@ interface DashboardValue {
   error: string;
   refetch: () => void;
   adminEmail: string | null;
+  userId: string | null;
   trend: TrendPoint[];
   trendLoading: boolean;
 
@@ -122,20 +104,11 @@ interface DashboardValue {
   openLeaderboard: () => Promise<void>;
   closeLeaderboard: () => void;
 
-  // Student/team-scoped state. Empty/no-ops when role === 'admin'.
+  // Lightweight team membership, used for delete-permission checks and the
+  // student "Raffle Wheel" quick action. Full team management (invites,
+  // join requests, leave/create) lives on the /student/teams hub, not here.
   teams: AdminTeam[];
   isTeamLeader: boolean;
-  teamMembers: TeamMember[];
-  loadingTeamMembers: boolean;
-  refetchTeamMembers: () => void;
-  joinRequests: TeamJoinRequest[];
-  loadingJoinRequests: boolean;
-  updatingJoinRequestId: string | null;
-  handleJoinRequest: (requestId: string, action: 'approve' | 'reject') => Promise<void>;
-  transferringMemberId: string | null;
-  transferLeadership: (member: TeamMember) => Promise<void>;
-  leavingTeam: boolean;
-  leaveTeam: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardValue | null>(null);
@@ -153,6 +126,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newSurveyTitle, setNewSurveyTitle] = useState('');
@@ -173,13 +147,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [trendLoading, setTrendLoading] = useState(true);
 
   const [teams, setTeams] = useState<AdminTeam[]>([]);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
-  const [joinRequests, setJoinRequests] = useState<TeamJoinRequest[]>([]);
-  const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
-  const [updatingJoinRequestId, setUpdatingJoinRequestId] = useState<string | null>(null);
-  const [transferringMemberId, setTransferringMemberId] = useState<string | null>(null);
-  const [leavingTeam, setLeavingTeam] = useState(false);
 
   const router = useRouter();
 
@@ -206,51 +173,18 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     fetchSurveys();
   }, [fetchSurveys]);
 
-  const fetchTeamMembers = useCallback(() => {
-    setLoadingTeamMembers(true);
-    adminFetch('/admin-api/team-members')
-      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load team members'))
-      .then((data) =>
-        setTeamMembers(ensureArray<TeamMember>(data, 'Unexpected team-member response'))
-      )
-      .catch((err) => {
-        if (!isAdminFetchError(err)) console.error('Failed to load team members', err);
-        setTeamMembers([]);
-      })
-      .finally(() => setLoadingTeamMembers(false));
-  }, []);
-
-  const fetchJoinRequests = useCallback(() => {
-    setLoadingJoinRequests(true);
-    adminFetch('/admin-api/team-join-requests')
-      .then((res) => parseJsonResponse<unknown>(res, 'Failed to load team requests'))
-      .then((data) =>
-        setJoinRequests(ensureArray<TeamJoinRequest>(data, 'Unexpected team-request response'))
-      )
-      .catch((err) => {
-        if (!isAdminFetchError(err)) console.error('Failed to load team requests', err);
-        setJoinRequests([]);
-      })
-      .finally(() => setLoadingJoinRequests(false));
-  }, []);
-
   useEffect(() => {
     fetchAdminMe()
       .then((me) => {
         setAdminEmail(me.user.email);
+        setUserId(me.user.id);
         setRole(me.is_admin ? 'admin' : 'student');
         setTeams(me.teams);
-        if (!me.is_admin && me.teams.length > 0) {
-          fetchTeamMembers();
-          if (me.teams.some((t) => t.role === 'team_leader')) {
-            fetchJoinRequests();
-          }
-        }
       })
-      .catch(() => setAdminEmail(null));
-    // Only ever needs to run once per mount; role/teams are re-derived from
-    // this same call, not from external deps.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch(() => {
+        setAdminEmail(null);
+        setUserId(null);
+      });
   }, []);
 
   // Response Trend: the survey list endpoint has no per-day breakdown, so we
@@ -533,82 +467,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const isTeamLeader = teams.some((team) => team.role === 'team_leader');
 
-  const refetchTeamMembers = useCallback(() => fetchTeamMembers(), [fetchTeamMembers]);
-
-  const handleJoinRequest = useCallback(
-    async (requestId: string, action: 'approve' | 'reject') => {
-      setUpdatingJoinRequestId(requestId);
-      try {
-        const res = await adminFetch(`/admin-api/team-join-requests/${requestId}/${action}`, {
-          method: 'POST',
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          alert(data.detail || data.error || `Failed to ${action} request.`);
-          return;
-        }
-        fetchJoinRequests();
-      } catch (err) {
-        if (!isAdminFetchError(err)) console.error(err);
-        alert(`Failed to ${action} request.`);
-      } finally {
-        setUpdatingJoinRequestId(null);
-      }
-    },
-    [fetchJoinRequests]
-  );
-
-  const transferLeadership = useCallback(async (member: TeamMember) => {
-    const memberLabel = member.full_name || member.user_email || 'this member';
-    const confirmed = window.confirm(
-      `Transfer leadership to ${memberLabel}? You will become a regular team member and only the new leader will be able to manage requests or delete surveys.`
-    );
-    if (!confirmed) return;
-
-    setTransferringMemberId(member.id);
-    try {
-      const res = await adminFetch('/admin-api/team-members/transfer-leadership', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ team_id: member.team_id, new_leader_user_id: member.user_id }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.detail || data.error || 'Failed to transfer leadership.');
-        return;
-      }
-      window.location.reload();
-    } catch (err) {
-      if (!isAdminFetchError(err)) console.error(err);
-      alert('Failed to transfer leadership.');
-    } finally {
-      setTransferringMemberId(null);
-    }
-  }, []);
-
-  const leaveTeam = useCallback(async () => {
-    const confirmed = window.confirm(
-      'Leave this team? You will lose access to its surveys and return to team onboarding.'
-    );
-    if (!confirmed) return;
-
-    setLeavingTeam(true);
-    try {
-      const res = await adminFetch('/admin-api/team-members/leave', { method: 'POST' });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.detail || data.error || 'Failed to leave team.');
-        return;
-      }
-      window.location.href = '/student/pending-team';
-    } catch (err) {
-      if (!isAdminFetchError(err)) console.error(err);
-      alert('Failed to leave team.');
-    } finally {
-      setLeavingTeam(false);
-    }
-  }, []);
-
   const value = useMemo<DashboardValue>(
     () => ({
       role,
@@ -618,6 +476,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       error,
       refetch: fetchSurveys,
       adminEmail,
+      userId,
       trend,
       trendLoading,
       searchQuery,
@@ -656,17 +515,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       closeLeaderboard,
       teams,
       isTeamLeader,
-      teamMembers,
-      loadingTeamMembers,
-      refetchTeamMembers,
-      joinRequests,
-      loadingJoinRequests,
-      updatingJoinRequestId,
-      handleJoinRequest,
-      transferringMemberId,
-      transferLeadership,
-      leavingTeam,
-      leaveTeam,
     }),
     [
       role,
@@ -676,6 +524,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       error,
       fetchSurveys,
       adminEmail,
+      userId,
       trend,
       trendLoading,
       searchQuery,
@@ -710,17 +559,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       closeLeaderboard,
       teams,
       isTeamLeader,
-      teamMembers,
-      loadingTeamMembers,
-      refetchTeamMembers,
-      joinRequests,
-      loadingJoinRequests,
-      updatingJoinRequestId,
-      handleJoinRequest,
-      transferringMemberId,
-      transferLeadership,
-      leavingTeam,
-      leaveTeam,
     ]
   );
 

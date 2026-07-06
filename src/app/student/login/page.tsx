@@ -69,7 +69,7 @@ export default function AdminLogin() {
       }
     }
 
-    router.push('/student');
+    router.push('/student/teams');
     router.refresh();
   };
 

@@ -82,77 +82,99 @@ export function ResponseTrendChart({ data }: { data: TrendPoint[] }) {
   };
 
   return (
-    <svg
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      className="h-56 w-full overflow-visible"
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
+    <div className="relative h-56 w-full">
+      {/* The SVG is stretched non-uniformly to fill the card (preserveAspectRatio
+          "none"), which is fine for geometry but would distort <text>, so axis
+          labels are rendered as a plain HTML overlay instead, positioned by
+          percentage to line up with the SVG coordinate space. */}
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        className="h-full w-full overflow-visible"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-      <g className="text-border">
-        {gridLines.map((g) => (
-          <line
-            key={g.value}
-            x1={PAD_LEFT}
-            x2={WIDTH - PAD_RIGHT}
-            y1={g.y}
-            y2={g.y}
+        <g className="text-border">
+          {gridLines.map((g) => (
+            <line
+              key={g.value}
+              x1={PAD_LEFT}
+              x2={WIDTH - PAD_RIGHT}
+              y1={g.y}
+              y2={g.y}
+              stroke="currentColor"
+              strokeWidth={1}
+              strokeDasharray="3 4"
+            />
+          ))}
+        </g>
+
+        <g className="text-ink">
+          <motion.path
+            d={areaPath}
+            fill={`url(#${gradientId})`}
+            stroke="none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          />
+          <motion.path
+            d={linePath}
+            fill="none"
             stroke="currentColor"
-            strokeWidth={1}
-            strokeDasharray="3 4"
+            strokeWidth={2}
+            strokeLinecap="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           />
-        ))}
-      </g>
+          {points.length > 0 && (
+            <motion.circle
+              cx={points[points.length - 1].x}
+              cy={points[points.length - 1].y}
+              r={3.5}
+              fill="currentColor"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 1 }}
+            />
+          )}
+        </g>
+      </svg>
 
-      <g className="text-ink-soft">
+      <div className="pointer-events-none absolute inset-0">
         {gridLines.map((g) => (
-          <text key={g.value} x={0} y={g.y + 3} fontSize="11">
+          <span
+            key={g.value}
+            className="absolute left-0 -translate-y-1/2 whitespace-nowrap text-[11px] text-ink-soft"
+            style={{ top: `${(g.y / HEIGHT) * 100}%` }}
+          >
             {g.value}
-          </text>
+          </span>
         ))}
-        {dateTicks.map((t) => (
-          <text key={t.date} x={t.x} y={HEIGHT - 4} fontSize="11" textAnchor="middle">
+        {dateTicks.map((t, i) => (
+          <span
+            key={t.date}
+            className="absolute bottom-0 whitespace-nowrap text-[11px] text-ink-soft"
+            style={{
+              left: `${(t.x / WIDTH) * 100}%`,
+              transform:
+                i === 0
+                  ? 'translateX(0)'
+                  : i === dateTicks.length - 1
+                    ? 'translateX(-100%)'
+                    : 'translateX(-50%)',
+            }}
+          >
             {formatDate(t.date)}
-          </text>
+          </span>
         ))}
-      </g>
-
-      <g className="text-ink">
-        <motion.path
-          d={areaPath}
-          fill={`url(#${gradientId})`}
-          stroke="none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        />
-        <motion.path
-          d={linePath}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-        />
-        {points.length > 0 && (
-          <motion.circle
-            cx={points[points.length - 1].x}
-            cy={points[points.length - 1].y}
-            r={3.5}
-            fill="currentColor"
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: 1 }}
-          />
-        )}
-      </g>
-    </svg>
+      </div>
+    </div>
   );
 }
