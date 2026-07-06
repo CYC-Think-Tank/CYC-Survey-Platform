@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import type { Session } from '@supabase/supabase-js';
 import {
   AdminFetchError,
   fetchAdminMe,
@@ -33,16 +34,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname();
 
   // The session/profile check is a network round trip — it only needs to run
-  // once per mount, not on every in-dashboard navigation. Re-running it per
-  // pathname change was forcing a full DashboardProvider remount (and a
-  // second, redundant data-loading spinner) on every sidebar click.
+  // once per mount, not on every in-dashboard navigation (re-running it per
+  // pathname change was forcing a full DashboardProvider remount and a
+  // second, redundant data-loading spinner on every sidebar click). But it
+  // does need to re-run whenever the session itself changes — e.g. a user
+  // who lands on this layout signed out, then signs in from a child page
+  // (like /student/login) without a full page reload. onAuthStateChange
+  // covers both: it fires once immediately with the current session and
+  // again on every subsequent sign-in/sign-out, so a single subscription
+  // replaces a one-shot getSession() call without re-running on navigation.
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
-
+    const resolve = async (session: Session | null) => {
       if (!session) {
         if (!cancelled) setAuth({ status: 'signed-out' });
         return;
@@ -65,10 +69,17 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           if (!cancelled) setAuth({ status: 'error' });
         }
       }
-    })();
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      resolve(session);
+    });
 
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, []);
 

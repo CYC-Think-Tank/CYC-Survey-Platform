@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   fetchAdminMe: vi.fn(),
   adminFetch: vi.fn(),
-  getSession: vi.fn(),
+  onAuthStateChange: vi.fn(),
   signOut: vi.fn(),
 }));
 
@@ -32,15 +32,18 @@ vi.mock('@/lib/adminAuth', () => ({
   parseJsonResponse: async (response: Response) => response.json().catch(() => null),
 }));
 vi.mock('@/lib/supabase', () => ({
-  supabase: { auth: { getSession: mocks.getSession, signOut: mocks.signOut } },
+  supabase: { auth: { onAuthStateChange: mocks.onAuthStateChange, signOut: mocks.signOut } },
 }));
 
 describe('StudentLayout', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.getSession.mockResolvedValue({
-      data: { session: { user: { email: 'person@thecyc.org' } } },
-    });
+    mocks.onAuthStateChange.mockImplementation(
+      (callback: (event: string, session: unknown) => void) => {
+        callback('INITIAL_SESSION', { user: { email: 'person@thecyc.org' } });
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      }
+    );
     mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
   });
 
