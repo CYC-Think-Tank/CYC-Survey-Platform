@@ -51,12 +51,8 @@ export default function AdminAudiencePage() {
         transition={{ duration: 0.4, delay: 0.05 }}
         className="mb-8 rounded-2xl border border-border bg-card px-6 py-5"
       >
-        <p className="font-mono text-xs uppercase tracking-wider text-ink-soft">
-          Total Respondents
-        </p>
-        <p className="mt-2 font-mono text-3xl font-semibold text-ink">
-          {totalResponses.toLocaleString()}
-        </p>
+        <p className="text-xs uppercase tracking-wider text-ink-soft">Total Respondents</p>
+        <p className="mt-2 text-3xl font-semibold text-ink">{totalResponses.toLocaleString()}</p>
       </motion.div>
 
       <motion.div
@@ -78,7 +74,7 @@ export default function AdminAudiencePage() {
                 <div key={category}>
                   <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                     <span className="truncate font-medium text-ink">{category}</span>
-                    <span className="shrink-0 font-mono text-ink-soft">
+                    <span className="shrink-0 text-ink-soft">
                       {count.toLocaleString()} · {share}%
                     </span>
                   </div>

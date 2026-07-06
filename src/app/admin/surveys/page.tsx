@@ -97,7 +97,7 @@ export default function AdminSurveysPage() {
         className="mb-6"
       >
         <h1 className="font-display text-3xl font-medium tracking-tight text-ink">Surveys</h1>
-        <p className="mt-1 font-mono text-sm text-ink-soft">
+        <p className="mt-1 text-sm text-ink-soft">
           {surveys.length} total · {surveys.filter((s) => s.is_active).length} active
         </p>
       </motion.div>
@@ -190,7 +190,7 @@ export default function AdminSurveysPage() {
         </div>
       </div>
 
-      <p className="mb-3 font-mono text-xs uppercase tracking-wider text-ink-soft">
+      <p className="mb-3 text-xs uppercase tracking-wider text-ink-soft">
         {filteredSurveys.length} survey{filteredSurveys.length !== 1 ? 's' : ''}
       </p>
 

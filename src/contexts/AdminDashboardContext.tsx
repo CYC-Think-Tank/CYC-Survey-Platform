@@ -42,12 +42,21 @@ export interface ReferralLeaderboardEntry {
   referral_count: number;
 }
 
+export interface TrendPoint {
+  date: string;
+  count: number;
+}
+
+const TREND_DAYS = 30;
+
 interface AdminDashboardValue {
   surveys: Survey[];
   loading: boolean;
   error: string;
   refetch: () => void;
   adminEmail: string | null;
+  trend: TrendPoint[];
+  trendLoading: boolean;
 
   searchQuery: string;
   setSearchQuery: (q: string) => void;
@@ -112,6 +121,9 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
   const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
 
+  const [trend, setTrend] = useState<TrendPoint[]>([]);
+  const [trendLoading, setTrendLoading] = useState(true);
+
   const router = useRouter();
 
   const fetchSurveys = useCallback(() => {
@@ -142,6 +154,61 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       .then((me) => setAdminEmail(me.user.email))
       .catch(() => setAdminEmail(null));
   }, []);
+
+  // Response Trend: the survey list endpoint has no per-day breakdown, so we
+  // pull each survey's individual response timestamps and bucket them by day
+  // client-side. Only surveys that actually have responses are fetched, and
+  // each fetch is capped, so this stays cheap for the common case.
+  useEffect(() => {
+    if (loading) return;
+    let cancelled = false;
+
+    const loadTrend = async () => {
+      setTrendLoading(true);
+      const since = new Date();
+      since.setHours(0, 0, 0, 0);
+      since.setDate(since.getDate() - (TREND_DAYS - 1));
+
+      const buckets = new Map<string, number>();
+      for (let i = 0; i < TREND_DAYS; i++) {
+        const d = new Date(since);
+        d.setDate(d.getDate() + i);
+        buckets.set(d.toISOString().slice(0, 10), 0);
+      }
+
+      const withResponses = surveys.filter((s) => (s.response_count || 0) > 0);
+      await Promise.all(
+        withResponses.map(async (s) => {
+          try {
+            const limit = Math.min(s.response_count || 0, 500);
+            const res = await adminFetch(`/api/surveys/${s.id}/responses/paginated?limit=${limit}`);
+            const data = await parseJsonResponse<{
+              responses: { completed_at: string | null }[];
+            }>(res, 'Failed to fetch responses');
+            for (const r of data.responses) {
+              if (!r.completed_at) continue;
+              const day = r.completed_at.slice(0, 10);
+              if (buckets.has(day)) {
+                buckets.set(day, (buckets.get(day) || 0) + 1);
+              }
+            }
+          } catch (err) {
+            if (!isAdminFetchError(err)) console.error(err);
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setTrend([...buckets.entries()].map(([date, count]) => ({ date, count })));
+        setTrendLoading(false);
+      }
+    };
+
+    loadTrend();
+    return () => {
+      cancelled = true;
+    };
+  }, [surveys, loading]);
 
   const openCreateModal = useCallback(() => setCreateModalOpen(true), []);
   const closeCreateModal = useCallback(() => {
@@ -365,6 +432,8 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       error,
       refetch: fetchSurveys,
       adminEmail,
+      trend,
+      trendLoading,
       searchQuery,
       setSearchQuery,
       createModalOpen,
@@ -405,6 +474,8 @@ export function AdminDashboardProvider({ children }: { children: ReactNode }) {
       error,
       fetchSurveys,
       adminEmail,
+      trend,
+      trendLoading,
       searchQuery,
       createModalOpen,
       openCreateModal,

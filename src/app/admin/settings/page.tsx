@@ -41,8 +41,7 @@ export default function AdminSettingsPage() {
           <div>
             <p className="text-sm text-ink-soft">Access</p>
             <p className="text-sm text-ink">
-              Restricted to <span className="font-mono">@{allowedDomain || 'unconfigured'}</span>{' '}
-              accounts.
+              Restricted to <strong>@{allowedDomain || 'unconfigured'}</strong> accounts.
             </p>
           </div>
         </div>

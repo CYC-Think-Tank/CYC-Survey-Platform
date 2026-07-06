@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Send, Trophy, Share2, ArrowRight } from 'lucide-react';
 import { useAdminDashboard } from '@/contexts/AdminDashboardContext';
+import { ResponseTrendChart } from '@/components/admin/ResponseTrendChart';
 
 const today = new Date().toLocaleDateString('en-US', {
   month: 'short',
@@ -12,8 +13,15 @@ const today = new Date().toLocaleDateString('en-US', {
 });
 
 export default function AdminOverview() {
-  const { surveys, loading, handleNotifyUsers, openLeaderboard, openShareModal } =
-    useAdminDashboard();
+  const {
+    surveys,
+    loading,
+    trend,
+    trendLoading,
+    handleNotifyUsers,
+    openLeaderboard,
+    openShareModal,
+  } = useAdminDashboard();
 
   const stats = useMemo(() => {
     const totalResponses = surveys.reduce((sum, s) => sum + (s.response_count || 0), 0);
@@ -48,7 +56,7 @@ export default function AdminOverview() {
         className="mb-8"
       >
         <h1 className="font-display text-3xl font-medium tracking-tight text-ink">Overview</h1>
-        <p className="mt-1 font-mono text-sm text-ink-soft">{today}</p>
+        <p className="mt-1 text-sm text-ink-soft">{today}</p>
       </motion.div>
 
       <motion.div
@@ -64,12 +72,35 @@ export default function AdminOverview() {
           { label: 'Avg Responses / Survey', value: stats.avgResponses },
         ].map((stat) => (
           <div key={stat.label} className="bg-card px-6 py-5">
-            <p className="font-mono text-xs uppercase tracking-wider text-ink-soft">{stat.label}</p>
-            <p className="mt-2 font-mono text-3xl font-semibold text-ink">
-              {stat.value.toLocaleString()}
-            </p>
+            <p className="text-xs uppercase tracking-wider text-ink-soft">{stat.label}</p>
+            <p className="mt-2 text-3xl font-semibold text-ink">{stat.value.toLocaleString()}</p>
           </div>
         ))}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.08 }}
+        className="mb-6 rounded-2xl border border-border bg-card p-6"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-display text-lg font-medium tracking-tight text-ink">
+            Response Trend
+          </h2>
+          <span className="text-sm text-ink-soft">Last 30 days</span>
+        </div>
+        {trendLoading ? (
+          <div className="flex h-56 items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ink"></div>
+          </div>
+        ) : trend.every((t) => t.count === 0) ? (
+          <div className="flex h-56 items-center justify-center text-sm text-ink-soft">
+            No responses in the last 30 days.
+          </div>
+        ) : (
+          <ResponseTrendChart data={trend} />
+        )}
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -107,7 +138,7 @@ export default function AdminOverview() {
                 >
                   <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                     <span className="truncate font-medium text-ink">{survey.title}</span>
-                    <span className="shrink-0 font-mono text-ink-soft">
+                    <span className="shrink-0 text-ink-soft">
                       {(survey.response_count || 0).toLocaleString()}
                     </span>
                   </div>

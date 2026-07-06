@@ -71,8 +71,8 @@ export default function AdminAnalyticsPage() {
           { label: 'Avg. Est. Time', value: `${stats.avgMinutes}m` },
         ].map((stat) => (
           <div key={stat.label} className="bg-card px-6 py-5">
-            <p className="font-mono text-xs uppercase tracking-wider text-ink-soft">{stat.label}</p>
-            <p className="mt-2 font-mono text-3xl font-semibold text-ink">{stat.value}</p>
+            <p className="text-xs uppercase tracking-wider text-ink-soft">{stat.label}</p>
+            <p className="mt-2 text-3xl font-semibold text-ink">{stat.value}</p>
           </div>
         ))}
       </motion.div>
@@ -95,9 +95,7 @@ export default function AdminAnalyticsPage() {
                 <div key={category}>
                   <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                     <span className="truncate font-medium text-ink">{category}</span>
-                    <span className="shrink-0 font-mono text-ink-soft">
-                      {count.toLocaleString()}
-                    </span>
+                    <span className="shrink-0 text-ink-soft">{count.toLocaleString()}</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-cream-deep">
                     <motion.div
@@ -130,7 +128,7 @@ export default function AdminAnalyticsPage() {
                 <div key={survey.id}>
                   <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
                     <span className="truncate font-medium text-ink">{survey.title}</span>
-                    <span className="shrink-0 font-mono text-ink-soft">
+                    <span className="shrink-0 text-ink-soft">
                       {(survey.response_count || 0).toLocaleString()}
                     </span>
                   </div>
