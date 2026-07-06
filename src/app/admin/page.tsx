@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'motion/react';
 import { UNCATEGORIZED_LABEL } from '@/config/categories';
 import { adminFetch, ensureArray, isAdminFetchError, parseJsonResponse } from '@/lib/adminAuth';
 import { supabase } from '@/lib/supabase';
@@ -21,7 +22,7 @@ import {
   X,
   Send,
   Trophy,
-  FileText,
+  Menu,
 } from 'lucide-react';
 
 interface ReferralLeaderboardEntry {
@@ -48,6 +49,12 @@ interface ShareLink {
   response_count?: number;
 }
 
+// One reusable style for every small icon-only row/menu action so the whole
+// panel reads as a single monochrome system: ink (black in light, white in
+// dark) on hover, nothing else, unless explicitly overridden per-button.
+const iconButton =
+  'inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink dark:hover:bg-white/10';
+
 export default function AdminDashboard() {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +71,7 @@ export default function AdminDashboard() {
   const [createModal, setCreateModal] = useState(false);
   const [newSurveyTitle, setNewSurveyTitle] = useState('');
   const [creatingSurvey, setCreatingSurvey] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
 
@@ -341,83 +349,125 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-cyc-primary)]"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-ink"></div>
       </div>
     );
   }
 
   return (
     <div className="max-w-6xl mx-auto py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0"
+      >
         <div>
-          <h1 className="font-display text-3xl font-medium tracking-tight text-ink flex items-center">
+          <h1 className="font-display text-3xl font-medium tracking-tight text-ink flex flex-wrap items-center gap-3">
             Dashboard Overview
-            <span className="ml-4 text-sm font-medium bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-3 py-1 rounded-full border border-[var(--color-cyc-primary)]/20">
-              {totalActiveResponses} total active responses
+            <span className="text-sm font-medium bg-card border border-border text-ink-soft px-3 py-1 rounded-full">
+              {totalActiveResponses} active responses
             </span>
           </h1>
-          <p className="text-gray-500 dark:text-slate-500 mt-1">
-            Manage your surveys and view engagement metrics.
-          </p>
+          <p className="text-ink-soft mt-1">Manage your surveys and view engagement metrics.</p>
         </div>
-        <div className="flex space-x-4 flex-wrap gap-y-2">
-          <button onClick={() => setCreateModal(true)} className="btn-primary flex items-center">
+
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setCreateModal(true)}
+            className="flex items-center px-4 py-2.5 rounded-lg font-semibold bg-ink text-cream hover:opacity-90 transition-opacity"
+          >
             <PlusCircle className="w-4 h-4 mr-2" />
             New Survey
-          </button>
+          </motion.button>
 
-          <Link
-            href="/admin/blog"
-            className="px-4 py-2 bg-teal text-white hover:bg-teal-deep rounded-lg flex items-center font-semibold transition-colors"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Manage Blog
-          </Link>
-
-          <button
-            onClick={() => handleNotifyUsers()}
-            className="text-blue-600 hover:text-blue-800 flex items-center font-semibold"
-          >
-            <Send className="w-4 h-4 mr-1" />
-            Remind Users
-          </button>
-
-          <button
-            onClick={openLeaderboard}
-            className="text-emerald-600 hover:text-emerald-800 flex items-center"
-          >
-            <Trophy className="w-4 h-4 mr-1" />
-            Leaderboard
-          </button>
-
-          <button
-            onClick={() => openShareModal(null)}
-            className="text-purple-600 hover:text-purple-800 flex items-center"
-          >
-            <Share2 className="w-4 h-4 mr-1" />
-            Global Links
-          </button>
-
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-red-600 hover:bg-red-50 rounded flex items-center transition-colors"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </button>
+          <div className="relative">
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Admin actions"
+              aria-expanded={menuOpen}
+              className="flex h-10.5 w-10.5 items-center justify-center rounded-lg border border-border text-ink hover:bg-cream-deep dark:hover:bg-white/10 transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </motion.button>
+            <AnimatePresence>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-border bg-card shadow-cute py-1.5 z-50 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        handleNotifyUsers();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink hover:bg-cream-deep dark:hover:bg-white/10 transition-colors"
+                    >
+                      <Send className="w-4 h-4" />
+                      Remind Users
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        openLeaderboard();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink hover:bg-cream-deep dark:hover:bg-white/10 transition-colors"
+                    >
+                      <Trophy className="w-4 h-4" />
+                      Leaderboard
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        openShareModal(null);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink hover:bg-cream-deep dark:hover:bg-white/10 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Global Links
+                    </button>
+                    <div className="my-1.5 border-t border-border" />
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-soft hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
+      </motion.div>
+
       {availableCategories.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 mr-1">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="flex flex-wrap items-center gap-2 mb-6"
+        >
+          <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft mr-1">
             Category
           </span>
           <button
             onClick={() => setCategoryFilter('all')}
             className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
               categoryFilter === 'all'
-                ? 'bg-[var(--color-cyc-primary)] text-white border-transparent'
-                : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-[var(--color-cyc-primary)]'
+                ? 'bg-ink text-cream border-ink'
+                : 'bg-card text-ink-soft border-border hover:border-ink'
             }`}
           >
             All
@@ -432,169 +482,168 @@ export default function AdminDashboard() {
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
                   active
-                    ? 'bg-[var(--color-cyc-primary)] text-white border-transparent'
-                    : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-700 hover:border-[var(--color-cyc-primary)]'
+                    ? 'bg-ink text-cream border-ink'
+                    : 'bg-card text-ink-soft border-border hover:border-ink'
                 } ${isUncat ? 'italic' : ''}`}
               >
                 {label}
               </button>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+        <div className="mb-6 rounded-lg border border-red-200 dark:border-red-500/20 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow border border-gray-200 dark:border-slate-700 overflow-x-auto overflow-y-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50 dark:bg-slate-900/50">
+
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        className="bg-card rounded-2xl shadow-cute-sm border border-border overflow-x-auto overflow-y-hidden"
+      >
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-cream-deep/50">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider"
+                className="px-6 py-4 text-left text-xs font-semibold text-ink-soft uppercase tracking-wider"
               >
                 Survey Title
               </th>
               <th
                 scope="col"
-                className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider"
+                className="px-6 py-4 text-left text-xs font-semibold text-ink-soft uppercase tracking-wider"
               >
                 Status
               </th>
               <th
                 scope="col"
-                className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider"
+                className="px-6 py-4 text-left text-xs font-semibold text-ink-soft uppercase tracking-wider"
               >
                 Responses
               </th>
               <th
                 scope="col"
-                className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider"
+                className="px-6 py-4 text-left text-xs font-semibold text-ink-soft uppercase tracking-wider"
               >
                 Est. Time
               </th>
               <th
                 scope="col"
-                className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wider"
+                className="px-6 py-4 text-right text-xs font-semibold text-ink-soft uppercase tracking-wider"
               >
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200">
-            {filteredSurveys.map((survey) => (
-              <tr
+          <tbody className="divide-y divide-border">
+            {filteredSurveys.map((survey, idx) => (
+              <motion.tr
                 key={survey.id}
-                className="hover:bg-gray-50 dark:bg-slate-900/50 transition-colors"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.3) }}
+                className="hover:bg-cream-deep/40 transition-colors"
               >
                 <td className="px-6 py-4">
                   <div className="text-sm font-semibold text-ink flex items-center gap-2">
                     {survey.title}
                     {survey.category?.trim() && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wide bg-[var(--color-cyc-primary)]/10 text-[var(--color-cyc-primary)] px-2 py-0.5 rounded-full border border-[var(--color-cyc-primary)]/20">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide border border-border text-ink-soft px-2 py-0.5 rounded-full">
                         {survey.category}
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-slate-500 line-clamp-1">
+                  <div className="text-sm text-ink-soft line-clamp-1">
                     {survey.description?.replace(/<[^>]*>?/gm, '')}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${survey.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200'}`}
-                  >
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-ink">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${survey.is_active ? 'bg-emerald-500' : 'bg-ink-soft'}`}
+                    />
                     {survey.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
                   <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-1.5 text-[var(--color-cyc-primary)]" />
+                    <Users className="w-4 h-4 mr-1.5" />
                     {survey.response_count || 0}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 mr-1.5" />
                     {survey.estimated_minutes} min
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-3">
+                  <div className="flex items-center justify-end gap-1">
                     <Link
                       href={`/admin/results/${survey.id}`}
-                      className="text-ink hover:text-blue-700 flex items-center"
+                      title="Results"
+                      className={iconButton}
                     >
-                      <BarChart3 className="w-4 h-4 mr-1" />
-                      Results
+                      <BarChart3 className="w-4 h-4" />
                     </Link>
 
                     <button
                       onClick={() => openShareModal(survey)}
-                      className="text-purple-600 hover:text-purple-800 flex items-center"
                       title="Share Links"
+                      className={iconButton}
                     >
-                      <Share2 className="w-4 h-4 mr-1" />
-                      Share
+                      <Share2 className="w-4 h-4" />
                     </button>
 
                     <button
                       onClick={() => handleToggleActive(survey)}
-                      className={`flex items-center ${survey.is_active ? 'text-orange-500 hover:text-orange-700' : 'text-green-600 hover:text-green-800'}`}
                       title={survey.is_active ? 'Deactivate' : 'Activate'}
+                      className={iconButton}
                     >
-                      <Power className="w-4 h-4 mr-1" />
-                      {survey.is_active ? 'Deactivate' : 'Activate'}
+                      <Power className="w-4 h-4" />
                     </button>
 
                     {!survey.has_been_published ? (
-                      <Link
-                        href={`/admin/edit/${survey.id}`}
-                        className="text-[var(--color-cyc-primary)] hover:text-teal-700 flex items-center"
-                      >
-                        <Edit3 className="w-4 h-4 mr-1" />
-                        Edit
+                      <Link href={`/admin/edit/${survey.id}`} title="Edit" className={iconButton}>
+                        <Edit3 className="w-4 h-4" />
                       </Link>
                     ) : (
                       <Link
                         href={`/admin/edit/${survey.id}`}
-                        className="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 flex items-center"
                         title="View locked survey or edit translations"
+                        className={iconButton}
                       >
-                        <Lock className="w-4 h-4 mr-1" />
-                        View
+                        <Lock className="w-4 h-4" />
                       </Link>
                     )}
 
                     <button
                       onClick={() => handleDuplicate(survey)}
-                      className="text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:text-slate-300 flex items-center"
                       title="Duplicate Survey"
+                      className={iconButton}
                     >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Duplicate
+                      <Copy className="w-4 h-4" />
                     </button>
 
                     <button
                       onClick={() => handleDelete(survey)}
-                      className="text-red-500 hover:text-red-700 ml-2"
                       title="Delete Survey"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
             {filteredSurveys.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-6 py-12 text-center text-gray-500 dark:text-slate-500"
-                >
+                <td colSpan={5} className="px-6 py-12 text-center text-ink-soft">
                   {surveys.length === 0
                     ? 'No surveys found. Create one to get started!'
                     : 'No surveys in this category.'}
@@ -603,242 +652,275 @@ export default function AdminDashboard() {
             )}
           </tbody>
         </table>
-      </div>
+      </motion.div>
 
       {/* Share Link Modal */}
-      {shareModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[85vh] flex flex-col">
-            <button
-              onClick={() => setShareModal(null)}
-              className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-400"
+      <AnimatePresence>
+        {shareModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[85vh] flex flex-col"
             >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-1 flex items-center">
-              <Share2 className="w-5 h-5 mr-2" />
-              Share Links
-            </h2>
-            <div className="flex justify-between items-center mb-5">
-              <p className="text-sm text-gray-500 dark:text-slate-500">
-                Generate unique tracked links for <strong>{shareModal.title}</strong>
-              </p>
-              <label className="flex items-center text-sm text-gray-600 dark:text-slate-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hideZeroResponses}
-                  onChange={(e) => setHideZeroResponses(e.target.checked)}
-                  className="mr-2 rounded border-gray-300 text-[var(--color-cyc-primary)] focus:ring-[var(--color-cyc-primary)]"
-                />
-                Hide 0 responses
-              </label>
-            </div>
-
-            {/* Generate new link */}
-            <div className="flex space-x-2 mb-5">
-              <input
-                type="text"
-                value={shareLabel}
-                onChange={(e) => setShareLabel(e.target.value)}
-                placeholder="Label (intern name)"
-                className="flex-grow p-2.5 border-2 border-gray-200 dark:border-slate-700 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleGenerateLink();
-                }}
-              />
               <button
-                onClick={handleGenerateLink}
-                disabled={generatingLink}
-                className="px-4 py-2 bg-[var(--color-cyc-primary)] text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-all whitespace-nowrap"
+                onClick={() => setShareModal(null)}
+                className="absolute top-4 right-4 text-ink-soft hover:text-ink transition-colors"
               >
-                {generatingLink ? '...' : '+ Generate'}
+                <X className="w-5 h-5" />
               </button>
-            </div>
-
-            {/* List of generated links */}
-            <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
-              {shareLinks.length === 0 && (
-                <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">
-                  No links generated yet. Click &quot;Generate&quot; to create one.
+              <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-1 flex items-center">
+                <Share2 className="w-5 h-5 mr-2" />
+                Share Links
+              </h2>
+              <div className="flex justify-between items-center mb-5">
+                <p className="text-sm text-ink-soft">
+                  Generate unique tracked links for <strong>{shareModal.title}</strong>
                 </p>
-              )}
-              {shareLinks
-                .filter(
-                  (link) => !hideZeroResponses || (link.response_count && link.response_count > 0)
-                )
-                .map((link) => {
-                  const isGlobal = shareModal.id === 'global';
-                  const url = isGlobal
-                    ? `${baseUrl}?ref=${link.code}`
-                    : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
-                  const isCopied = copiedLink === link.code;
-                  return (
-                    <div
-                      key={link.id}
-                      className="bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3 group"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-semibold text-ink">
-                            {link.label || (
-                              <span className="text-gray-400 dark:text-slate-500 italic">
-                                Unlabeled
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">
-                            {link.code}
-                          </span>
+                <label className="flex items-center text-sm text-ink-soft cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hideZeroResponses}
+                    onChange={(e) => setHideZeroResponses(e.target.checked)}
+                    className="mr-2 rounded border-border text-ink focus:ring-ink"
+                  />
+                  Hide 0 responses
+                </label>
+              </div>
+
+              {/* Generate new link */}
+              <div className="flex space-x-2 mb-5">
+                <input
+                  type="text"
+                  value={shareLabel}
+                  onChange={(e) => setShareLabel(e.target.value)}
+                  placeholder="Label (intern name)"
+                  className="flex-grow p-2.5 border-2 border-border rounded-lg bg-card text-ink focus:border-ink focus:outline-none text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleGenerateLink();
+                  }}
+                />
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleGenerateLink}
+                  disabled={generatingLink}
+                  className="px-4 py-2 bg-ink text-cream rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-40 transition-opacity whitespace-nowrap"
+                >
+                  {generatingLink ? '...' : '+ Generate'}
+                </motion.button>
+              </div>
+
+              {/* List of generated links */}
+              <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
+                {shareLinks.length === 0 && (
+                  <p className="text-center text-ink-soft text-sm py-8">
+                    No links generated yet. Click &quot;Generate&quot; to create one.
+                  </p>
+                )}
+                {shareLinks
+                  .filter(
+                    (link) => !hideZeroResponses || (link.response_count && link.response_count > 0)
+                  )
+                  .map((link) => {
+                    const isGlobal = shareModal.id === 'global';
+                    const url = isGlobal
+                      ? `${baseUrl}?ref=${link.code}`
+                      : `${baseUrl}/survey/${shareModal.id}?ref=${link.code}`;
+                    const isCopied = copiedLink === link.code;
+                    return (
+                      <div
+                        key={link.id}
+                        className="bg-cream-deep/50 border border-border rounded-lg p-3 group"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-semibold text-ink">
+                              {link.label || (
+                                <span className="text-ink-soft italic">Unlabeled</span>
+                              )}
+                            </span>
+                            <span className="text-xs bg-card border border-border px-1.5 py-0.5 rounded font-mono text-ink-soft">
+                              {link.code}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-ink-soft font-medium">
+                              {link.response_count} response{link.response_count !== 1 ? 's' : ''}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteLink(link.id)}
+                              className="text-ink-soft/50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs text-gray-500 dark:text-slate-500 font-medium">
-                            {link.response_count} response{link.response_count !== 1 ? 's' : ''}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <code className="text-xs text-ink-soft truncate mr-2 flex-1">{url}</code>
                           <button
-                            onClick={() => handleDeleteLink(link.id)}
-                            className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                            onClick={() => copyToClipboard(url, link.code)}
+                            className={`flex items-center text-xs font-medium px-2 py-1 rounded transition-all ${isCopied ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-card border border-border text-ink-soft hover:text-ink hover:border-ink'}`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            {isCopied ? (
+                              <>
+                                <Check className="w-3 h-3 mr-1" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3 mr-1" />
+                                Copy
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <code className="text-xs text-gray-500 dark:text-slate-500 truncate mr-2 flex-1">
-                          {url}
-                        </code>
-                        <button
-                          onClick={() => copyToClipboard(url, link.code)}
-                          className={`flex items-center text-xs font-medium px-2 py-1 rounded transition-all ${isCopied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:border-teal-300'}`}
-                        >
-                          {isCopied ? (
-                            <>
-                              <Check className="w-3 h-3 mr-1" />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3 mr-1" />
-                              Copy
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-      )}
+                    );
+                  })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Create Survey Modal */}
-      {createModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
-            <button
-              onClick={() => {
-                setCreateModal(false);
-                setNewSurveyTitle('');
-              }}
-              className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-400"
+      <AnimatePresence>
+        {createModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-card rounded-2xl shadow-2xl max-w-md w-full p-6 relative"
             >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-4 flex items-center">
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Create New Survey
-            </h2>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                Survey Title
-              </label>
-              <input
-                type="text"
-                autoFocus
-                value={newSurveyTitle}
-                onChange={(e) => setNewSurveyTitle(e.target.value)}
-                placeholder="e.g. Employee Feedback 2024"
-                className="w-full p-2.5 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:border-transparent outline-none transition-all"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateSurvey();
-                }}
-              />
-            </div>
-            <div className="flex justify-end gap-3">
               <button
                 onClick={() => {
                   setCreateModal(false);
                   setNewSurveyTitle('');
                 }}
-                className="px-4 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
+                className="absolute top-4 right-4 text-ink-soft hover:text-ink transition-colors"
               >
-                Cancel
+                <X className="w-5 h-5" />
               </button>
-              <button
-                onClick={handleCreateSurvey}
-                disabled={creatingSurvey || !newSurveyTitle.trim()}
-                className="px-4 py-2 bg-[var(--color-cyc-primary)] text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
-              >
-                {creatingSurvey ? 'Creating...' : 'Create Survey'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-4 flex items-center">
+                <PlusCircle className="w-5 h-5 mr-2" />
+                Create New Survey
+              </h2>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-ink-soft mb-2">Survey Title</label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={newSurveyTitle}
+                  onChange={(e) => setNewSurveyTitle(e.target.value)}
+                  placeholder="e.g. Employee Feedback 2024"
+                  className="w-full p-2.5 border border-border rounded-lg bg-card text-ink focus:ring-2 focus:ring-ink focus:border-transparent outline-none transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateSurvey();
+                  }}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setCreateModal(false);
+                    setNewSurveyTitle('');
+                  }}
+                  className="px-4 py-2 text-ink-soft hover:text-ink transition-colors"
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleCreateSurvey}
+                  disabled={creatingSurvey || !newSurveyTitle.trim()}
+                  className="px-4 py-2 bg-ink text-cream rounded-lg font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                >
+                  {creatingSurvey ? 'Creating...' : 'Create Survey'}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Referral Leaderboard Modal */}
-      {leaderboardModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[85vh] flex flex-col">
-            <button
-              onClick={() => setLeaderboardModal(false)}
-              className="absolute top-4 right-4 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-400"
+      <AnimatePresence>
+        {leaderboardModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6 relative max-h-[85vh] flex flex-col"
             >
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-5 flex items-center">
-              <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
-              Referrals Leaderboard
-            </h2>
+              <button
+                onClick={() => setLeaderboardModal(false)}
+                className="absolute top-4 right-4 text-ink-soft hover:text-ink transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <h2 className="font-display text-xl font-medium tracking-tight text-ink mb-5 flex items-center">
+                <Trophy className="w-5 h-5 mr-2" />
+                Referrals Leaderboard
+              </h2>
 
-            <div className="flex-1 overflow-y-auto min-h-0 pr-2">
-              {loadingLeaderboard ? (
-                <div className="flex justify-center items-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-cyc-primary)]"></div>
-                </div>
-              ) : leaderboard.length === 0 ? (
-                <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">
-                  No referrals recorded yet.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {leaderboard.map((entry, idx) => (
-                    <div
-                      key={entry.email}
-                      className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span
-                          className={`font-bold w-6 text-center ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-600' : 'text-gray-500 dark:text-slate-400'}`}
-                        >
-                          #{idx + 1}
-                        </span>
-                        <span className="text-sm font-semibold text-ink truncate max-w-[200px]">
-                          {entry.email}
+              <div className="flex-1 overflow-y-auto min-h-0 pr-2">
+                {loadingLeaderboard ? (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ink"></div>
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <p className="text-center text-ink-soft text-sm py-8">
+                    No referrals recorded yet.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {leaderboard.map((entry, idx) => (
+                      <div
+                        key={entry.email}
+                        className="flex items-center justify-between bg-cream-deep/50 border border-border rounded-lg p-3"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className="font-bold w-6 text-center text-ink-soft">
+                            #{idx + 1}
+                          </span>
+                          <span className="text-sm font-semibold text-ink truncate max-w-[200px]">
+                            {entry.email}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium border border-border px-2 py-1 rounded-full text-ink-soft">
+                          {entry.referral_count}{' '}
+                          {entry.referral_count === 1 ? 'referral' : 'referrals'}
                         </span>
                       </div>
-                      <span className="text-sm font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
-                        {entry.referral_count}{' '}
-                        {entry.referral_count === 1 ? 'referral' : 'referrals'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
