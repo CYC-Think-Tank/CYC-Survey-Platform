@@ -5,43 +5,16 @@ import {
   adminFetch,
   ensureArray,
   fetchAdminMe,
-  isAdminFetchError,
   parseJsonResponse,
   type AdminTeam,
 } from '@/lib/adminAuth';
 import { supabase } from '@/lib/supabase';
+import { useTeamManagement } from '@/hooks/useTeamManagement';
 import { ArrowRight, Check, Crown, Home, LogOut, Mail, Trash2, X } from 'lucide-react';
 
 interface BrowsableTeam {
   id: string;
   name: string;
-}
-
-interface TeamMember {
-  id: string;
-  team_id: string;
-  team_name?: string | null;
-  user_id: string;
-  user_email?: string | null;
-  full_name?: string | null;
-  role: 'team_leader' | 'team_member';
-}
-
-interface TeamJoinRequest {
-  id: string;
-  team_id: string;
-  team_name?: string | null;
-  user_id: string;
-  user_email?: string | null;
-  requested_at?: string;
-}
-
-interface SentInvite {
-  id: string;
-  team_id: string;
-  invited_email: string;
-  status: string;
-  created_at?: string;
 }
 
 interface MyInvite {
@@ -68,20 +41,27 @@ export default function StudentTeamsPage() {
   const [resolvingInviteId, setResolvingInviteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Has-team state
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
-  const [joinRequests, setJoinRequests] = useState<TeamJoinRequest[]>([]);
-  const [updatingJoinRequestId, setUpdatingJoinRequestId] = useState<string | null>(null);
-  const [sentInvites, setSentInvites] = useState<SentInvite[]>([]);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [sendingInvite, setSendingInvite] = useState(false);
-  const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
-  const [transferringMemberId, setTransferringMemberId] = useState<string | null>(null);
-  const [leavingTeam, setLeavingTeam] = useState(false);
+  const {
+    currentTeam,
+    isTeamLeader,
+    error: teamMgmtError,
+    teamMembers,
+    loadingTeamMembers,
+    joinRequests,
+    updatingJoinRequestId,
+    handleJoinRequest,
+    sentInvites,
+    sendingInvite,
+    sendInvite,
+    revokingInviteId,
+    revokeInvite,
+    transferringMemberId,
+    transferLeadership,
+    leavingTeam,
+    leaveTeam,
+  } = useTeamManagement(teams);
 
-  const currentTeam = teams[0] || null;
-  const isTeamLeader = currentTeam?.role === 'team_leader';
+  const [inviteEmail, setInviteEmail] = useState('');
 
   const loadAll = () => {
     setLoading(true);
@@ -106,33 +86,7 @@ export default function StudentTeamsPage() {
             .catch(() => setError('Could not load team information.'))
             .finally(() => setLoading(false));
         } else {
-          setLoadingTeamMembers(true);
-          const fetches: Promise<void>[] = [
-            adminFetch('/admin-api/team-members')
-              .then((res) => parseJsonResponse<unknown>(res, 'Could not load team members.'))
-              .then((data) => setTeamMembers(ensureArray<TeamMember>(data, 'Unexpected response')))
-              .catch(() => setTeamMembers([]))
-              .finally(() => setLoadingTeamMembers(false)),
-          ];
-          if (me.teams.some((t) => t.role === 'team_leader')) {
-            fetches.push(
-              adminFetch('/admin-api/team-join-requests')
-                .then((res) => parseJsonResponse<unknown>(res, 'Could not load team requests.'))
-                .then((data) =>
-                  setJoinRequests(ensureArray<TeamJoinRequest>(data, 'Unexpected response'))
-                )
-                .catch(() => setJoinRequests([]))
-            );
-            fetches.push(
-              adminFetch('/admin-api/team-invites')
-                .then((res) => parseJsonResponse<unknown>(res, 'Could not load invites.'))
-                .then((data) =>
-                  setSentInvites(ensureArray<SentInvite>(data, 'Unexpected response'))
-                )
-                .catch(() => setSentInvites([]))
-            );
-          }
-          Promise.all(fetches).finally(() => setLoading(false));
+          setLoading(false);
         }
       })
       .catch(() => {
@@ -227,115 +181,18 @@ export default function StudentTeamsPage() {
     }
   };
 
-  const sendInvite = async () => {
+  const handleSendInvite = async () => {
     const email = inviteEmail.trim();
     if (!email) return;
-    setError('');
     setMessage('');
-    setSendingInvite(true);
-    try {
-      const res = await adminFetch('/admin-api/team-invites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.detail || data.error || 'Failed to send invite.');
-        return;
-      }
+    const ok = await sendInvite(email);
+    if (ok) {
       setInviteEmail('');
       setMessage(`Invite sent to ${email}.`);
-      loadAll();
-    } catch {
-      setError('Failed to send invite.');
-    } finally {
-      setSendingInvite(false);
     }
   };
 
-  const revokeInvite = async (inviteId: string) => {
-    setRevokingInviteId(inviteId);
-    try {
-      await adminFetch(`/admin-api/team-invites/${inviteId}`, { method: 'DELETE' });
-      setSentInvites((prev) => prev.filter((invite) => invite.id !== inviteId));
-    } catch {
-      setError('Failed to revoke invite.');
-    } finally {
-      setRevokingInviteId(null);
-    }
-  };
-
-  const handleJoinRequest = async (requestId: string, action: 'approve' | 'reject') => {
-    setUpdatingJoinRequestId(requestId);
-    try {
-      const res = await adminFetch(`/admin-api/team-join-requests/${requestId}/${action}`, {
-        method: 'POST',
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.detail || data.error || `Failed to ${action} request.`);
-        return;
-      }
-      setJoinRequests((prev) => prev.filter((request) => request.id !== requestId));
-    } catch (err) {
-      if (!isAdminFetchError(err)) console.error(err);
-      setError(`Failed to ${action} request.`);
-    } finally {
-      setUpdatingJoinRequestId(null);
-    }
-  };
-
-  const transferLeadership = async (member: TeamMember) => {
-    const memberLabel = member.full_name || member.user_email || 'this member';
-    const confirmed = window.confirm(
-      `Transfer leadership to ${memberLabel}? You will become a regular team member and only the new leader will be able to manage requests or invite people.`
-    );
-    if (!confirmed) return;
-
-    setTransferringMemberId(member.id);
-    try {
-      const res = await adminFetch('/admin-api/team-members/transfer-leadership', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ team_id: member.team_id, new_leader_user_id: member.user_id }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.detail || data.error || 'Failed to transfer leadership.');
-        return;
-      }
-      window.location.reload();
-    } catch (err) {
-      if (!isAdminFetchError(err)) console.error(err);
-      setError('Failed to transfer leadership.');
-    } finally {
-      setTransferringMemberId(null);
-    }
-  };
-
-  const leaveTeam = async () => {
-    const confirmed = window.confirm(
-      'Leave this team? You will lose access to its surveys and return to team onboarding.'
-    );
-    if (!confirmed) return;
-
-    setLeavingTeam(true);
-    try {
-      const res = await adminFetch('/admin-api/team-members/leave', { method: 'POST' });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.detail || data.error || 'Failed to leave team.');
-        return;
-      }
-      loadAll();
-    } catch (err) {
-      if (!isAdminFetchError(err)) console.error(err);
-      setError('Failed to leave team.');
-    } finally {
-      setLeavingTeam(false);
-    }
-  };
+  const handleLeaveTeam = () => leaveTeam(loadAll);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -378,9 +235,9 @@ export default function StudentTeamsPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {error && (
+            {(error || teamMgmtError) && (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
-                {error}
+                {error || teamMgmtError}
               </div>
             )}
             {message && (
@@ -417,7 +274,7 @@ export default function StudentTeamsPage() {
                       {!isTeamLeader && (
                         <button
                           type="button"
-                          onClick={leaveTeam}
+                          onClick={handleLeaveTeam}
                           disabled={leavingTeam}
                           className="text-sm font-semibold text-red-600 hover:text-red-700 disabled:opacity-50 dark:text-red-400"
                         >
@@ -486,12 +343,12 @@ export default function StudentTeamsPage() {
                         placeholder="name@thecyc.org"
                         className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') sendInvite();
+                          if (e.key === 'Enter') handleSendInvite();
                         }}
                       />
                       <button
                         type="button"
-                        onClick={sendInvite}
+                        onClick={handleSendInvite}
                         disabled={sendingInvite || !inviteEmail.trim()}
                         className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-cream transition-opacity hover:opacity-90 disabled:opacity-50"
                       >

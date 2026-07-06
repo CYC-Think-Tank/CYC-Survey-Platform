@@ -104,9 +104,14 @@ interface DashboardValue {
   openLeaderboard: () => Promise<void>;
   closeLeaderboard: () => void;
 
+  accountSettingsOpen: boolean;
+  openAccountSettings: () => void;
+  closeAccountSettings: () => void;
+
   // Lightweight team membership, used for delete-permission checks and the
   // student "Raffle Wheel" quick action. Full team management (invites,
-  // join requests, leave/create) lives on the /student/teams hub, not here.
+  // join requests, leave/create) lives on the /student/teams hub and the
+  // in-dashboard Team Settings page, not here.
   teams: AdminTeam[];
   isTeamLeader: boolean;
 }
@@ -142,6 +147,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const [leaderboardModal, setLeaderboardModal] = useState(false);
   const [leaderboard, setLeaderboard] = useState<ReferralLeaderboardEntry[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
 
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(true);
@@ -421,6 +428,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   const closeLeaderboard = useCallback(() => setLeaderboardModal(false), []);
 
+  const openAccountSettings = useCallback(() => setAccountSettingsOpen(true), []);
+  const closeAccountSettings = useCallback(() => setAccountSettingsOpen(false), []);
+
   const handleGenerateLink = useCallback(async () => {
     if (!shareModal) return;
     setGeneratingLink(true);
@@ -513,6 +523,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       loadingLeaderboard,
       openLeaderboard,
       closeLeaderboard,
+      accountSettingsOpen,
+      openAccountSettings,
+      closeAccountSettings,
       teams,
       isTeamLeader,
     }),
@@ -557,6 +570,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       loadingLeaderboard,
       openLeaderboard,
       closeLeaderboard,
+      accountSettingsOpen,
+      openAccountSettings,
+      closeAccountSettings,
       teams,
       isTeamLeader,
     ]

@@ -2,6 +2,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { PlusCircle, Share2, Trophy, X, Check, Copy, Trash2 } from 'lucide-react';
 import { useDashboard } from '@/contexts/DashboardContext';
+import { AccountSettingsModal } from '@/components/dashboard/AccountSettingsModal';
 
 export function DashboardModals() {
   const {
@@ -291,6 +292,8 @@ export function DashboardModals() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AccountSettingsModal />
     </>
   );
 }

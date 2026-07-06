@@ -15,6 +15,7 @@ import {
   LogOut,
   Newspaper,
   Home,
+  UserCog,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -28,6 +29,7 @@ function buildNavItems(basePath: string) {
       icon: LayoutGrid,
       match: (p: string) => p === basePath,
       adminOnly: false,
+      studentOnly: false,
     },
     {
       href: `${basePath}/surveys`,
@@ -38,6 +40,7 @@ function buildNavItems(basePath: string) {
         p.startsWith(`${basePath}/edit`) ||
         p.startsWith(`${basePath}/results`),
       adminOnly: false,
+      studentOnly: false,
     },
     {
       href: '/admin/blog',
@@ -45,6 +48,7 @@ function buildNavItems(basePath: string) {
       icon: Newspaper,
       match: (p: string) => p.startsWith('/admin/blog'),
       adminOnly: true,
+      studentOnly: false,
     },
     {
       href: `${basePath}/analytics`,
@@ -52,6 +56,7 @@ function buildNavItems(basePath: string) {
       icon: BarChart3,
       match: (p: string) => p.startsWith(`${basePath}/analytics`),
       adminOnly: false,
+      studentOnly: false,
     },
     {
       href: `${basePath}/audience`,
@@ -59,25 +64,37 @@ function buildNavItems(basePath: string) {
       icon: Users,
       match: (p: string) => p.startsWith(`${basePath}/audience`),
       adminOnly: false,
+      studentOnly: false,
     },
     {
       href: `${basePath}/settings`,
-      label: 'Settings',
+      label: 'Team Settings',
       icon: Settings,
       match: (p: string) => p.startsWith(`${basePath}/settings`),
       adminOnly: false,
+      studentOnly: true,
     },
   ];
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { role, basePath, searchQuery, setSearchQuery, openCreateModal, adminEmail, handleLogout } =
-    useDashboard();
+  const {
+    role,
+    basePath,
+    searchQuery,
+    setSearchQuery,
+    openCreateModal,
+    adminEmail,
+    handleLogout,
+    openAccountSettings,
+  } = useDashboard();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const initials = adminEmail ? adminEmail.slice(0, 2).toUpperCase() : '··';
-  const navItems = buildNavItems(basePath).filter((item) => !item.adminOnly || role === 'admin');
+  const navItems = buildNavItems(basePath).filter(
+    (item) => (!item.adminOnly || role === 'admin') && (!item.studentOnly || role === 'student')
+  );
 
   return (
     <div className="flex min-h-screen w-full bg-cream">
@@ -151,6 +168,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                   transition={{ duration: 0.15 }}
                   className="absolute bottom-full left-3 right-3 z-50 mb-2 origin-bottom rounded-xl border border-border bg-card shadow-cute py-1.5"
                 >
+                  <button
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      openAccountSettings();
+                    }}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-cream-deep hover:text-ink dark:hover:bg-white/5"
+                  >
+                    <UserCog className="h-4 w-4" />
+                    Account Settings
+                  </button>
                   <button
                     onClick={() => {
                       setAccountMenuOpen(false);

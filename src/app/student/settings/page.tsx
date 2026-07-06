@@ -1,3 +1,3 @@
-import { SettingsPage } from '@/components/dashboard/SettingsPage';
+import { TeamSettingsPage } from '@/components/dashboard/TeamSettingsPage';
 
-export default SettingsPage;
+export default TeamSettingsPage;
