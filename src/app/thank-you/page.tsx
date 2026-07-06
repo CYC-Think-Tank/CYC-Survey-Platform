@@ -201,7 +201,7 @@ export default function ThankYouPage() {
                           />
                         </div>
                       ) : (
-                        <div className="h-48 w-full bg-navy-soft flex items-center justify-center relative overflow-hidden group-hover:bg-navy transition-colors duration-500 border-b border-border">
+                        <div className="h-48 w-full bg-navy-soft flex items-center justify-center relative overflow-hidden group-hover:bg-navy dark:group-hover:bg-white/10 transition-colors duration-500 border-b border-border">
                           <span className="font-display text-6xl font-semibold text-white/30 drop-shadow-sm select-none tracking-tight">
                             CYC
                           </span>

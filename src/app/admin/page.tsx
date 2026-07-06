@@ -368,7 +368,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/blog"
-            className="px-4 py-2 bg-[var(--color-cyc-secondary)] text-white hover:bg-slate-700 rounded-lg flex items-center font-semibold transition-colors"
+            className="px-4 py-2 bg-teal text-white hover:bg-teal-deep rounded-lg flex items-center font-semibold transition-colors"
           >
             <FileText className="w-4 h-4 mr-2" />
             Manage Blog

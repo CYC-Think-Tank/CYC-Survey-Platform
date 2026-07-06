@@ -114,6 +114,69 @@
   --c-ink-soft: #9d9da4;
 
   color-scheme: dark;
+
+  /* A lot of older screens (admin, judge, student dashboards, survey-tools)
+     were built with raw Tailwind gray and slate utilities and never got a
+     dark: counterpart, or paired gray with slate (a different, bluer
+     scale) as an ad-hoc dark mode. Overriding the two palettes here so they
+     resolve to the app's actual neutral dark scale fixes every one of those
+     screens at once, and unifies the two palettes into one consistent ramp,
+     without touching anything that already uses bg-white/text-black/etc
+     directly (those are untouched on purpose elsewhere for cinematic
+     dark-mode-specific treatments). */
+  --color-gray-50: #0e0e10;
+  --color-gray-100: #161618;
+  --color-gray-200: #212124;
+  --color-gray-300: #2b2b2f;
+  --color-gray-400: #4b4b52;
+  --color-gray-500: #86868d;
+  --color-gray-600: #a6a6ac;
+  --color-gray-700: #c7c7cc;
+  --color-gray-800: #e2e2e5;
+  --color-gray-900: #f4f4f5;
+  --color-gray-950: #ffffff;
+
+  /* Unlike gray-*, every slate-* usage in the app is already dark:-prefixed
+     (chosen by whoever built admin/student as their ad-hoc dark palette), so
+     these keep the same light-to-dark direction as stock Tailwind slate —
+     only the blue hue is stripped out in favor of the app's neutral grey. */
+  --color-slate-50: #f5f5f6;
+  --color-slate-100: #e8e8ea;
+  --color-slate-200: #d4d4d8;
+  --color-slate-300: #b8b8bd;
+  --color-slate-400: #98989e;
+  --color-slate-500: #79797f;
+  --color-slate-600: #5c5c61;
+  --color-slate-700: #434347;
+  --color-slate-800: #2b2b2e;
+  --color-slate-900: #17171a;
+  --color-slate-950: #0d0d0f;
+
+  /* Same story for the pastel-50/100 alert & badge backgrounds (error boxes,
+     success chips, filter pills) — none had a dark: pair, so they stayed
+     bright pastel islands on a dark page. Darken just the 50/100 steps so
+     the tinted-chip look survives in dark mode; the 600/700 text/icon
+     colors paired with them are saturated enough to stay legible as-is. */
+  --color-red-50: #2a1215;
+  --color-red-100: #3a1a1e;
+  --color-blue-50: #0f1f2e;
+  --color-blue-100: #16283a;
+  --color-emerald-50: #0f2420;
+  --color-emerald-100: #163a30;
+  --color-green-50: #102616;
+  --color-green-100: #17381f;
+  --color-teal-50: #0f2426;
+  --color-teal-100: #17363a;
+  --color-yellow-50: #2a2410;
+  --color-yellow-100: #3a3316;
+  --color-amber-50: #2a2110;
+  --color-amber-100: #3a2e14;
+  --color-purple-50: #1f1730;
+  --color-purple-100: #2b2140;
+  --color-indigo-50: #161a33;
+  --color-indigo-100: #202748;
+  --color-pink-50: #2a1420;
+  --color-pink-100: #3a1c2c;
 }
 
 @keyframes float {

@@ -53,7 +53,7 @@ export default function JudgeLogin() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-xl sm:px-10 border border-gray-100">
+        <div className="bg-card py-8 px-4 shadow sm:rounded-xl sm:px-10 border border-gray-100">
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -69,7 +69,7 @@ export default function JudgeLogin() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[var(--color-cyc-primary)] focus:border-[var(--color-cyc-primary)] sm:text-sm text-gray-900 bg-white"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[var(--color-cyc-primary)] focus:border-[var(--color-cyc-primary)] sm:text-sm text-gray-900 bg-card"
                   placeholder="e.g. Alice Smith"
                 />
               </div>
@@ -89,7 +89,7 @@ export default function JudgeLogin() {
                   required
                   value={passcode}
                   onChange={(e) => setPasscode(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[var(--color-cyc-primary)] focus:border-[var(--color-cyc-primary)] sm:text-sm text-gray-900 bg-white"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[var(--color-cyc-primary)] focus:border-[var(--color-cyc-primary)] sm:text-sm text-gray-900 bg-card"
                   placeholder="Enter passcode"
                 />
               </div>

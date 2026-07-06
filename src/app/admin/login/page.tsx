@@ -78,7 +78,7 @@ export default function AdminLogin() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
               placeholder={allowedDomain ? `name@${allowedDomain}` : 'name@example.com'}
             />
           </div>
@@ -95,7 +95,7 @@ export default function AdminLogin() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
               placeholder="Enter password"
             />
           </div>

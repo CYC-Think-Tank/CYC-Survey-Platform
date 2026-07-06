@@ -135,14 +135,14 @@ export default function PendingTeamPage() {
                   <button
                     type="button"
                     onClick={() => setMode('join')}
-                    className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === 'join' ? 'bg-[var(--color-cyc-secondary)] text-white' : 'text-gray-600'}`}
+                    className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === 'join' ? 'bg-teal text-white' : 'text-gray-600'}`}
                   >
                     Join a team
                   </button>
                   <button
                     type="button"
                     onClick={() => setMode('create')}
-                    className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === 'create' ? 'bg-[var(--color-cyc-secondary)] text-white' : 'text-gray-600'}`}
+                    className={`rounded-md px-3 py-2 text-sm font-semibold ${mode === 'create' ? 'bg-teal text-white' : 'text-gray-600'}`}
                   >
                     Create a team
                   </button>
@@ -162,7 +162,7 @@ export default function PendingTeamPage() {
                         value={teamSearch}
                         onChange={(event) => setTeamSearch(event.target.value)}
                         placeholder="Search by team name"
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                        className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:outline-none"
                       />
                     </div>
                     {filteredTeams.length === 0 ? (
@@ -181,7 +181,7 @@ export default function PendingTeamPage() {
                           id="team-request"
                           value={selectedVisibleTeam}
                           onChange={(event) => setSelectedTeam(event.target.value)}
-                          className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                          className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:outline-none"
                         >
                           {filteredTeams.map((team) => (
                             <option key={team.id} value={team.id}>
@@ -214,7 +214,7 @@ export default function PendingTeamPage() {
                         value={newTeamName}
                         onChange={(event) => setNewTeamName(event.target.value)}
                         placeholder="Enter a team name"
-                        className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-[var(--color-cyc-primary)] focus:outline-none"
+                        className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:outline-none"
                       />
                     </div>
                     <button

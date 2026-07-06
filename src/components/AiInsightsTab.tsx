@@ -180,7 +180,7 @@ export default function AiInsightsTab({
               className={`flex-shrink-0 flex items-center px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                 isActive
                   ? 'bg-[var(--color-cyc-primary)] text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                  : 'bg-card text-gray-600 hover:bg-gray-50 border border-gray-200'
               }`}
             >
               <Icon className="w-4 h-4 mr-2" />
@@ -191,7 +191,7 @@ export default function AiInsightsTab({
       </div>
 
       {loading && (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow border border-gray-200">
+        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-xl shadow border border-gray-200">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--color-cyc-primary)]" />
           <p className="mt-6 text-lg font-semibold text-[var(--color-cyc-secondary)]">
             Analyzing with AI...
@@ -201,7 +201,7 @@ export default function AiInsightsTab({
       )}
 
       {error && !loading && (
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-6 text-center">
+        <div className="bg-card rounded-xl shadow border border-gray-200 p-6 text-center">
           <AlertTriangle className="w-8 h-8 text-[var(--color-cyc-accent)] mx-auto mb-3" />
           <p className="text-[var(--color-cyc-secondary)] font-semibold mb-1">Analysis Failed</p>
           <p className="text-gray-500 text-sm mb-4">{error}</p>
@@ -242,7 +242,7 @@ export default function AiInsightsTab({
           {/* 1. PERSUADABILITY */}
           {aiSubTab === 'persuadability' && (
             <>
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                   <div className="relative w-28 h-28 flex-shrink-0">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -279,7 +279,7 @@ export default function AiInsightsTab({
               </div>
 
               {data.key_findings && data.key_findings.length > 0 && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
                     <Lightbulb className="w-4 h-4 mr-2 text-[var(--color-cyc-accent)]" />
                     Key Findings
@@ -321,7 +321,7 @@ export default function AiInsightsTab({
               )}
 
               {data.demographic_segments && data.demographic_segments.length > 0 && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center">
                     <Users className="w-4 h-4 mr-2 text-[var(--color-cyc-primary)]" />
                     Demographic Segments
@@ -358,7 +358,7 @@ export default function AiInsightsTab({
           {/* 2. PUBLIC MOOD HEATMAP */}
           {aiSubTab === 'mood' && (
             <>
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                 <div className="text-center mb-6">
                   <span className="text-3xl font-extrabold text-[var(--color-cyc-primary)] block mb-1">
                     {data.overall_mood?.label}
@@ -390,7 +390,7 @@ export default function AiInsightsTab({
               </div>
 
               {data.emerging_concerns && data.emerging_concerns.length > 0 && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center">
                     <AlertTriangle className="w-4 h-4 mr-2 text-[var(--color-cyc-accent)]" />
                     Emerging Concerns
@@ -423,7 +423,7 @@ export default function AiInsightsTab({
           {/* 3. BELIEF NETWORK */}
           {aiSubTab === 'beliefs' && (
             <>
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                 <p className="text-sm text-gray-600 mb-6 leading-relaxed">{data.summary}</p>
                 <h3 className="text-sm font-bold text-[var(--color-cyc-secondary)] mb-4 uppercase tracking-wider">
                   Belief Clusters
@@ -444,7 +444,7 @@ export default function AiInsightsTab({
                         {cluster.beliefs?.map((b: string, j: number) => (
                           <span
                             key={j}
-                            className="text-[10px] bg-white border border-gray-200 text-gray-600 px-2 py-1 rounded shadow-sm"
+                            className="text-[10px] bg-card border border-gray-200 text-gray-600 px-2 py-1 rounded shadow-sm"
                           >
                             {b}
                           </span>
@@ -456,7 +456,7 @@ export default function AiInsightsTab({
               </div>
 
               {data.surprising_connections && data.surprising_connections.length > 0 && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4 flex items-center">
                     <Zap className="w-4 h-4 mr-2 text-[var(--color-cyc-accent)]" />
                     Surprising Connections
@@ -490,7 +490,7 @@ export default function AiInsightsTab({
           {/* 4. MINORITY INSIGHTS */}
           {aiSubTab === 'minority' && (
             <>
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                 <p className="text-sm text-gray-600 mb-6">{data.summary}</p>
                 <h3 className="text-sm font-bold text-[var(--color-cyc-secondary)] mb-4 uppercase tracking-wider">
                   Amplified Concerns
@@ -536,7 +536,7 @@ export default function AiInsightsTab({
           {/* 5. ARCHETYPES */}
           {aiSubTab === 'archetypes' && (
             <>
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                 <p className="text-sm text-gray-600 mb-6">{data.summary}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {data.archetypes?.map((arch: Archetype, i: number) => (
@@ -548,7 +548,7 @@ export default function AiInsightsTab({
                         <h4 className="font-bold text-[var(--color-cyc-primary)] text-lg">
                           {arch.name}
                         </h4>
-                        <span className="bg-[var(--color-cyc-secondary)] text-white text-xs font-bold px-2 py-1 rounded-md">
+                        <span className="bg-teal text-white text-xs font-bold px-2 py-1 rounded-md">
                           {arch.percentage}%
                         </span>
                       </div>
@@ -594,7 +594,7 @@ export default function AiInsightsTab({
           {/* 6. BLIND SPOTS */}
           {aiSubTab === 'blindspots' && (
             <>
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+              <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                 <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-100">
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-[var(--color-cyc-secondary)] flex items-center mb-1">
@@ -633,7 +633,7 @@ export default function AiInsightsTab({
                         <span className="font-semibold">Evidence:</span> {bs.evidence}
                       </p>
 
-                      <div className="bg-white border border-gray-200 rounded p-2">
+                      <div className="bg-card border border-gray-200 rounded p-2">
                         <span className="block text-[10px] font-bold text-gray-400 mb-1 uppercase">
                           Suggested Addition
                         </span>

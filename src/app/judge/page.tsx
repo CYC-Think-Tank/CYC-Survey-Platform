@@ -75,7 +75,7 @@ export default function JudgeDashboard() {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors shadow-sm self-start md:self-auto font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-gray-200 text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors shadow-sm self-start md:self-auto font-medium"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
@@ -83,7 +83,7 @@ export default function JudgeDashboard() {
         </header>
 
         {/* Progress Card */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
+        <div className="bg-card border border-gray-200 rounded-xl p-6 mb-8 shadow-sm">
           <div className="flex justify-between items-end mb-3">
             <div>
               <p className="text-sm text-gray-500 font-semibold uppercase tracking-wider mb-1">
@@ -107,7 +107,7 @@ export default function JudgeDashboard() {
         </div>
 
         {/* Survey List */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-card border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="font-display text-lg font-medium tracking-tight text-ink flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-[var(--color-cyc-primary)]" />

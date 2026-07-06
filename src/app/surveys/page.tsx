@@ -86,8 +86,8 @@ export default function SurveysPage() {
               onClick={() => setCategoryFilter('all')}
               className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
                 categoryFilter === 'all'
-                  ? 'bg-navy text-white border-navy'
-                  : 'bg-card text-ink-soft border-border hover:border-navy'
+                  ? 'bg-teal text-white border-teal'
+                  : 'bg-card text-ink-soft border-border hover:border-teal'
               }`}
             >
               {t('All')}
@@ -132,63 +132,63 @@ export default function SurveysPage() {
 
               return (
                 <Reveal key={item.id} delay={idx * 0.1}>
-                  <article className="group relative flex min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-cute-sm transition-transform duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-[#101014] dark:shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)]">
+                  {/* Same full-bleed photo card in both themes — only the
+                      scrim tint (and the text/pill/button contrast it forces)
+                      changes: a light wash in light mode, the original dark
+                      vignette in dark mode. Card base is theme-aware too, or
+                      the near-black dark-mode fill peeks through the rounded
+                      corners against a light page. */}
+                  <article className="group relative flex min-h-[28rem] overflow-hidden rounded-2xl border border-border bg-card shadow-cute-sm transition-transform duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-[#101014] dark:shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)]">
                     <div
-                      className="absolute inset-0 h-full w-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                       style={{
                         backgroundImage: item.thumbnail_url
                           ? `url(${item.thumbnail_url})`
                           : 'linear-gradient(135deg, #101014 0%, #04377e 48%, #0cb7c4 100%)',
                       }}
                     />
+                    <div className="absolute inset-0 bg-white/40 dark:bg-black/45" />
+                    <div className="absolute inset-0 bg-linear-to-t from-white/85 via-white/55 to-white/25 dark:from-black/90 dark:via-black/45 dark:to-black/20" />
+                    <div className="absolute inset-0 bg-radial from-transparent via-white/10 to-white/45 dark:via-black/5 dark:to-black/45" />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent opacity-70 dark:from-white/10" />
 
-                    {/* Light mode: light wash, heaviest behind the text up top and
-                        clearing toward the bottom so the photo still shows through. */}
-                    <div className="absolute inset-0 bg-linear-to-b from-white/85 via-white/45 to-white/10 dark:hidden" />
-
-                    {/* Dark mode: dark vignette, unchanged from the original. */}
-                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-black/45" />
-                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-linear-to-t dark:from-black/90 dark:via-black/45 dark:to-black/20" />
-                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-radial dark:from-transparent dark:via-black/5 dark:to-black/45" />
-                    <div className="hidden dark:block dark:pointer-events-none dark:absolute dark:inset-x-0 dark:top-0 dark:h-24 dark:bg-linear-to-b dark:from-white/10 dark:to-transparent dark:opacity-70" />
-
-                    <div className="relative z-10 flex h-full w-full flex-col justify-between p-5 sm:p-6">
-                      <div className="flex items-center justify-between gap-3">
-                        {item.category && (
-                          <span className="max-w-[70%] truncate rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink-soft shadow-sm dark:border dark:border-white/20 dark:bg-white/12 dark:text-white/85 dark:shadow-none">
-                            {item.category}
-                          </span>
-                        )}
-                        <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink-soft shadow-sm dark:bg-black/25 dark:text-white/75 dark:shadow-none">
-                          <Clock className="mr-1.5 h-3.5 w-3.5" />
-                          {item.estimated_minutes} {t('MIN')}
-                        </span>
-                      </div>
-
+                    <div className="relative z-10 flex w-full flex-col justify-between p-5 text-ink sm:p-6 dark:text-white">
                       <div>
+                        <div className="mb-4 flex min-h-8 items-center justify-between gap-3">
+                          {item.category && (
+                            <span className="max-w-[70%] truncate rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:border dark:border-white/20 dark:bg-white/12 dark:text-white/85">
+                              {item.category}
+                            </span>
+                          )}
+                          <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:bg-black/25 dark:text-white/75">
+                            <Clock className="mr-1.5 h-3.5 w-3.5" />
+                            {item.estimated_minutes} {t('MIN')}
+                          </span>
+                        </div>
+
                         <h2 className="line-clamp-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink dark:text-white">
                           {displayTitle}
                         </h2>
                         <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft dark:text-white/72">
                           {descriptionText}
                         </p>
+                      </div>
 
-                        <div className="mt-6 flex items-center justify-between gap-3 dark:border-t dark:border-white/12 dark:pt-4">
-                          {isCompleted ? (
-                            <span className="inline-flex items-center rounded-full bg-teal-soft px-3 py-2 text-sm font-bold text-teal-deep">
-                              <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                              {t('Completed')}
-                            </span>
-                          ) : (
-                            <Link
-                              href={`/survey/${item.id}`}
-                              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-cute-sm transition-all duration-200 hover:bg-white/90 active:scale-[0.98] sm:w-auto"
-                            >
-                              {t('Start Survey')}
-                              <ArrowRight className="h-4 w-4" />
-                            </Link>
-                          )}
-                        </div>
+                      <div className="mt-10 flex items-center justify-between gap-3 rounded-2xl bg-white/60 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-md dark:border dark:border-white/12 dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
+                        {isCompleted ? (
+                          <span className="inline-flex items-center rounded-full bg-teal-soft px-3 py-2 text-sm font-bold text-teal-deep">
+                            <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                            {t('Completed')}
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/survey/${item.id}`}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-cute-sm transition-all duration-200 hover:bg-white/90 active:scale-[0.98] sm:w-auto"
+                          >
+                            {t('Start Survey')}
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </article>
