@@ -34,14 +34,14 @@ export function Header() {
   );
 
   // The admin/student dashboards (everything except their own
-  // login/unauthorized/pending screens) have their own sidebar shell with
-  // their own nav — this marketing header would just duplicate/clash with it.
+  // login/unauthorized screens) have their own nav — either the sidebar
+  // shell, or (for /student/teams) the hub's own back/sign-out controls —
+  // so this marketing header would just duplicate/clash with it.
   const DASHBOARD_PUBLIC_PATHS = [
     '/admin/login',
     '/admin/unauthorized',
     '/student/login',
     '/student/unauthorized',
-    '/student/teams',
   ];
   if (
     (pathname.startsWith('/admin') || pathname.startsWith('/student')) &&
