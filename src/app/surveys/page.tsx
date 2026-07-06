@@ -135,8 +135,10 @@ export default function SurveysPage() {
                   {/* Same full-bleed photo card in both themes — only the
                       scrim tint (and the text/pill/button contrast it forces)
                       changes: a light wash in light mode, the original dark
-                      vignette in dark mode. */}
-                  <article className="group relative flex min-h-[28rem] overflow-hidden rounded-2xl border border-white/10 bg-[#101014] shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)] transition-transform duration-500 hover:-translate-y-2">
+                      vignette in dark mode. Card base is theme-aware too, or
+                      the near-black dark-mode fill peeks through the rounded
+                      corners against a light page. */}
+                  <article className="group relative flex min-h-[28rem] overflow-hidden rounded-2xl border border-border bg-card shadow-cute-sm transition-transform duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-[#101014] dark:shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)]">
                     <div
                       className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
                       style={{
@@ -145,14 +147,10 @@ export default function SurveysPage() {
                           : 'linear-gradient(135deg, #101014 0%, #04377e 48%, #0cb7c4 100%)',
                       }}
                     />
-                    {/* Base wash, radial vignette, and top sheen are dark-mode-
-                        only depth cues; in light mode only the bottom-anchored
-                        gradient below applies, so the photo's true color shows
-                        through everywhere except right behind the text. */}
-                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-black/45" />
-                    <div className="absolute inset-0 bg-linear-to-t from-white/75 via-white/10 to-transparent dark:from-black/90 dark:via-black/45 dark:to-black/20" />
-                    <div className="hidden dark:block dark:absolute dark:inset-0 dark:bg-radial dark:from-transparent dark:via-black/5 dark:to-black/45" />
-                    <div className="hidden dark:block dark:pointer-events-none dark:absolute dark:inset-x-0 dark:top-0 dark:h-24 dark:bg-linear-to-b dark:from-white/10 dark:to-transparent dark:opacity-70" />
+                    <div className="absolute inset-0 bg-white/40 dark:bg-black/45" />
+                    <div className="absolute inset-0 bg-linear-to-t from-white/85 via-white/55 to-white/25 dark:from-black/90 dark:via-black/45 dark:to-black/20" />
+                    <div className="absolute inset-0 bg-radial from-transparent via-white/10 to-white/45 dark:via-black/5 dark:to-black/45" />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent opacity-70 dark:from-white/10" />
 
                     <div className="relative z-10 flex w-full flex-col justify-between p-5 text-ink sm:p-6 dark:text-white">
                       <div>
