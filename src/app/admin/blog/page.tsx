@@ -93,7 +93,7 @@ export default function AdminBlogDashboard() {
             <ArrowLeft className="w-4 h-4 mr-1" />
             Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+          <h1 className="font-display text-3xl font-medium tracking-tight text-ink">
             Blog Management
           </h1>
           <p className="text-gray-500 dark:text-slate-500 mt-1">
@@ -133,9 +133,7 @@ export default function AdminBlogDashboard() {
             {posts.map((post) => (
               <tr key={post.id} className="hover:bg-gray-50 dark:bg-slate-900/50 transition-colors">
                 <td className="px-6 py-4">
-                  <div className="text-sm font-semibold text-[var(--color-cyc-secondary)] dark:text-slate-100">
-                    {post.title}
-                  </div>
+                  <div className="text-sm font-semibold text-ink">{post.title}</div>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {post.tags?.map((tag) => (
                       <span

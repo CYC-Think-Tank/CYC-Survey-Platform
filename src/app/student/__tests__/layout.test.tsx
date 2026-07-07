@@ -4,13 +4,15 @@ import StudentLayout from '../layout';
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(),
+  push: vi.fn(),
   fetchAdminMe: vi.fn(),
-  getSession: vi.fn(),
+  adminFetch: vi.fn(),
+  onAuthStateChange: vi.fn(),
   signOut: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: mocks.replace }),
+  useRouter: () => ({ replace: mocks.replace, push: mocks.push }),
   usePathname: () => '/student',
 }));
 vi.mock('@/lib/adminAuth', () => ({
@@ -23,17 +25,26 @@ vi.mock('@/lib/adminAuth', () => ({
   },
   fetchAdminMe: mocks.fetchAdminMe,
   isAllowedAdminEmail: () => true,
+  getAllowedAdminEmailDomain: () => 'thecyc.org',
+  adminFetch: mocks.adminFetch,
+  ensureArray: (data: unknown) => (Array.isArray(data) ? data : []),
+  isAdminFetchError: () => false,
+  parseJsonResponse: async (response: Response) => response.json().catch(() => null),
 }));
 vi.mock('@/lib/supabase', () => ({
-  supabase: { auth: { getSession: mocks.getSession, signOut: mocks.signOut } },
+  supabase: { auth: { onAuthStateChange: mocks.onAuthStateChange, signOut: mocks.signOut } },
 }));
 
 describe('StudentLayout', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.getSession.mockResolvedValue({
-      data: { session: { user: { email: 'person@thecyc.org' } } },
-    });
+    mocks.onAuthStateChange.mockImplementation(
+      (callback: (event: string, session: unknown) => void) => {
+        callback('INITIAL_SESSION', { user: { email: 'person@thecyc.org' } });
+        return { data: { subscription: { unsubscribe: vi.fn() } } };
+      }
+    );
+    mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
   });
 
   it('does not render dashboard children while redirecting an unassigned user', async () => {
@@ -46,7 +57,7 @@ describe('StudentLayout', () => {
     );
 
     await waitFor(() => {
-      expect(mocks.replace).toHaveBeenCalledWith('/student/pending-team');
+      expect(mocks.replace).toHaveBeenCalledWith('/student/teams');
     });
     expect(screen.queryByText('Dashboard child mounted')).not.toBeInTheDocument();
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();

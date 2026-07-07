@@ -4,31 +4,256 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
-/* Force light mode everywhere by mapping the dark variant to a non-existent class */
-@variant dark (&:where(.never-use-dark-mode));
+/* Class-based dark mode (next-themes sets .dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --color-cyc-primary: #0cb7c4;
-  --color-cyc-secondary: #04377e;
-  --color-cyc-accent: #f5c518;
-  --color-cyc-bg: #ffffff;
-  --color-cyc-divider: #f3f4f6;
-  --color-cyc-text-heading: #04377e;
-  --color-cyc-text-body: #4b5563; /* Updated to a better default body text color */
+/* Map Tailwind color utilities to swappable CSS variables.
+   `inline` makes utilities reference the var at use-site so .dark overrides apply. */
+@theme inline {
+  --color-cream: var(--c-bg);
+  --color-cream-deep: var(--c-bg-2);
+  --color-card: var(--c-surface);
+  --color-border: var(--c-border);
+
+  --color-teal: var(--c-teal);
+  --color-teal-deep: var(--c-teal-deep);
+  --color-teal-soft: var(--c-teal-soft);
+
+  --color-gold: var(--c-gold);
+  --color-gold-deep: var(--c-gold-deep);
+  --color-gold-soft: var(--c-gold-soft);
+
+  --color-navy: var(--c-navy);
+  --color-navy-soft: var(--c-navy-soft);
+
+  --color-ink: var(--c-ink);
+  --color-ink-soft: var(--c-ink-soft);
+
+  /* Back-compat aliases so existing var(--color-cyc-*) usages keep working
+     AND now inherit dark-mode swapping for free. */
+  --color-cyc-primary: var(--c-teal);
+  --color-cyc-secondary: var(--c-navy);
+  --color-cyc-accent: var(--c-gold);
+  --color-cyc-bg: var(--c-bg);
+  --color-cyc-divider: var(--c-border);
+  --color-cyc-text-heading: var(--c-ink);
+  --color-cyc-text-body: var(--c-ink-soft);
 }
 
-/* Removed forced body and heading colors to allow Tailwind dark mode utilities to work */
+@theme {
+  --font-display: var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-newsreader), ui-serif, serif;
+
+  --shadow-cute: 0 22px 48px -20px rgba(16, 20, 28, 0.16);
+  --shadow-cute-sm: 0 12px 26px -14px rgba(16, 20, 28, 0.09);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-drift-a: drift-a 24s ease-in-out infinite;
+  --animate-drift-b: drift-b 30s ease-in-out infinite;
+  --animate-drift-c: drift-c 36s ease-in-out infinite;
+  --animate-aurora: aurora 60s linear infinite;
+}
+
+@keyframes aurora {
+  from {
+    background-position:
+      50% 50%,
+      50% 50%;
+  }
+  to {
+    background-position:
+      350% 50%,
+      350% 50%;
+  }
+}
+
+/* ── Light theme (default) — neutral ink on near-white, teal/gold as accents ── */
+:root {
+  --c-bg: #fcfcfd;
+  --c-bg-2: #f2f6f9;
+  --c-surface: #ffffff;
+  --c-border: #e9edf2;
+
+  --c-teal: #0cb7c4;
+  --c-teal-deep: #0a8a85;
+  --c-teal-soft: #e6f8f9;
+
+  --c-gold: #f5c518;
+  --c-gold-deep: #e0af00;
+  --c-gold-soft: #fef6d5;
+
+  --c-navy: #04377e;
+  --c-navy-soft: #e8eef6;
+
+  --c-ink: #21242c;
+  --c-ink-soft: #6f7683;
+
+  color-scheme: light;
+}
+
+/* ── Dark theme — teal/gold accents on sleek neutral grey/black ── */
+.dark {
+  --c-bg: #0a0a0b;
+  --c-bg-2: #111113;
+  --c-surface: #161618;
+  --c-border: #27272a;
+
+  --c-teal: #2bc8d4;
+  --c-teal-deep: #56d7e1;
+  --c-teal-soft: #142527;
+
+  --c-gold: #f7ce3a;
+  --c-gold-deep: #ffd84d;
+  --c-gold-soft: #292311;
+
+  --c-navy: #d4d4d8;
+  --c-navy-soft: #1b1b1e;
+
+  --c-ink: #f4f4f5;
+  --c-ink-soft: #9d9da4;
+
+  color-scheme: dark;
+
+  /* A lot of older screens (admin, judge, student dashboards, survey-tools)
+     were built with raw Tailwind gray and slate utilities and never got a
+     dark: counterpart, or paired gray with slate (a different, bluer
+     scale) as an ad-hoc dark mode. Overriding the two palettes here so they
+     resolve to the app's actual neutral dark scale fixes every one of those
+     screens at once, and unifies the two palettes into one consistent ramp,
+     without touching anything that already uses bg-white/text-black/etc
+     directly (those are untouched on purpose elsewhere for cinematic
+     dark-mode-specific treatments). */
+  --color-gray-50: #0e0e10;
+  --color-gray-100: #161618;
+  --color-gray-200: #212124;
+  --color-gray-300: #2b2b2f;
+  --color-gray-400: #4b4b52;
+  --color-gray-500: #86868d;
+  --color-gray-600: #a6a6ac;
+  --color-gray-700: #c7c7cc;
+  --color-gray-800: #e2e2e5;
+  --color-gray-900: #f4f4f5;
+  --color-gray-950: #ffffff;
+
+  /* Unlike gray-*, every slate-* usage in the app is already dark:-prefixed
+     (chosen by whoever built admin/student as their ad-hoc dark palette), so
+     these keep the same light-to-dark direction as stock Tailwind slate —
+     only the blue hue is stripped out in favor of the app's neutral grey. */
+  --color-slate-50: #f5f5f6;
+  --color-slate-100: #e8e8ea;
+  --color-slate-200: #d4d4d8;
+  --color-slate-300: #b8b8bd;
+  --color-slate-400: #98989e;
+  --color-slate-500: #79797f;
+  --color-slate-600: #5c5c61;
+  --color-slate-700: #434347;
+  --color-slate-800: #2b2b2e;
+  --color-slate-900: #17171a;
+  --color-slate-950: #0d0d0f;
+
+  /* Same story for the pastel-50/100 alert & badge backgrounds (error boxes,
+     success chips, filter pills) — none had a dark: pair, so they stayed
+     bright pastel islands on a dark page. Darken just the 50/100 steps so
+     the tinted-chip look survives in dark mode; the 600/700 text/icon
+     colors paired with them are saturated enough to stay legible as-is. */
+  --color-red-50: #2a1215;
+  --color-red-100: #3a1a1e;
+  --color-blue-50: #0f1f2e;
+  --color-blue-100: #16283a;
+  --color-emerald-50: #0f2420;
+  --color-emerald-100: #163a30;
+  --color-green-50: #102616;
+  --color-green-100: #17381f;
+  --color-teal-50: #0f2426;
+  --color-teal-100: #17363a;
+  --color-yellow-50: #2a2410;
+  --color-yellow-100: #3a3316;
+  --color-amber-50: #2a2110;
+  --color-amber-100: #3a2e14;
+  --color-purple-50: #1f1730;
+  --color-purple-100: #2b2140;
+  --color-indigo-50: #161a33;
+  --color-indigo-100: #202748;
+  --color-pink-50: #2a1420;
+  --color-pink-100: #3a1c2c;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(50px, -28px, 0) scale(1.12);
+  }
+}
+@keyframes drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-44px, 24px, 0) scale(1);
+  }
+}
+@keyframes drift-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(28px, 32px, 0) scale(1.15);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+body {
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+::selection {
+  background: var(--c-teal);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 .btn-primary {
-  @apply bg-[#F5C518] text-[#1a1a1a] font-extrabold py-2.5 px-6 rounded-full shadow-sm hover:bg-yellow-400 hover:shadow transition-all duration-200;
+  @apply bg-gold text-[#1a1a1a] font-extrabold py-2.5 px-6 rounded-full shadow-cute hover:bg-gold-deep hover:shadow transition-all duration-200;
 }
 
 .btn-secondary {
-  @apply bg-transparent border border-gray-200 dark:border-white/10 text-gray-700 dark:text-slate-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-all duration-200;
+  @apply bg-card ring-2 ring-border text-ink font-semibold py-2 px-4 rounded-lg hover:ring-teal transition-all duration-200;
 }
 
 .card {
-  @apply bg-white rounded-xl shadow-md border border-[var(--color-cyc-divider)] p-6 hover:shadow-lg transition-shadow;
+  @apply bg-card border border-border rounded-2xl shadow-cute-sm p-6 hover:shadow-cute transition-shadow;
 }
 /* Raffle confetti falling animation */
 @keyframes raffle-confetti-fall {

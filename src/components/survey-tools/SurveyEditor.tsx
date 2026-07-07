@@ -1185,11 +1185,11 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
         <div className="flex items-center">
           <Link
             href={basePath}
-            className="text-gray-500 dark:text-slate-500 hover:text-[var(--color-cyc-secondary)] dark:text-slate-100 mr-4"
+            className="mr-4 flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-cream-deep hover:text-teal"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+          <h1 className="font-display text-3xl font-normal tracking-tighter text-ink">
             Edit Survey
           </h1>
         </div>
@@ -1205,7 +1205,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
       {error && <div className="bg-red-50 text-red-600 p-4 rounded mb-6">{error}</div>}
 
       {isLocked && language === 'en' && (
-        <div className="bg-yellow-50 text-yellow-800 p-4 rounded mb-6 border border-yellow-200">
+        <div className="bg-gold-soft text-ink p-4 rounded-xl mb-6 border border-gold/30">
           <strong>This survey is locked.</strong> Because it is active or has been published, its
           English structure cannot be modified. You can view its contents, or switch to another
           language to edit translations.
@@ -1216,11 +1216,9 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
         <form onSubmit={handleSubmit} className="space-y-8 flex-1 min-w-0">
           <div className="card space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                Survey Title
-              </label>
+              <label className="block text-sm font-medium text-ink-soft mb-1">Survey Title</label>
               {language !== 'en' && (
-                <div className="text-sm text-gray-500 dark:text-slate-400 mb-1 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
+                <div className="text-sm text-ink-soft mb-1 px-2 border-l-2 border-border bg-cream-deep/50 p-2 rounded-r">
                   {title || 'No English title provided'}
                 </div>
               )}
@@ -1234,7 +1232,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     : setTransMeta(language, 'title', e.target.value)
                 }
                 disabled={isLocked && language === 'en'}
-                className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 placeholder={
                   language === 'en'
                     ? 'Survey Title'
@@ -1244,11 +1242,11 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
             </div>
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
+                <label className="block text-sm font-medium text-ink-soft">
                   Description (Optional)
                 </label>
                 <div className="flex items-center space-x-2">
-                  <label className="text-xs text-gray-500 dark:text-slate-500">Alignment:</label>
+                  <label className="text-xs text-ink-soft">Alignment:</label>
                   <select
                     value={descriptionAlignment}
                     onChange={(e) => setDescriptionAlignment(e.target.value)}
@@ -1262,7 +1260,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                 </div>
               </div>
               {language !== 'en' && (
-                <div className="text-sm text-gray-500 dark:text-slate-400 mb-2 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
+                <div className="text-sm text-ink-soft mb-2 px-2 border-l-2 border-border bg-cream-deep/50 p-2 rounded-r">
                   {description || 'No English description provided'}
                 </div>
               )}
@@ -1296,12 +1294,12 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
             </div>
             {/* Thumbnail Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-ink-soft mb-1">
                 Survey Thumbnail
               </label>
               <div className="flex items-center space-x-4">
                 {thumbnailUrl ? (
-                  <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700">
+                  <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-border">
                     <img
                       src={thumbnailUrl}
                       alt="Thumbnail"
@@ -1316,9 +1314,9 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex items-center px-4 py-2 bg-gray-50 dark:bg-slate-900/50 border border-dashed border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer hover:border-[var(--color-cyc-primary)] transition-colors">
-                    <Upload className="w-4 h-4 mr-2 text-gray-500 dark:text-slate-500" />
-                    <span className="text-sm text-gray-600 dark:text-slate-400">
+                  <label className="flex items-center px-4 py-2 bg-cream-deep/40 border border-dashed border-border rounded-lg cursor-pointer hover:border-[var(--color-cyc-primary)] transition-colors">
+                    <Upload className="w-4 h-4 mr-2 text-ink-soft" />
+                    <span className="text-sm text-ink-soft">
                       {thumbnailUploading ? 'Uploading...' : 'Upload Image'}
                     </span>
                     <input
@@ -1335,7 +1333,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
 
             <div className="flex space-x-6">
               <div className="w-1/3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium text-ink-soft mb-1">
                   Est. Time (minutes)
                 </label>
                 <input
@@ -1344,13 +1342,11 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   value={estimatedMinutes}
                   onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
                   disabled={isLocked}
-                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                  className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
               </div>
               <div className="w-1/3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Category
-                </label>
+                <label className="block text-sm font-medium text-ink-soft mb-1">Category</label>
                 <input
                   type="text"
                   list="survey-category-options"
@@ -1358,7 +1354,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   onChange={(e) => setCategory(e.target.value)}
                   disabled={isLocked}
                   placeholder="e.g. Community"
-                  className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                  className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
                 <datalist id="survey-category-options">
                   {SURVEY_CATEGORIES.map((c) => (
@@ -1375,9 +1371,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     disabled={isLocked}
                     className="mr-2 h-5 w-5 text-[var(--color-cyc-primary)]"
                   />
-                  <span className="font-medium text-gray-700 dark:text-slate-300">
-                    Set as Active
-                  </span>
+                  <span className="font-medium text-ink-soft">Set as Active</span>
                 </label>
               </div>
             </div>
@@ -1385,13 +1379,13 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
 
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
-              <h2 className="text-xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+              <h2 className="font-display text-xl font-normal tracking-tight text-ink">
                 Questions
               </h2>
             </div>
 
             {language !== 'en' && (
-              <div className="bg-blue-50 dark:bg-slate-800/50 text-blue-600 dark:text-blue-400 p-3 rounded-lg text-sm">
+              <div className="bg-teal-soft text-teal-deep p-3 rounded-lg text-sm">
                 <div className="flex items-start">
                   <FileText className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" />
                   <div className="flex-1">
@@ -1404,7 +1398,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                 </div>
                 <div className="mt-3 flex items-center gap-3">
                   <label
-                    className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${translationUploading ? 'bg-blue-200 dark:bg-blue-800 text-blue-400 dark:text-blue-300 cursor-not-allowed' : 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-600 border border-blue-200 dark:border-blue-700'}`}
+                    className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors ${translationUploading ? 'bg-teal-soft text-teal/50 cursor-not-allowed' : 'bg-card text-teal-deep hover:bg-teal-soft border border-teal/30'}`}
                   >
                     <Upload className="w-4 h-4 mr-1.5" />
                     {translationUploading ? 'Parsing...' : 'Upload PDF'}
@@ -1432,8 +1426,8 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         disabled={translateAllLoading}
                         className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                           translateAllLoading
-                            ? 'bg-blue-200 dark:bg-blue-800 text-blue-400 cursor-not-allowed'
-                            : 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-slate-600 border border-blue-200 dark:border-blue-700'
+                            ? 'bg-teal-soft text-teal/50 cursor-not-allowed'
+                            : 'bg-card text-teal-deep hover:bg-teal-soft border border-teal/30'
                         }`}
                       >
                         <Upload className="w-4 h-4 mr-1.5" />
@@ -1467,13 +1461,13 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   }
                 }}
               >
-                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <div className="bg-card rounded-2xl shadow-cute p-6 w-full max-w-md mx-4">
+                  <h3 className="text-lg font-semibold text-ink mb-4">
                     Translate to {getLanguageConfig(language)?.name || language}
                   </h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                      <label className="block text-sm font-medium text-ink-soft mb-1">
                         Provider
                       </label>
                       <select
@@ -1483,7 +1477,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                             e.target.value as 'opencode' | 'openrouter' | 'gemini'
                           )
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
+                        className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-cream-deep/50 text-ink focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
                       >
                         <option value="opencode">OpenCode Go (DeepSeek V4 Flash)</option>
                         <option value="openrouter">OpenRouter (GLM-4.5 Air)</option>
@@ -1492,7 +1486,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     </div>
                     {translateProvider !== 'gemini' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                        <label className="block text-sm font-medium text-ink-soft mb-1">
                           API Key
                         </label>
                         <input
@@ -1500,7 +1494,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                           value={translateApiKey}
                           onChange={(e) => setTranslateApiKey(e.target.value)}
                           placeholder="sk-l... or sk-or-..."
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
+                          className="w-full px-3 py-2 rounded-lg border border-border text-sm bg-cream-deep/50 text-ink focus:outline-none focus:ring-2 focus:ring-[var(--color-cyc-primary)]"
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && translateApiKey.trim()) {
@@ -1518,7 +1512,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         setShowTranslateDialog(false);
                         setTranslateApiKey('');
                       }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-md transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-ink-soft bg-cream-deep hover:bg-navy-soft rounded-md transition-colors"
                     >
                       Cancel
                     </button>
@@ -1540,7 +1534,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
               return (
                 <div
                   key={q.id}
-                  className={`card p-6 border-l-4 shadow-sm relative group ${q.type === 'section_header' ? 'border-l-[var(--color-cyc-accent)] bg-yellow-50/30' : 'border-l-[var(--color-cyc-primary)]'}`}
+                  className={`card p-6 border-l-4 shadow-sm relative group ${q.type === 'section_header' ? 'border-l-gold bg-gold-soft/40' : 'border-l-teal'}`}
                 >
                   <div
                     className={`absolute top-4 right-4 flex items-center space-x-1 transition-opacity ${language !== 'en' || isLocked ? 'hidden' : 'opacity-0 group-hover:opacity-100'}`}
@@ -1549,7 +1543,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                       type="button"
                       onClick={() => moveQuestionUp(qIdx)}
                       disabled={qIdx === 0}
-                      className={`p-1.5 rounded ${qIdx === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:bg-teal-50'}`}
+                      className={`p-1.5 rounded ${qIdx === 0 ? 'text-ink-soft/40 cursor-not-allowed' : 'text-ink-soft/70 hover:text-[var(--color-cyc-primary)] hover:bg-teal-50'}`}
                       title="Move Up"
                     >
                       <svg
@@ -1570,7 +1564,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                       type="button"
                       onClick={() => moveQuestionDown(qIdx)}
                       disabled={qIdx === questions.length - 1}
-                      className={`p-1.5 rounded ${qIdx === questions.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 dark:text-slate-500 hover:text-[var(--color-cyc-primary)] hover:bg-teal-50'}`}
+                      className={`p-1.5 rounded ${qIdx === questions.length - 1 ? 'text-ink-soft/40 cursor-not-allowed' : 'text-ink-soft/70 hover:text-[var(--color-cyc-primary)] hover:bg-teal-50'}`}
                       title="Move Down"
                     >
                       <svg
@@ -1590,7 +1584,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     <button
                       type="button"
                       onClick={() => removeQuestion(q.id)}
-                      className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 rounded"
+                      className="p-1.5 text-ink-soft/70 hover:text-red-500 hover:bg-red-50 rounded"
                       title="Delete Question"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1598,7 +1592,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   </div>
 
                   <div className="flex items-start space-x-3 mb-4">
-                    <span className="font-bold text-gray-400 dark:text-slate-500 mt-2">
+                    <span className="font-bold text-ink-soft/70 mt-2">
                       {q.type === 'section_header' ? '§' : `Q${qIdx + 1}`}
                     </span>
                     <div className="flex-grow">
@@ -1608,7 +1602,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         </div>
                       ) : null}
                       {language !== 'en' && (
-                        <div className="text-sm text-gray-500 dark:text-slate-400 mb-1 px-2 border-l-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 p-2 rounded-r">
+                        <div className="text-sm text-ink-soft mb-1 px-2 border-l-2 border-border bg-cream-deep/50 p-2 rounded-r">
                           {q.question_text || 'No English text provided'}
                         </div>
                       )}
@@ -1645,11 +1639,11 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   {/* Question Description (short_answer only) */}
                   {q.type === 'short_answer' && (
                     <div className="ml-10 mb-4">
-                      <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                      <label className="block text-xs font-medium text-ink-soft mb-1">
                         Helper Text / Description (Optional)
                       </label>
                       {language !== 'en' && (
-                        <div className="text-xs text-gray-400 dark:text-slate-500 mb-1 px-2 border-l-2 border-gray-200 bg-gray-50 dark:bg-slate-900 p-1.5 rounded-r">
+                        <div className="text-xs text-ink-soft/70 mb-1 px-2 border-l-2 border-border bg-cream-deep/50 p-1.5 rounded-r">
                           {q.question_description || 'No English description provided'}
                         </div>
                       )}
@@ -1661,27 +1655,27 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         }
                         disabled={isLocked && language === 'en'}
                         placeholder="e.g. We ask for the first three characters of your postal code to get a general sense of where responses are coming from."
-                        className="w-full p-2 border border-gray-200 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                        className="w-full p-2 border border-border rounded bg-cream-deep/50 text-ink text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                       />
                     </div>
                   )}
 
                   {/* Short Answer Validation Config */}
                   {q.type === 'short_answer' && (
-                    <div className="ml-10 mb-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700">
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+                    <div className="ml-10 mb-4 p-4 bg-cream-deep/50 rounded-lg border border-border">
+                      <label className="block text-sm font-semibold text-ink-soft mb-3">
                         Validation Settings
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                          <label className="block text-xs font-medium text-ink-soft mb-1">
                             Validation Type
                           </label>
                           <select
                             value={q.validation_type || 'none'}
                             onChange={(e) => updateValidationType(q.id, e.target.value)}
                             disabled={isLocked && language === 'en'}
-                            className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                            className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                           >
                             <option value="none">None</option>
                             <option value="email">Email</option>
@@ -1694,7 +1688,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                             {q.validation_type === 'regex' ? (
                               <>
                                 <div>
-                                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                                  <label className="block text-xs font-medium text-ink-soft mb-1">
                                     Max Length
                                   </label>
                                   <input
@@ -1709,12 +1703,12 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                                       )
                                     }
                                     disabled={isLocked && language === 'en'}
-                                    className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                                    className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink text-sm focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                                     placeholder="e.g. 3"
                                   />
                                 </div>
                                 <div className="sm:col-span-2">
-                                  <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                                  <label className="block text-xs font-medium text-ink-soft mb-1">
                                     Regex Pattern
                                   </label>
                                   <input
@@ -1724,7 +1718,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                                       updateQuestion(q.id, 'validation_regex', e.target.value)
                                     }
                                     disabled={isLocked && language === 'en'}
-                                    className="w-full p-2 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
+                                    className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink text-sm font-mono focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                                     placeholder="^[A-Z][0-9][A-Z]$"
                                   />
                                 </div>
@@ -1743,14 +1737,14 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                                       disabled={isLocked && language === 'en'}
                                       className="mr-2 h-4 w-4 text-[var(--color-cyc-primary)]"
                                     />
-                                    <span className="text-sm text-gray-700 dark:text-slate-300">
+                                    <span className="text-sm text-ink-soft">
                                       Normalize to uppercase
                                     </span>
                                   </label>
                                 </div>
                               </>
                             ) : (
-                              <div className="sm:col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
+                              <div className="sm:col-span-2 bg-teal-soft border border-teal/20 rounded-lg p-3 text-sm text-teal-deep">
                                 {q.validation_type === 'email' && (
                                   <>
                                     <strong>Email rules:</strong> Must contain @ and a domain. Max
@@ -1773,10 +1767,10 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   )}
 
                   <div
-                    className={`flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4 text-sm text-gray-600 dark:text-slate-400 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
+                    className={`flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4 text-sm text-ink-soft ${language !== 'en' || isLocked ? 'hidden' : ''}`}
                   >
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                      <label className="flex items-center cursor-pointer text-sm text-gray-600 dark:text-slate-400">
+                      <label className="flex items-center cursor-pointer text-sm text-ink-soft">
                         <input
                           type="checkbox"
                           checked={q.is_required}
@@ -1785,7 +1779,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         />
                         Required
                       </label>
-                      <label className="flex items-center cursor-pointer text-sm text-gray-600 dark:text-slate-400">
+                      <label className="flex items-center cursor-pointer text-sm text-ink-soft">
                         <input
                           type="checkbox"
                           checked={q.is_conditional || false}
@@ -1806,7 +1800,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                           onChange={(e) =>
                             updateQuestion(q.id, 'max_selections', parseInt(e.target.value) || 1)
                           }
-                          className="w-16 p-1 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none text-center"
+                          className="w-16 p-1 rounded-lg border border-border bg-cream-deep/50 text-ink focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none text-center"
                         />
                       </label>
                     )}
@@ -1816,7 +1810,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     q.type === 'checkboxes' ||
                     q.type === 'dropdown' ||
                     q.type === 'ranking') && (
-                    <div className="flex items-center space-x-6 mb-4 text-sm text-gray-600 dark:text-slate-400 pl-8">
+                    <div className="flex items-center space-x-6 mb-4 text-sm text-ink-soft pl-8">
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -1841,7 +1835,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   )}
 
                   {q.type === 'rating_scale' && (
-                    <div className="flex items-center space-x-6 mb-4 text-sm text-gray-600 dark:text-slate-400 pl-8">
+                    <div className="flex items-center space-x-6 mb-4 text-sm text-ink-soft pl-8">
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -1868,7 +1862,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                       {optionsArray.map((opt: string, oIdx: number) => (
                         <div key={oIdx} className="flex items-center space-x-2">
                           <div
-                            className={`w-4 h-4 border border-gray-400 ${q.type === 'multiple_choice' || q.type === 'dropdown' ? 'rounded-full' : 'rounded'}`}
+                            className={`w-4 h-4 border border-ink-soft/40 ${q.type === 'multiple_choice' || q.type === 'dropdown' ? 'rounded-full' : 'rounded'}`}
                           />
                           <input
                             type="text"
@@ -1882,7 +1876,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                             onChange={(e) => updateOption(q.id, oIdx, e.target.value)}
                             onFocus={() => collab.setFocusField(`opt:${q.id}:${oIdx}`)}
                             onBlur={() => collab.setFocusField(null)}
-                            className={`flex-grow p-1.5 border-b focus:border-[var(--color-cyc-primary)] focus:outline-none bg-transparent ${language !== 'en' ? 'border-blue-200 focus:border-blue-500' : ''}`}
+                            className={`flex-grow p-1.5 border-b focus:border-[var(--color-cyc-primary)] focus:outline-none bg-transparent ${language !== 'en' ? 'border-teal/40 focus:border-teal' : ''}`}
                           />
                           {collab.active && collab.fieldEditors[`opt:${q.id}:${oIdx}`]?.length ? (
                             <FieldPresence editors={collab.fieldEditors[`opt:${q.id}:${oIdx}`]} />
@@ -1890,7 +1884,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                           <button
                             type="button"
                             onClick={() => toggleLockChoice(q.id, opt)}
-                            className={`ml-2 ${(q.locked_choices || []).includes(opt) ? 'text-[var(--color-cyc-primary)]' : 'text-gray-300 hover:text-gray-500 dark:text-slate-500'} ${language !== 'en' || isLocked ? 'hidden' : ''}`}
+                            className={`ml-2 ${(q.locked_choices || []).includes(opt) ? 'text-[var(--color-cyc-primary)]' : 'text-ink-soft/40 hover:text-ink-soft'} ${language !== 'en' || isLocked ? 'hidden' : ''}`}
                             title="Lock Option Position"
                           >
                             {(q.locked_choices || []).includes(opt) ? (
@@ -1903,7 +1897,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                             <button
                               type="button"
                               onClick={() => removeOption(q.id, oIdx)}
-                              className={`text-gray-400 dark:text-slate-500 hover:text-red-500 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
+                              className={`text-ink-soft/70 hover:text-red-500 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
                             >
                               &times;
                             </button>
@@ -1925,13 +1919,11 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                     <div className="space-y-3 ml-10 pr-28">
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <label className="block text-sm font-medium text-gray-600 dark:text-slate-400">
+                          <label className="block text-sm font-medium text-ink-soft">
                             Section Description
                           </label>
                           <div className="flex items-center space-x-2">
-                            <label className="text-xs text-gray-500 dark:text-slate-500">
-                              Alignment:
-                            </label>
+                            <label className="text-xs text-ink-soft">Alignment:</label>
                             <select
                               value={q.description_alignment || 'left'}
                               onChange={(e) =>
@@ -1957,24 +1949,24 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         />
                       </div>
                       <div className={language !== 'en' || isLocked ? 'hidden' : ''}>
-                        <label className="block text-sm font-medium text-gray-600 dark:text-slate-400 mb-1">
+                        <label className="block text-sm font-medium text-ink-soft mb-1">
                           Attachments
                         </label>
                         {(q.attachments || []).map((att, aIdx) => (
                           <div
                             key={aIdx}
-                            className="flex items-center space-x-2 mb-2 bg-white dark:bg-slate-800 p-2 rounded border text-sm"
+                            className="flex items-center space-x-2 mb-2 bg-card p-2 rounded border text-sm"
                           >
                             {att.type.startsWith('image/') ? (
                               <ImageIcon className="w-4 h-4 text-green-500" />
                             ) : (
-                              <FileText className="w-4 h-4 text-blue-500" />
+                              <FileText className="w-4 h-4 text-teal" />
                             )}
                             <a
                               href={att.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline flex-grow truncate"
+                              className="text-teal hover:underline flex-grow truncate"
                             >
                               {att.name}
                             </a>
@@ -1987,11 +1979,9 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                             </button>
                           </div>
                         ))}
-                        <label className="inline-flex items-center px-3 py-1.5 bg-white dark:bg-slate-800 border border-dashed border-gray-300 dark:border-slate-600 rounded cursor-pointer hover:border-[var(--color-cyc-primary)] transition-colors text-sm">
-                          <Upload className="w-3.5 h-3.5 mr-1.5 text-gray-500 dark:text-slate-500" />
-                          <span className="text-gray-600 dark:text-slate-400">
-                            Add File (PDF, PNG, JPEG)
-                          </span>
+                        <label className="inline-flex items-center px-3 py-1.5 bg-card border border-dashed border-border rounded cursor-pointer hover:border-[var(--color-cyc-primary)] transition-colors text-sm">
+                          <Upload className="w-3.5 h-3.5 mr-1.5 text-ink-soft" />
+                          <span className="text-ink-soft">Add File (PDF, PNG, JPEG)</span>
                           <input
                             type="file"
                             accept=".pdf,.png,.jpg,.jpeg,image/*,application/pdf"
@@ -2004,9 +1994,9 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   )}
 
                   {/* Definitions Section */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                      <h4 className="text-sm font-semibold text-ink-soft">
                         Interactive Definitions
                       </h4>
                       <button
@@ -2039,7 +2029,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                                   onChange={(e) =>
                                     updateDefinition(q.id, dIdx, 'term', e.target.value)
                                   }
-                                  className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none ${language !== 'en' ? 'border-blue-200' : ''}`}
+                                  className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none ${language !== 'en' ? 'border-teal/40' : ''}`}
                                 />
                               </div>
                               <div className="flex-grow">
@@ -2054,13 +2044,13 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                                     updateDefinition(q.id, dIdx, 'definition', e.target.value)
                                   }
                                   rows={1}
-                                  className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none resize-none ${language !== 'en' ? 'border-blue-200' : ''}`}
+                                  className={`w-full p-1.5 text-sm border rounded focus:ring-1 focus:ring-[var(--color-cyc-primary)] focus:outline-none resize-none ${language !== 'en' ? 'border-teal/40' : ''}`}
                                 />
                               </div>
                               <button
                                 type="button"
                                 onClick={() => removeDefinition(q.id, dIdx)}
-                                className={`p-1.5 text-gray-400 hover:text-red-500 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
+                                className={`p-1.5 text-ink-soft/70 hover:text-red-500 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -2072,9 +2062,9 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   </div>
 
                   {/* Logic Gating Section */}
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+                      <h4 className="text-sm font-semibold text-ink-soft">
                         Logic Gating (Display Conditions)
                       </h4>
                       <div className="flex items-center space-x-2">
@@ -2104,7 +2094,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                         {q.logic_gates.map((gate, gIdx) => (
                           <div
                             key={gIdx}
-                            className="flex items-start space-x-2 p-2 bg-gray-50 dark:bg-slate-800 rounded"
+                            className="flex items-start space-x-2 p-2 bg-cream-deep/50 rounded"
                           >
                             <div className="flex-grow flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                               <select
@@ -2155,7 +2145,7 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                             <button
                               type="button"
                               onClick={() => removeLogicGate(q.id, gIdx)}
-                              className={`p-1.5 text-gray-400 hover:text-red-500 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
+                              className={`p-1.5 text-ink-soft/70 hover:text-red-500 ${language !== 'en' || isLocked ? 'hidden' : ''}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -2169,65 +2159,63 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
             })}
 
             <div
-              className={`bg-gray-50 dark:bg-slate-900/50 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-6 text-center ${language !== 'en' || isLocked ? 'hidden' : ''}`}
+              className={`bg-cream-deep/40 border-2 border-dashed border-border rounded-xl p-6 text-center ${language !== 'en' || isLocked ? 'hidden' : ''}`}
             >
-              <p className="text-gray-500 dark:text-slate-500 mb-4">
-                Add a new question to this survey
-              </p>
+              <p className="text-ink-soft mb-4">Add a new question to this survey</p>
               <div className="flex flex-wrap justify-center gap-3">
                 <button
                   type="button"
                   onClick={() => addQuestion('section_header')}
-                  className="px-4 py-2 bg-yellow-50 border border-yellow-300 rounded shadow-sm hover:border-[var(--color-cyc-accent)] transition-colors text-sm font-medium text-yellow-700"
+                  className="px-4 py-2 bg-gold-soft border border-gold/40 rounded-lg shadow-cute-sm hover:border-gold transition-colors text-sm font-medium text-gold-deep"
                 >
                   § Section Header
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('multiple_choice')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Multiple Choice
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('ranking')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Ranking
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('checkboxes')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Checkboxes
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('dropdown')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Dropdown
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('rating_scale')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Percentage Slider (0-100)
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('likert_scale')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Likert Scale (1-5)
                 </button>
                 <button
                   type="button"
                   onClick={() => addQuestion('short_answer')}
-                  className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded shadow-sm hover:border-[var(--color-cyc-primary)] transition-colors text-sm font-medium text-gray-700 dark:text-slate-300"
+                  className="px-4 py-2 bg-card border border-border rounded-lg shadow-cute-sm hover:border-teal hover:text-teal transition-colors text-sm font-medium text-ink-soft"
                 >
                   Short Answer
                 </button>
@@ -2235,10 +2223,10 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
             </div>
           </div>
 
-          <div className="flex justify-end pt-6 border-t border-gray-200 dark:border-slate-700">
+          <div className="flex justify-end pt-6 border-t border-border">
             <Link
               href={basePath}
-              className="px-6 py-2 text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:text-slate-100 font-medium mr-4"
+              className="px-6 py-2 text-ink-soft hover:text-ink font-medium mr-4"
             >
               Cancel
             </Link>
@@ -2267,10 +2255,10 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                 onClick={() => setLanguage(lang.code)}
                 className={`w-full text-left px-3 py-2 text-xs font-medium rounded-md transition-colors flex items-center justify-between ${
                   language === lang.code
-                    ? 'bg-[var(--color-cyc-primary)] text-white shadow-sm'
+                    ? 'bg-teal text-white shadow-cute-sm'
                     : isEnabled
-                      ? 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'
-                      : 'text-gray-400 dark:text-slate-600 hover:bg-gray-100 dark:hover:bg-slate-800 opacity-50'
+                      ? 'text-ink-soft hover:bg-cream-deep'
+                      : 'text-ink-soft/60 hover:bg-cream-deep opacity-50'
                 }`}
               >
                 <span>{lang.name}</span>

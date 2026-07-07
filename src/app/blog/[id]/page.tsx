@@ -53,10 +53,10 @@ export default function BlogPostDetail() {
   if (error || !post) {
     return (
       <div className="max-w-3xl mx-auto py-24 px-4 text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">
+        <h1 className="font-display text-3xl font-normal tracking-tight text-ink mb-4">
           Post not found
         </h1>
-        <p className="text-gray-600 dark:text-slate-400 mb-8">
+        <p className="text-ink-soft mb-8">
           The blog post you&apos;re looking for doesn&apos;t exist or has been removed.
         </p>
         <Link href="/blog" className="btn-primary inline-flex items-center">
@@ -94,11 +94,11 @@ export default function BlogPostDetail() {
           )}
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-6 leading-tight">
+        <h1 className="font-display text-4xl sm:text-5xl font-normal tracking-tighter text-ink mb-6 leading-tight">
           {post.title}
         </h1>
 
-        <div className="flex flex-wrap items-center text-sm text-gray-500 dark:text-slate-400 gap-6 border-b border-gray-200 dark:border-slate-700 pb-8">
+        <div className="flex flex-wrap items-center text-sm text-ink-soft gap-6 border-b border-border pb-8">
           <div className="flex items-center">
             <User className="w-4 h-4 mr-2" />
             <span className="font-medium">{post.author || 'Anonymous'}</span>
@@ -129,7 +129,7 @@ export default function BlogPostDetail() {
 
       {/* Uses prose from tailwind typography for styling the raw HTML from TipTap */}
       <div
-        className="prose prose-lg dark:prose-invert max-w-none prose-headings:text-[var(--color-cyc-secondary)] prose-a:text-[var(--color-cyc-primary)]"
+        className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-display prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-ink prose-a:text-[var(--color-cyc-primary)]"
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
     </article>

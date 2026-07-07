@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Clock, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import Reveal from '@/components/Reveal';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 interface Survey {
   id: string;
@@ -15,6 +16,7 @@ interface Survey {
   description_zh?: string;
   estimated_minutes?: number;
   category?: string | null;
+  thumbnail_url?: string | null;
   translations?: Record<string, { title?: string; description?: string; questions?: unknown[] }>;
 }
 
@@ -69,108 +71,132 @@ export default function SurveysPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading)
-    return (
-      <div className="flex-1 flex justify-center items-center bg-slate-50 min-h-[50vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F5C518]" />
-      </div>
-    );
-
   return (
-    <div className="flex-1 w-full max-w-5xl mx-auto px-6 py-12 bg-slate-50">
-      <motion.div
-        className="text-center mb-12"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        <h1 className="text-4xl font-extrabold text-[#04377E] mb-3">{t('Active Surveys')}</h1>
-        <p className="text-lg text-slate-500 font-medium">
-          {t('Share your voice and help empower Canadian youth.')}
-        </p>
-      </motion.div>
+    <div className="flex-1 w-full flex flex-col items-center pb-24">
+      <div className="w-full max-w-6xl mx-auto px-5 pt-10 md:pt-16">
+        <SectionHeading
+          title={t('Active Surveys')}
+          eyebrow={t('Share your voice and help empower Canadian youth.')}
+          className="mb-16 text-center items-center"
+        />
 
-      {availableCategories.length > 0 && (
-        <div className="flex flex-wrap justify-center items-center gap-2 mb-8">
-          <button
-            onClick={() => setCategoryFilter('all')}
-            className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
-              categoryFilter === 'all'
-                ? 'bg-[#04377E] text-white border-[#04377E]'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-[#04377E]'
-            }`}
-          >
-            {t('All')}
-          </button>
-          {availableCategories.map((cat) => (
+        {availableCategories.length > 0 && (
+          <div className="flex flex-wrap justify-center items-center gap-2 mb-12">
             <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
+              onClick={() => setCategoryFilter('all')}
               className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
-                categoryFilter === cat
-                  ? 'bg-[#04377E] text-white border-[#04377E]'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-[#04377E]'
+                categoryFilter === 'all'
+                  ? 'bg-teal text-white border-teal'
+                  : 'bg-card text-ink-soft border-border hover:border-teal'
               }`}
             >
-              {cat}
+              {t('All')}
             </button>
-          ))}
-        </div>
-      )}
+            {availableCategories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-colors ${
+                  categoryFilter === cat
+                    ? 'bg-navy text-white border-navy'
+                    : 'bg-card text-ink-soft border-border hover:border-navy'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
-        {visibleSurveys.map((item, idx) => {
-          const isCompleted = completedIds.includes(item.id);
-          const displayTitle =
-            item.translations?.[language]?.title ||
-            (language === 'fr' && item.title_fr) ||
-            (language === 'zh' && item.title_zh) ||
-            item.title;
-          const displayDescription =
-            item.translations?.[language]?.description ||
-            (language === 'fr' && item.description_fr) ||
-            (language === 'zh' && item.description_zh) ||
-            item.description;
-          return (
-            <motion.div
-              key={item.id}
-              className="bg-white rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border-t-[6px] border-[#F5C518] p-6 md:p-8 flex flex-col hover:shadow-lg transition-shadow"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 + idx * 0.1, ease: 'easeOut' }}
-            >
-              <h2 className="text-xl font-extrabold text-[#04377E] mb-3 leading-snug">
-                {displayTitle}
-              </h2>
-              <p className="text-sm text-slate-500 mb-8 flex-1 leading-relaxed">
-                {displayDescription?.replace(/<[^>]*>?/gm, '') ||
-                  t('Share your perspective on issues that matter.')}
-              </p>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {visibleSurveys.map((item, idx) => {
+              const isCompleted = completedIds.includes(item.id);
+              const displayTitle =
+                item.translations?.[language]?.title ||
+                (language === 'fr' && item.title_fr) ||
+                (language === 'zh' && item.title_zh) ||
+                item.title;
+              const displayDescription =
+                item.translations?.[language]?.description ||
+                (language === 'fr' && item.description_fr) ||
+                (language === 'zh' && item.description_zh) ||
+                item.description;
+              const descriptionText =
+                displayDescription?.replace(/<[^>]*>?/gm, '') ||
+                t('Share your perspective on issues that matter.');
 
-              <div className="flex items-center justify-between mt-auto pt-2">
-                <span className="flex items-center text-xs text-slate-400 font-semibold tracking-wide">
-                  <Clock className="w-3.5 h-3.5 mr-1.5" />
-                  {item.estimated_minutes} {t('MIN')}
-                </span>
+              return (
+                <Reveal key={item.id} delay={idx * 0.1}>
+                  {/* Same full-bleed photo card in both themes — only the
+                      scrim tint (and the text/pill/button contrast it forces)
+                      changes: a light wash in light mode, the original dark
+                      vignette in dark mode. Card base is theme-aware too, or
+                      the near-black dark-mode fill peeks through the rounded
+                      corners against a light page. */}
+                  <article className="group relative flex min-h-[28rem] overflow-hidden rounded-2xl border border-border bg-card shadow-cute-sm transition-transform duration-500 hover:-translate-y-2 dark:border-white/10 dark:bg-[#101014] dark:shadow-[0_28px_70px_-34px_rgba(0,0,0,0.75)]">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                      style={{
+                        backgroundImage: item.thumbnail_url
+                          ? `url(${item.thumbnail_url})`
+                          : 'linear-gradient(135deg, #101014 0%, #04377e 48%, #0cb7c4 100%)',
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-white/40 dark:bg-black/45" />
+                    <div className="absolute inset-0 bg-linear-to-t from-white/85 via-white/55 to-white/25 dark:from-black/90 dark:via-black/45 dark:to-black/20" />
+                    <div className="absolute inset-0 bg-radial from-transparent via-white/10 to-white/45 dark:via-black/5 dark:to-black/45" />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-black/10 to-transparent opacity-70 dark:from-white/10" />
 
-                {isCompleted ? (
-                  <span className="text-sm text-green-600 font-bold flex items-center bg-green-50 px-3 py-1.5 rounded-md">
-                    <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                    {t('Completed')}
-                  </span>
-                ) : (
-                  <Link
-                    href={`/survey/${item.id}`}
-                    className="flex items-center px-4 py-2 rounded-lg text-sm font-bold bg-[#F5C518] text-[#1a1a1a] hover:bg-yellow-400 transition-colors"
-                  >
-                    {t('Start Survey')}
-                    <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                  </Link>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
+                    <div className="relative z-10 flex w-full flex-col justify-between p-5 text-ink sm:p-6 dark:text-white">
+                      <div>
+                        <div className="mb-4 flex min-h-8 items-center justify-between gap-3">
+                          {item.category && (
+                            <span className="max-w-[70%] truncate rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:border dark:border-white/20 dark:bg-white/12 dark:text-white/85">
+                              {item.category}
+                            </span>
+                          )}
+                          <span className="ml-auto inline-flex items-center whitespace-nowrap rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-ink-soft backdrop-blur-md dark:bg-black/25 dark:text-white/75">
+                            <Clock className="mr-1.5 h-3.5 w-3.5" />
+                            {item.estimated_minutes} {t('MIN')}
+                          </span>
+                        </div>
+
+                        <h2 className="line-clamp-2 font-display text-2xl font-medium leading-tight tracking-tight text-ink dark:text-white">
+                          {displayTitle}
+                        </h2>
+                        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-soft dark:text-white/72">
+                          {descriptionText}
+                        </p>
+                      </div>
+
+                      <div className="mt-10 flex items-center justify-between gap-3 rounded-2xl bg-white/60 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-md dark:border dark:border-white/12 dark:bg-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]">
+                        {isCompleted ? (
+                          <span className="inline-flex items-center rounded-full bg-teal-soft px-3 py-2 text-sm font-bold text-teal-deep">
+                            <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                            {t('Completed')}
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/survey/${item.id}`}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-black shadow-cute-sm transition-all duration-200 hover:bg-white/90 active:scale-[0.98] sm:w-auto"
+                          >
+                            {t('Start Survey')}
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

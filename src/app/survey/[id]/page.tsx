@@ -979,7 +979,7 @@ export default function SurveyPage() {
   if (error || !survey) {
     return (
       <div className="flex-1 flex justify-center items-center text-center p-4">
-        <h1 className="text-2xl font-bold text-gray-500">{error}</h1>
+        <h1 className="font-display text-2xl font-medium tracking-tight text-ink-soft">{error}</h1>
       </div>
     );
   }
@@ -991,7 +991,7 @@ export default function SurveyPage() {
           <div className="mx-auto flex justify-center items-center w-20 h-20 bg-teal-50 rounded-full mb-6">
             <CheckCircle2 className="w-12 h-12 text-[var(--color-cyc-primary)]" />
           </div>
-          <h1 className="text-3xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-4">
+          <h1 className="font-display text-3xl font-medium tracking-tight text-ink mb-4">
             {t('Already Completed')}
           </h1>
           <p className="text-lg text-gray-600 dark:text-slate-400 dark:text-slate-300 leading-relaxed">
@@ -1004,7 +1004,7 @@ export default function SurveyPage() {
               {raffleEntered ? (
                 <div className="flex flex-col items-center">
                   <div className="text-4xl mb-2">🎟️</div>
-                  <p className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100">
+                  <p className="text-lg font-bold text-ink">
                     {t("You're entered into the raffle — good luck!")}
                   </p>
                 </div>
@@ -1361,11 +1361,11 @@ export default function SurveyPage() {
           transition={{ duration: 0.5 }}
           className="w-full"
         >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-6 leading-tight">
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-normal tracking-tighter text-ink mb-6 leading-tight">
             {displayTitle}
           </h1>
           <div
-            className={`text-lg sm:text-xl text-gray-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed text-${survey.description_alignment || 'left'} [&_p]:mb-4 last:[&_p]:mb-0`}
+            className={`text-lg sm:text-xl text-ink-soft mb-10 max-w-2xl mx-auto leading-relaxed text-${survey.description_alignment || 'left'} [&_p]:mb-4 last:[&_p]:mb-0`}
           >
             {displayDescription ? (
               <RichTextRenderer text={displayDescription} />
@@ -1413,7 +1413,7 @@ export default function SurveyPage() {
             transition={{ duration: 0.5, ease: 'easeOut' }}
           />
         </div>
-        <p className="text-xs sm:text-sm font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mt-3">
+        <p className="text-xs sm:text-sm font-bold text-ink mt-3">
           {isEmailStep
             ? t('Almost Done!')
             : currentQuestion?.type === 'section_header'
@@ -1456,7 +1456,7 @@ export default function SurveyPage() {
             {/* EMAIL STEP */}
             {isEmailStep && (
               <>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 sm:mb-8 text-[var(--color-cyc-secondary)] dark:text-slate-100 text-center leading-snug pt-4">
+                <h2 className="font-display text-xl sm:text-2xl md:text-3xl font-medium tracking-tight mb-6 sm:mb-8 text-ink text-center leading-snug pt-4">
                   {t('What is your email address?')}
                 </h2>
                 <input
@@ -1484,7 +1484,7 @@ export default function SurveyPage() {
             {/* QUESTION STEPS */}
             {!isEmailStep && currentQuestion && (
               <>
-                <div className="mb-6 sm:mb-8 text-center pt-4 text-xl sm:text-2xl md:text-3xl font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 leading-snug [&_p]:mb-4 last:[&_p]:mb-0">
+                <div className="mb-6 sm:mb-8 text-center pt-4 font-display text-xl sm:text-2xl md:text-3xl font-medium tracking-tight text-ink leading-snug [&_p]:mb-4 last:[&_p]:mb-0">
                   <RichTextRenderer
                     text={(currentQuestion.question_text || '').replace(/\n\n/g, '<br/><br/>')}
                     definitions={opts.definitions}
@@ -1665,14 +1665,14 @@ export default function SurveyPage() {
                   {/* RATING SCALE with calculator */}
                   {currentQuestion.type === 'rating_scale' && (
                     <div className="py-8 px-4 sm:px-8 flex flex-col items-center">
-                      <div className="text-4xl sm:text-5xl font-extrabold text-[var(--color-cyc-primary)] mb-2">
+                      <div className="font-display text-4xl sm:text-5xl font-semibold text-[var(--color-cyc-primary)] mb-2">
                         {answers[currentQuestion.id] !== undefined
                           ? (answers[currentQuestion.id] as number)
                           : 50}
                         %
                       </div>
                       {opts.has_calculator && refNumbers[currentQuestion.id] !== undefined && (
-                        <div className="text-lg font-bold text-[var(--color-cyc-secondary)] dark:text-slate-100 mb-2">
+                        <div className="text-lg font-bold text-ink mb-2">
                           {Math.round(
                             (((answers[currentQuestion.id] as number | undefined) !== undefined
                               ? (answers[currentQuestion.id] as number)
@@ -1947,7 +1947,7 @@ export default function SurveyPage() {
                             <div
                               className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border-4 transition-all duration-300 bg-white dark:bg-white/5 shadow-sm ${answers[currentQuestion.id] === val ? 'border-[var(--color-cyc-primary)] scale-125 shadow-md shadow-teal-100 text-[var(--color-cyc-primary)]' : 'border-gray-300 group-hover:border-teal-200 text-gray-500 group-hover:text-teal-500 group-hover:scale-110'}`}
                             >
-                              <span className="text-base sm:text-lg font-extrabold">{val}</span>
+                              <span className="text-base sm:text-lg font-semibold">{val}</span>
                             </div>
                           </label>
                         ))}

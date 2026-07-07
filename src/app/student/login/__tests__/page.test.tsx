@@ -64,7 +64,7 @@ describe('AdminLogin', () => {
         email: 'person@thecyc.org',
         password: 'password123',
       });
-      expect(mocks.mockPush).toHaveBeenCalledWith('/student');
+      expect(mocks.mockPush).toHaveBeenCalledWith('/student/teams');
     });
   });
 

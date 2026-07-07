@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import AdminDashboard from '../page';
+import StudentOverviewPage from '../page';
+import { DashboardProvider } from '@/contexts/DashboardContext';
 
 const mocks = vi.hoisted(() => ({
   mockPush: vi.fn(),
@@ -24,25 +25,37 @@ vi.mock('@/lib/adminAuth', () => ({
     if (!Array.isArray(data)) throw new Error(fallbackMessage);
     return data;
   },
+  isAdminFetchError: () => false,
 }));
 vi.mock('@/lib/supabase', () => ({ supabase: { auth: { signOut: mocks.signOut } } }));
 
-describe('AdminDashboard', () => {
+function renderOverview() {
+  return render(
+    <DashboardProvider>
+      <StudentOverviewPage />
+    </DashboardProvider>
+  );
+}
+
+describe('Student OverviewPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.mockPush.mockClear();
     mocks.fetchAdminMe.mockResolvedValue({
+      user: { id: 'user-1', email: 'person@thecyc.org' },
+      is_admin: false,
       teams: [{ id: 'team-1', name: 'CYC Admin', role: 'team_member' }],
+      pending_requests: [],
     });
   });
 
   it('renders loading state initially', () => {
     mocks.adminFetch.mockImplementation(() => new Promise(() => {}));
-    render(<AdminDashboard />);
+    renderOverview();
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
-  it('renders dashboard with surveys after loading', async () => {
+  it('renders dashboard stats after loading', async () => {
     const mockSurveys = [
       {
         id: 'survey-1',
@@ -64,119 +77,44 @@ describe('AdminDashboard', () => {
       },
     ];
     mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => mockSurveys } as Response);
-    render(<AdminDashboard />);
+    renderOverview();
     await waitFor(() => {
       expect(screen.getByText('Active Survey')).toBeInTheDocument();
       expect(screen.getByText('Draft Survey')).toBeInTheDocument();
     });
   });
 
-  it('shows survey status badges', async () => {
-    const mockSurveys = [
-      {
-        id: 'survey-1',
-        title: 'Active Survey',
-        is_active: true,
-        response_count: 10,
-        estimated_minutes: 5,
-        has_been_published: true,
-      },
-    ];
-    mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => mockSurveys } as Response);
-    render(<AdminDashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Active')).toBeInTheDocument();
-      expect(screen.getByText('10')).toBeInTheDocument();
-    });
-  });
-
   it('renders empty state when no surveys', async () => {
     mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
-    render(<AdminDashboard />);
+    renderOverview();
     await waitFor(() => {
-      expect(screen.getByText('No surveys found. Create one to get started!')).toBeInTheDocument();
+      expect(
+        screen.getByText('No surveys yet. Create one to see responses here.')
+      ).toBeInTheDocument();
     });
   });
 
-  it('opens the create survey modal', async () => {
-    mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
-    render(<AdminDashboard />);
-    const newSurveyButton = await screen.findByText('New Survey');
-    fireEvent.click(newSurveyButton);
-    await waitFor(() => {
-      expect(screen.getByText('Create New Survey')).toBeInTheDocument();
-    });
-  });
-
-  it('lets team leaders approve pending team requests', async () => {
+  it('shows the raffle wheel quick action for team leaders only', async () => {
     mocks.fetchAdminMe.mockResolvedValue({
+      user: { id: 'user-1', email: 'leader@thecyc.org' },
+      is_admin: false,
       teams: [{ id: 'team-1', name: 'CYC Admin', role: 'team_leader' }],
+      pending_requests: [],
     });
-    mocks.adminFetch.mockImplementation((input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url === '/api/surveys?include_inactive=true') {
-        return Promise.resolve({ ok: true, json: async () => [] } as Response);
-      }
-      if (url === '/admin-api/team-members') {
-        return Promise.resolve({
-          ok: true,
-          json: async () => [
-            {
-              id: 'member-1',
-              team_id: 'team-1',
-              team_name: 'CYC Admin',
-              user_id: 'user-1',
-              user_email: 'leader@example.com',
-              role: 'team_leader',
-            },
-            {
-              id: 'member-2',
-              team_id: 'team-1',
-              team_name: 'CYC Admin',
-              user_id: 'user-2',
-              user_email: 'member@example.com',
-              role: 'team_member',
-            },
-          ],
-        } as Response);
-      }
-      if (url === '/admin-api/team-join-requests') {
-        return Promise.resolve({
-          ok: true,
-          json: async () => [
-            {
-              id: 'request-1',
-              team_id: 'team-1',
-              team_name: 'CYC Admin',
-              user_id: 'user-2',
-              user_email: 'member@example.com',
-            },
-          ],
-        } as Response);
-      }
-      if (url === '/admin-api/team-join-requests/request-1/approve') {
-        return Promise.resolve({ ok: true, json: async () => ({ success: true }) } as Response);
-      }
-      return Promise.resolve({ ok: true, json: async () => [] } as Response);
-    });
-
-    render(<AdminDashboard />);
-
+    mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    renderOverview();
     await waitFor(() => {
-      expect(screen.getByText('Team Members')).toBeInTheDocument();
-      expect(screen.getByText('leader@example.com')).toBeInTheDocument();
-      expect(screen.getByText('Transfer leadership')).toBeInTheDocument();
-      expect(screen.getByText('Team Requests')).toBeInTheDocument();
-      expect(screen.getAllByText('member@example.com')).toHaveLength(2);
+      expect(screen.getByText('Raffle Wheel')).toBeInTheDocument();
     });
+  });
 
-    fireEvent.click(screen.getByText('Approve'));
-
+  it('hides admin-only quick actions for students', async () => {
+    mocks.adminFetch.mockResolvedValue({ ok: true, json: async () => [] } as Response);
+    renderOverview();
     await waitFor(() => {
-      expect(mocks.adminFetch).toHaveBeenCalledWith(
-        '/admin-api/team-join-requests/request-1/approve',
-        { method: 'POST' }
-      );
+      expect(screen.getByText('Manage Team')).toBeInTheDocument();
     });
+    expect(screen.queryByText('Remind Users')).not.toBeInTheDocument();
+    expect(screen.queryByText('Global Share Links')).not.toBeInTheDocument();
   });
 });

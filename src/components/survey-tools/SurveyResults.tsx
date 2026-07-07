@@ -196,13 +196,7 @@ interface LatentTraitPredictiveModels {
 
 interface LatentTraitData {
   status?:
-    | 'preview'
-    | 'running'
-    | 'complete'
-    | 'error'
-    | 'fit_complete'
-    | 'config_ready'
-    | 'unavailable';
+    'preview' | 'running' | 'complete' | 'error' | 'fit_complete' | 'config_ready' | 'unavailable';
   message?: string | null;
   dimensions: LatentTraitDimensionStats[];
   fit: LatentTraitFitStats;
@@ -505,7 +499,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
     );
 
     return (
-      <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+      <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
         <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
           <MapPinned className="w-4 h-4 mr-2" />
           Response Geography
@@ -541,7 +535,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
                   <button
                     className={`rounded-md px-2 py-1.5 transition-colors ${
                       postalGeoGroupBy === option.value
-                        ? 'bg-white text-[var(--color-cyc-secondary)] shadow-sm'
+                        ? 'bg-card text-[var(--color-cyc-secondary)] shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                     key={option.value}
@@ -1201,7 +1195,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] flex items-center">
@@ -1269,7 +1263,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
             return (
               <div
                 key={dimension.id}
-                className="bg-white rounded-xl shadow border border-gray-200 p-6"
+                className="bg-card rounded-xl shadow border border-gray-200 p-6"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -1305,7 +1299,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
           })}
         </div>
 
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+        <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
           <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-4">
             Fit Diagnostics
           </h3>
@@ -1351,25 +1345,25 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 bg-gray-100 rounded-lg p-1 mb-8 max-w-3xl">
         <button
           onClick={() => setTab('summary')}
-          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'summary' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'summary' ? 'bg-card shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <BarChart3 className="w-4 h-4 mr-2" /> Summary
         </button>
         <button
           onClick={() => setTab('individual')}
-          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'individual' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'individual' ? 'bg-card shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <User className="w-4 h-4 mr-2" /> Individual
         </button>
         <button
           onClick={() => setTab('latent')}
-          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'latent' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'latent' ? 'bg-card shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Activity className="w-4 h-4 mr-2" /> Traits
         </button>
         <button
           onClick={() => setTab('ai')}
-          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'ai' ? 'bg-white shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md text-sm font-semibold transition-all ${tab === 'ai' ? 'bg-card shadow text-[var(--color-cyc-secondary)]' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Sparkles className="w-4 h-4 mr-2" /> AI Insights
         </button>
@@ -1387,7 +1381,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
             <>
               {/* Referral Breakdown */}
               {data.referral_breakdown && Object.keys(data.referral_breakdown).length > 0 && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
                     <svg
                       className="w-4 h-4 mr-2"
@@ -1434,7 +1428,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
 
               {/* Language Breakdown */}
               {data.language_breakdown && Object.keys(data.language_breakdown).length > 0 && (
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1 flex items-center">
                     <Globe className="w-4 h-4 mr-2" />
                     Language Breakdown
@@ -1478,7 +1472,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
               })}
 
               {questions.map((q: Question, idx: number) => (
-                <div key={q.id} className="bg-white rounded-xl shadow border border-gray-200 p-6">
+                <div key={q.id} className="bg-card rounded-xl shadow border border-gray-200 p-6">
                   <h3 className="text-base font-bold text-[var(--color-cyc-secondary)] mb-1">
                     {idx + 1}. {q.question_text}
                   </h3>
@@ -1505,7 +1499,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
       {tab === 'individual' && (
         <div>
           <div className="flex justify-end mb-4">
-            <label className="flex items-center space-x-2 cursor-pointer bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition">
+            <label className="flex items-center space-x-2 cursor-pointer bg-card px-4 py-2 rounded-lg border border-gray-200 shadow-sm hover:bg-gray-50 transition">
               <input
                 type="checkbox"
                 checked={filterFailed}
@@ -1530,7 +1524,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
           ) : (
             <>
               {/* Navigation */}
-              <div className="flex items-center justify-between bg-white rounded-xl shadow border border-gray-200 p-4 mb-6">
+              <div className="flex items-center justify-between bg-card rounded-xl shadow border border-gray-200 p-4 mb-6">
                 <button
                   onClick={() => setCurrentResponseIndex(Math.max(0, currentResponseIndex - 1))}
                   disabled={currentResponseIndex === 0}
@@ -1640,7 +1634,7 @@ export default function SurveyResults({ basePath }: { basePath: string }) {
                   return (
                     <div
                       key={q.id}
-                      className="bg-white rounded-xl shadow border border-gray-200 p-5"
+                      className="bg-card rounded-xl shadow border border-gray-200 p-5"
                     >
                       <h4 className="text-sm font-bold text-[var(--color-cyc-secondary)] mb-1">
                         {idx + 1}. {q.question_text}
