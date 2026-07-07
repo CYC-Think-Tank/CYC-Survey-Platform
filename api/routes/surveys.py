@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Request
 
 from api.dependencies import require_admin_context, require_survey_team_access, supabase
-from api.models import SurveyCreate, SurveyDetail, SurveyList
+from api.models import SurveyCreate, SurveyDetail, SurveyList, SurveyMetaUpdate
 
 router = APIRouter()
 
@@ -536,6 +536,36 @@ async def update_survey(survey_id: str, survey: SurveyCreate, request: Request):
         updated_survey["response_count"] = 0  # Dummy count for response_model
 
         return updated_survey
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/api/surveys/{survey_id}/meta", response_model=SurveyList)
+async def update_survey_meta(survey_id: str, meta: SurveyMetaUpdate, request: Request):
+    """Update presentation metadata (category, estimated time, thumbnail, etc.)
+    without touching questions or the publish lock. Unlike the full PUT, this is
+    allowed on published/active surveys because it can't affect collected
+    responses."""
+    try:
+        context = await require_admin_context(request)
+        require_survey_team_access(survey_id, context)
+
+        # Only persist fields the client actually sent, so a partial update
+        # never nulls out untouched columns.
+        update = meta.model_dump(exclude_unset=True)
+        if not update:
+            raise HTTPException(status_code=400, detail="No metadata fields provided")
+        update["updated_at"] = datetime.utcnow().isoformat()
+
+        result = supabase.table("surveys").update(update).eq("id", survey_id).execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Survey not found")
+
+        updated = result.data[0]
+        updated["response_count"] = 0  # Dummy count for response_model
+        return updated
     except HTTPException:
         raise
     except Exception as e:

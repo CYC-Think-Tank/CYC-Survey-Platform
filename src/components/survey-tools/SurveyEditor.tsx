@@ -818,7 +818,10 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
       return;
     }
 
-    if (isActive) {
+    // Only warn when actually publishing a not-yet-locked survey. An already
+    // locked (active/published) survey stays active on a metadata save, so
+    // there's nothing new to confirm.
+    if (isActive && !isLocked) {
       const confirmed = window.confirm(
         'WARNING: Publishing this survey as ACTIVE will immediately DEACTIVATE all other currently active surveys, and PERMANENTLY LOCK this survey from future edits. Are you sure you want to proceed?'
       );
@@ -912,6 +915,27 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
           throw new Error(errorData.detail || 'Failed to update survey');
         }
         updatedSurvey = await res.json();
+      } else {
+        // Published/active surveys are locked against structural edits, but
+        // presentation metadata (category, estimated time, thumbnail) stays
+        // editable via this questions-untouched endpoint.
+        const res = await adminFetch(`/api/surveys/${params.id}/meta`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: payload.title,
+            description: payload.description,
+            description_alignment: payload.description_alignment,
+            thumbnail_url: thumbnailUrl || null,
+            estimated_minutes: payload.estimated_minutes,
+            category: payload.category,
+          }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.detail || 'Failed to update survey details');
+        }
       }
 
       for (const lang of SUPPORTED_LANGUAGES.filter((l) => l.code !== 'en')) {
@@ -1207,8 +1231,9 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
       {isLocked && language === 'en' && (
         <div className="bg-gold-soft text-ink p-4 rounded-xl mb-6 border border-gold/30">
           <strong>This survey is locked.</strong> Because it is active or has been published, its
-          English structure cannot be modified. You can view its contents, or switch to another
-          language to edit translations.
+          questions can&apos;t be changed. You can still update details like the category, estimated
+          time, and thumbnail, switch to another language to edit translations, or just view its
+          contents.
         </div>
       )}
 
@@ -1341,7 +1366,6 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   min={1}
                   value={estimatedMinutes}
                   onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-                  disabled={isLocked}
                   className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />
               </div>
@@ -1352,7 +1376,6 @@ export default function SurveyEditor({ basePath }: { basePath: string }) {
                   list="survey-category-options"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  disabled={isLocked}
                   placeholder="e.g. Community"
                   className="w-full p-2 rounded-lg border border-border bg-cream-deep/50 text-ink focus:ring-2 focus:ring-[var(--color-cyc-primary)] focus:outline-none"
                 />

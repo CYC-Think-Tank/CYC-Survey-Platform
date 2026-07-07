@@ -73,6 +73,19 @@ class SurveyCreate(BaseModel):
     questions: list[QuestionCreate]
 
 
+class SurveyMetaUpdate(BaseModel):
+    """Presentation metadata that stays editable even after a survey is locked
+    (published/active). Deliberately excludes questions and the active/publish
+    state so it can never disturb collected responses."""
+
+    title: str | None = None
+    description: str | None = None
+    description_alignment: str | None = None
+    estimated_minutes: int | None = None
+    thumbnail_url: str | None = None
+    category: str | None = None
+
+
 class SessionCreate(BaseModel):
     email: str
     referral_source: str | None = None
