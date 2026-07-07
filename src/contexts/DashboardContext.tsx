@@ -266,6 +266,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
+        // Close the modal and reset state before navigating — the dashboard
+        // layout (and this modal) persists across the client-side route change,
+        // so without this the "Creating…" dialog stays stuck on the edit page.
+        setCreatingSurvey(false);
+        setCreateModalOpen(false);
+        setNewSurveyTitle('');
         router.push(`${basePath}/edit/${data.id}`);
       } else {
         alert('Failed to create survey.');

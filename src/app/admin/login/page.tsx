@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ShieldCheck } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { fetchAdminMe, getAllowedAdminEmailDomain, isAllowedAdminEmail } from '@/lib/adminAuth';
+import { AuthShell, AuthError, authInputClass } from '@/components/auth/AuthShell';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -54,63 +56,57 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="card w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-2xl font-medium tracking-tight text-ink">
-            Admin Access
-          </h1>
-          <p className="text-gray-500 mt-2">Sign in to manage all surveys</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-medium">{error}</div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="admin-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
-              placeholder={allowedDomain ? `name@${allowedDomain}` : 'name@example.com'}
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="admin-password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="admin-password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
-              placeholder="Enter password"
-            />
-          </div>
-          <button type="submit" disabled={loading} className="w-full btn-primary py-3 mt-6 text-lg">
-            {loading ? 'Verifying...' : 'Sign In'}
-          </button>
-        </form>
-
+    <AuthShell
+      icon={<ShieldCheck className="h-7 w-7" />}
+      title="Admin Access"
+      subtitle="Sign in to manage all surveys"
+      footer={
         <a
           href="/student/login"
-          className="mt-5 block text-center text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700"
+          className="font-semibold text-teal transition-colors hover:text-teal-deep"
         >
           Not an admin? Student login
         </a>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <AuthError>{error}</AuthError>}
+
+        <div>
+          <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-ink-soft">
+            Email
+          </label>
+          <input
+            id="admin-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={authInputClass}
+            placeholder={allowedDomain ? `name@${allowedDomain}` : 'name@example.com'}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="admin-password"
+            className="mb-1.5 block text-sm font-medium text-ink-soft"
+          >
+            Password
+          </label>
+          <input
+            id="admin-password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={authInputClass}
+            placeholder="Enter password"
+          />
+        </div>
+        <button type="submit" disabled={loading} className="btn-primary mt-2 w-full py-3 text-base">
+          {loading ? 'Verifying…' : 'Sign In'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

@@ -1,8 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { GraduationCap } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getAllowedAdminEmailDomain, isAllowedAdminEmail } from '@/lib/adminAuth';
+import { AuthShell, AuthError, AuthNotice, authInputClass } from '@/components/auth/AuthShell';
 
 export default function AdminLogin() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -74,65 +76,13 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="card w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="font-display text-2xl font-medium tracking-tight text-ink">
-            Student Access
-          </h1>
-          <p className="text-gray-500 mt-2">
-            {mode === 'login'
-              ? 'Sign in to manage your team surveys'
-              : 'Create your student account'}
-          </p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm font-medium">{error}</div>
-        )}
-        {message && (
-          <div className="bg-teal-50 text-teal-700 p-3 rounded mb-4 text-sm font-medium">
-            {message}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              id="admin-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
-              placeholder={allowedDomain ? `name@${allowedDomain}` : 'name@example.com'}
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="admin-password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="admin-password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 border-2 border-gray-200 rounded-xl bg-card text-ink focus:border-[var(--color-cyc-primary)] focus:ring-4 focus:ring-teal-50 focus:outline-none transition-all"
-              placeholder="Enter password"
-            />
-          </div>
-          <button type="submit" disabled={loading} className="w-full btn-primary py-3 mt-6 text-lg">
-            {loading ? 'Verifying...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
-          </button>
-        </form>
-
+    <AuthShell
+      icon={<GraduationCap className="h-7 w-7" />}
+      title="Student Access"
+      subtitle={
+        mode === 'login' ? 'Sign in to manage your team surveys' : 'Create your student account'
+      }
+      footer={
         <button
           type="button"
           onClick={() => {
@@ -140,11 +90,51 @@ export default function AdminLogin() {
             setError('');
             setMessage('');
           }}
-          className="mt-5 w-full text-sm font-semibold text-[var(--color-cyc-primary)] hover:text-teal-700"
+          className="font-semibold text-teal transition-colors hover:text-teal-deep"
         >
           {mode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
         </button>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <AuthError>{error}</AuthError>}
+        {message && <AuthNotice>{message}</AuthNotice>}
+
+        <div>
+          <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-ink-soft">
+            Email
+          </label>
+          <input
+            id="admin-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={authInputClass}
+            placeholder={allowedDomain ? `name@${allowedDomain}` : 'name@example.com'}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="admin-password"
+            className="mb-1.5 block text-sm font-medium text-ink-soft"
+          >
+            Password
+          </label>
+          <input
+            id="admin-password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={authInputClass}
+            placeholder="Enter password"
+          />
+        </div>
+        <button type="submit" disabled={loading} className="btn-primary mt-2 w-full py-3 text-base">
+          {loading ? 'Verifying…' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

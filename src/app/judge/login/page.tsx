@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User } from 'lucide-react';
+import { Gavel, Lock, User } from 'lucide-react';
+import { AuthShell, AuthError } from '@/components/auth/AuthShell';
 
 export default function JudgeLogin() {
   const [name, setName] = useState('');
@@ -41,78 +42,62 @@ export default function JudgeLogin() {
     }
   };
 
+  const fieldClass =
+    'w-full rounded-xl border border-border bg-cream-deep/50 py-3 pl-11 pr-4 text-ink placeholder:text-ink-soft/60 transition-all focus:border-teal focus:bg-card focus:outline-none focus:ring-4 focus:ring-teal-soft';
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center font-display text-3xl font-medium tracking-tight text-ink">
-          Judge Portal
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Enter your credentials to access the evaluation platform
-        </p>
-      </div>
+    <AuthShell
+      icon={<Gavel className="h-7 w-7" />}
+      title="Judge Portal"
+      subtitle="Enter your credentials to access the evaluation platform"
+    >
+      <form className="space-y-4" onSubmit={handleLogin}>
+        {error && <AuthError>{error}</AuthError>}
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-card py-8 px-4 shadow sm:rounded-xl sm:px-10 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Your Name
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[var(--color-cyc-primary)] focus:border-[var(--color-cyc-primary)] sm:text-sm text-gray-900 bg-card"
-                  placeholder="e.g. Alice Smith"
-                />
-              </div>
+        <div>
+          <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-ink-soft">
+            Your Name
+          </label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <User className="h-5 w-5 text-ink-soft/70" />
             </div>
-
-            <div>
-              <label htmlFor="passcode" className="block text-sm font-medium text-gray-700">
-                Passcode
-              </label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="passcode"
-                  type="password"
-                  required
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[var(--color-cyc-primary)] focus:border-[var(--color-cyc-primary)] sm:text-sm text-gray-900 bg-card"
-                  placeholder="Enter passcode"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md border border-red-100 text-center">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-gray-900 bg-[var(--color-cyc-accent)] hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-cyc-accent)] disabled:opacity-50 transition-colors"
-              >
-                {loading ? 'Authenticating...' : 'Sign in to Dashboard'}
-              </button>
-            </div>
-          </form>
+            <input
+              id="name"
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={fieldClass}
+              placeholder="e.g. Alice Smith"
+            />
+          </div>
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label htmlFor="passcode" className="mb-1.5 block text-sm font-medium text-ink-soft">
+            Passcode
+          </label>
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <Lock className="h-5 w-5 text-ink-soft/70" />
+            </div>
+            <input
+              id="passcode"
+              type="password"
+              required
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              className={fieldClass}
+              placeholder="Enter passcode"
+            />
+          </div>
+        </div>
+
+        <button type="submit" disabled={loading} className="btn-primary mt-2 w-full py-3 text-base">
+          {loading ? 'Authenticating…' : 'Sign in to Dashboard'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }
