@@ -212,12 +212,22 @@ export const RichTextEditor = ({
   // Keep the live cursor/caret label in sync when the local identity changes
   // (e.g. the signed-in email resolves after the editor already mounted). The
   // editor itself is only rebuilt on doc change, so update the caret in place.
+  //
+  // Depend on the primitive identity fields ONLY — not the `collab` object,
+  // which the parent recreates every render. Depending on `collab` here caused
+  // an infinite loop: updateUser → awareness change → presence setState →
+  // re-render → new `collab` → updateUser → … ("Maximum update depth exceeded").
+  const collabUserId = collab?.user.id;
   const collabUserName = collab?.user.name;
   const collabUserColor = collab?.user.color;
   useEffect(() => {
-    if (!collab || !editor) return;
-    (editor.commands as { updateUser?: (u: unknown) => boolean }).updateUser?.(collab.user);
-  }, [editor, collab, collabUserName, collabUserColor]);
+    if (!editor || !collabUserName) return;
+    (editor.commands as { updateUser?: (u: unknown) => boolean }).updateUser?.({
+      id: collabUserId,
+      name: collabUserName,
+      color: collabUserColor,
+    });
+  }, [editor, collabUserId, collabUserName, collabUserColor]);
 
   if (!editor) {
     return null;
