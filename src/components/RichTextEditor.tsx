@@ -209,25 +209,15 @@ export const RichTextEditor = ({
     }
   }, [collab, editor, value]);
 
-  // Keep the live cursor/caret label in sync when the local identity changes
-  // (e.g. the signed-in email resolves after the editor already mounted). The
-  // editor itself is only rebuilt on doc change, so update the caret in place.
-  //
-  // Depend on the primitive identity fields ONLY — not the `collab` object,
-  // which the parent recreates every render. Depending on `collab` here caused
-  // an infinite loop: updateUser → awareness change → presence setState →
-  // re-render → new `collab` → updateUser → … ("Maximum update depth exceeded").
-  const collabUserId = collab?.user.id;
-  const collabUserName = collab?.user.name;
-  const collabUserColor = collab?.user.color;
-  useEffect(() => {
-    if (!editor || !collabUserName) return;
-    (editor.commands as { updateUser?: (u: unknown) => boolean }).updateUser?.({
-      id: collabUserId,
-      name: collabUserName,
-      color: collabUserColor,
-    });
-  }, [editor, collabUserId, collabUserName, collabUserColor]);
+  // NOTE: we intentionally do NOT poke `editor.commands.updateUser` here to
+  // push a late-resolving identity onto the caret. That command only calls
+  // `awareness.setLocalStateField('user', …)`, which the collaboration hook
+  // already does whenever the identity changes — and CollaborationCaret renders
+  // every caret label straight from the awareness `user` field, so peers pick
+  // up the email automatically. Touching `editor.commands` from an effect also
+  // crashed the editor: with `immediatelyRender: false` the ProseMirror view
+  // isn't ready yet, so the `commands` getter throws ("Cannot read properties
+  // of null").
 
   if (!editor) {
     return null;
