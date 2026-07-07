@@ -51,6 +51,27 @@ function randomItem<T>(arr: T[]): T {
 }
 
 /**
+ * Deterministic colour for a stable key (e.g. an email) so the same person
+ * always gets the same avatar/cursor colour across tabs and sessions.
+ */
+export function colorForKey(key: string): string {
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) | 0;
+  }
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+/** Identity for a signed-in collaborator, keyed off their email address. */
+export function identityFromEmail(email: string, id?: string): CollaboratorIdentity {
+  return {
+    id: id ?? email,
+    name: email,
+    color: colorForKey(email),
+  };
+}
+
+/**
  * Returns the identity for this tab, generating and persisting one on first use.
  * Persisted in sessionStorage so a reload keeps the same name/colour but a new
  * tab is treated as a separate collaborator.

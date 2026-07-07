@@ -22,7 +22,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Y from 'yjs';
 import { Awareness } from 'y-protocols/awareness';
 import { SupabaseYjsProvider } from '@/lib/collab/SupabaseYjsProvider';
-import { getCollaboratorIdentity, type CollaboratorIdentity } from '@/lib/collab/identity';
+import {
+  getCollaboratorIdentity,
+  identityFromEmail,
+  type CollaboratorIdentity,
+} from '@/lib/collab/identity';
+import { supabase } from '@/lib/supabase';
 import {
   META_KEY,
   QUESTIONS_KEY,
@@ -99,7 +104,28 @@ export function useCollaborativeSurvey(
   args: UseCollaborativeSurveyArgs
 ): UseCollaborativeSurveyResult {
   const { surveyId, enabled, ready } = args;
-  const user = useMemo(() => getCollaboratorIdentity(), []);
+
+  // Stable fallback identity (colour + session id) used until the signed-in
+  // email resolves, and if there is no session at all.
+  const fallbackIdentity = useMemo(() => getCollaboratorIdentity(), []);
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) setEmail(data.session?.user?.email ?? null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Prefer the signed-in email as the display name; keep the fallback id stable
+  // so resolving the email doesn't tear down and rebuild the live session.
+  const user = useMemo<CollaboratorIdentity>(
+    () => (email ? identityFromEmail(email, fallbackIdentity.id) : fallbackIdentity),
+    [email, fallbackIdentity]
+  );
 
   // Session is held in state so the returned doc/provider/awareness are
   // render-safe (no reading refs during render).
@@ -166,6 +192,15 @@ export function useCollaborativeSurvey(
   }, []);
 
   const active = session !== null;
+
+  // Push the latest identity into awareness whenever it changes (e.g. once the
+  // signed-in email resolves after the session is already live) so the presence
+  // bar switches from the fallback name to the real email without a rebuild.
+  useEffect(() => {
+    const awareness = awarenessRef.current;
+    if (!awareness) return;
+    awareness.setLocalStateField('user', { id: user.id, name: user.name, color: user.color });
+  }, [user, session]);
 
   // --- create the session ---
   useEffect(() => {

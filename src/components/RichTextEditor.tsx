@@ -46,7 +46,7 @@ interface CollabConfig {
   /** Provider exposing `.awareness` (drives live cursors). */
   provider: { awareness: unknown };
   /** Local user shown on the cursor/caret. */
-  user: { name: string; color: string };
+  user: { id?: string; name: string; color: string };
   /** Whether this client should seed the shared doc with initial content. */
   isSeeder: boolean;
   /** True once the shared doc is seeded — gates content seeding + onChange. */
@@ -208,6 +208,16 @@ export const RichTextEditor = ({
       editor.commands.setContent(value);
     }
   }, [collab, editor, value]);
+
+  // Keep the live cursor/caret label in sync when the local identity changes
+  // (e.g. the signed-in email resolves after the editor already mounted). The
+  // editor itself is only rebuilt on doc change, so update the caret in place.
+  const collabUserName = collab?.user.name;
+  const collabUserColor = collab?.user.color;
+  useEffect(() => {
+    if (!collab || !editor) return;
+    (editor.commands as { updateUser?: (u: unknown) => boolean }).updateUser?.(collab.user);
+  }, [editor, collab, collabUserName, collabUserColor]);
 
   if (!editor) {
     return null;

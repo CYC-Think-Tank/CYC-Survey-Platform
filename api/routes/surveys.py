@@ -547,7 +547,9 @@ async def delete_survey(survey_id: str, request: Request):
     """Delete a survey and all its associated data (cascade)."""
     try:
         context = await require_admin_context(request)
-        require_survey_team_access(survey_id, context, leader_required=True)
+        # Any member of the owning team may delete — team_leader is a title, not
+        # an elevated permission.
+        require_survey_team_access(survey_id, context)
         # Check if exists
         existing = supabase.table("surveys").select("id").eq("id", survey_id).execute()
         if not existing.data:

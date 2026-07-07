@@ -10,9 +10,9 @@ interface PresenceBarProps {
 }
 
 function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  // Names are the collaborator's email — show just the first letter.
+  const first = name.trim()[0];
+  return first ? first.toUpperCase() : '?';
 }
 
 function typingLabel(names: string[]): string {

@@ -98,8 +98,9 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full bg-cream">
-      {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex">
+      {/* Sidebar — pinned to the viewport so it never scrolls; only the page
+          content scrolls past it. */}
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-card md:flex">
         <div className="flex items-center justify-between gap-2 px-6 py-6">
           <Image
             src="/logo.png"

@@ -358,7 +358,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const canDeleteSurvey = useCallback(
     (survey: Survey) => {
       if (role === 'admin') return true;
-      return teams.some((team) => team.id === survey.team_id && team.role === 'team_leader');
+      // Any member of the owning team can delete — "team_leader" is just a
+      // title, not an elevated permission.
+      return teams.some((team) => team.id === survey.team_id);
     },
     [role, teams]
   );
