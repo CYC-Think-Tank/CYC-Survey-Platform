@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { adminFetch, ensureArray, isAdminFetchError, parseJsonResponse } from '@/lib/adminAuth';
+import { useDashboard } from '@/contexts/DashboardContext';
 
 interface Survey {
   id: string;
@@ -77,7 +78,8 @@ function truncate(str: string, max: number): string {
   return str.length > max ? str.slice(0, max - 1) + '…' : str;
 }
 
-export default function AdminRafflePage() {
+export default function RafflePage() {
+  const { basePath, role } = useDashboard();
   const [raffleMode, setRaffleMode] = useState<RaffleMode>('general');
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<string>('all');
@@ -432,35 +434,37 @@ export default function AdminRafflePage() {
 
   // ---- Render ----------------------------------------------------------
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
-      <div className="mb-6">
+    <div className="mx-auto max-w-6xl">
+      <div className="mb-8">
         <Link
-          href="/student"
-          className="text-sm text-gray-500 dark:text-slate-400 hover:text-[var(--color-cyc-primary)] flex items-center mb-2"
+          href={basePath}
+          className="mb-3 flex items-center text-sm font-medium text-ink-soft transition-colors hover:text-ink"
         >
-          <ArrowLeft className="w-4 h-4 mr-1" />
+          <ArrowLeft className="mr-1 h-4 w-4" />
           Back to Dashboard
         </Link>
-        <h1 className="font-display text-3xl font-medium tracking-tight text-ink flex items-center">
-          <Trophy className="w-7 h-7 mr-2 text-[var(--color-cyc-accent)]" />
+        <h1 className="flex items-center font-display text-3xl font-medium tracking-tight text-ink">
+          <span className="mr-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gold-soft text-gold-deep">
+            <Trophy className="h-5 w-5" />
+          </span>
           {raffleMode === 'general' ? 'General Raffle' : 'Event Raffle'}
         </h1>
-        <p className="text-gray-500 dark:text-slate-500 mt-1">
+        <p className="mt-2 text-sm text-ink-soft">
           {raffleMode === 'general'
-            ? "Draw from raffle tickets earned across your team's surveys."
+            ? role === 'admin'
+              ? 'Draw from raffle tickets earned across all surveys.'
+              : "Draw from raffle tickets earned across your team's surveys."
             : "Only people who complete a survey through this event's QR code enter this wheel."}
         </p>
       </div>
 
-      <div className="inline-flex border border-gray-300 dark:border-slate-700 rounded-lg p-1 mb-6 bg-gray-100 dark:bg-slate-900">
+      <div className="mb-6 inline-flex rounded-lg border border-border bg-card p-1">
         {(['general', 'event'] as const).map((mode) => (
           <button
             key={mode}
             onClick={() => setRaffleMode(mode)}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
-              raffleMode === mode
-                ? 'bg-white dark:bg-slate-700 text-ink shadow-sm'
-                : 'text-gray-500 dark:text-slate-400'
+            className={`rounded-md px-4 py-2 text-sm font-semibold transition-colors ${
+              raffleMode === mode ? 'bg-ink text-cream' : 'text-ink-soft hover:text-ink'
             }`}
           >
             {mode === 'general' ? 'General raffle' : 'Event raffle'}
@@ -470,10 +474,10 @@ export default function AdminRafflePage() {
 
       {/* Event setup */}
       {raffleMode === 'event' && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-5 mb-6">
+        <div className="mb-6 rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+              <label className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-soft">
                 Event code
               </label>
               <div className="flex items-center gap-2">
@@ -481,11 +485,11 @@ export default function AdminRafflePage() {
                   type="text"
                   value={eventCode}
                   onChange={(e) => setEventCode(e.target.value.trim())}
-                  className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm font-mono w-44"
+                  className="w-44 rounded-lg border border-border bg-card p-2.5 font-mono text-sm text-ink transition-colors focus:border-ink focus:outline-none"
                 />
                 <button
                   onClick={startNewEvent}
-                  className="btn-secondary flex items-center whitespace-nowrap"
+                  className="flex items-center whitespace-nowrap rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink"
                   title="Generate a fresh event code"
                 >
                   <Sparkles className="w-4 h-4 mr-1.5" />
@@ -496,7 +500,7 @@ export default function AdminRafflePage() {
 
             {knownEvents.length > 0 && (
               <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+                <label className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-soft">
                   Past events
                 </label>
                 <select
@@ -504,7 +508,7 @@ export default function AdminRafflePage() {
                   onChange={(e) => {
                     if (e.target.value) setEventCode(e.target.value);
                   }}
-                  className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm"
+                  className="rounded-lg border border-border bg-card p-2.5 text-sm text-ink transition-colors focus:border-ink focus:outline-none"
                 >
                   <option value="">Load existing…</option>
                   {knownEvents.map((ev) => (
@@ -517,13 +521,13 @@ export default function AdminRafflePage() {
             )}
 
             <div className="flex flex-col">
-              <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
+              <label className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-soft">
                 QR links to
               </label>
               <select
                 value={selectedSurvey}
                 onChange={(e) => setSelectedSurvey(e.target.value)}
-                className="p-2.5 border-2 border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded-lg focus:border-[var(--color-cyc-primary)] focus:outline-none text-sm"
+                className="rounded-lg border border-border bg-card p-2.5 text-sm text-ink transition-colors focus:border-ink focus:outline-none"
               >
                 <option value="all">Landing page (all surveys)</option>
                 {surveys.map((s) => (
@@ -536,15 +540,15 @@ export default function AdminRafflePage() {
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
-              <span className="flex items-center text-sm text-gray-600 dark:text-slate-400">
-                <Users className="w-4 h-4 mr-1.5 text-[var(--color-cyc-primary)]" />
+              <span className="flex items-center text-sm text-ink-soft">
+                <Users className="mr-1.5 h-4 w-4 text-teal" />
                 {totalUnique} {totalUnique !== 1 ? 'people' : 'person'}
-                <span className="mx-1.5 text-gray-300 dark:text-slate-600">·</span>
+                <span className="mx-1.5 text-border">·</span>
                 {totalTickets} ticket{totalTickets !== 1 ? 's' : ''}
               </span>
               <button
                 onClick={() => loadEntries()}
-                className="btn-secondary flex items-center"
+                className="flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-50"
                 disabled={loadingEntries}
               >
                 <RefreshCw className={`w-4 h-4 mr-1.5 ${loadingEntries ? 'animate-spin' : ''}`} />
@@ -554,18 +558,18 @@ export default function AdminRafflePage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4 mt-4 text-sm">
-            <label className="flex items-center text-gray-600 dark:text-slate-400 cursor-pointer">
+            <label className="flex cursor-pointer items-center text-ink-soft">
               <input
                 type="checkbox"
                 checked={autoRefresh}
                 onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="mr-2 rounded border-gray-300 text-[var(--color-cyc-primary)] focus:ring-[var(--color-cyc-primary)]"
+                className="mr-2 rounded border-border accent-teal"
               />
               Auto-refresh entries (every 8s)
             </label>
             <button
               onClick={() => setMaskEmails((m) => !m)}
-              className="flex items-center text-gray-600 dark:text-slate-400 hover:text-[var(--color-cyc-primary)]"
+              className="flex items-center text-ink-soft transition-colors hover:text-ink"
             >
               {maskEmails ? (
                 <Eye className="w-4 h-4 mr-1.5" />
@@ -579,17 +583,17 @@ export default function AdminRafflePage() {
       )}
 
       {raffleMode === 'general' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <span className="flex items-center text-sm text-gray-600 dark:text-slate-400">
-            <Users className="w-4 h-4 mr-1.5 text-[var(--color-cyc-primary)]" />
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
+          <span className="flex items-center text-sm text-ink-soft">
+            <Users className="mr-1.5 h-4 w-4 text-teal" />
             {totalUnique} {totalUnique !== 1 ? 'people' : 'person'}
-            <span className="mx-1.5 text-gray-300 dark:text-slate-600">·</span>
+            <span className="mx-1.5 text-border">·</span>
             {totalTickets} ticket{totalTickets !== 1 ? 's' : ''}
           </span>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMaskEmails((masked) => !masked)}
-              className="flex items-center text-sm text-gray-600 dark:text-slate-400 hover:text-[var(--color-cyc-primary)]"
+              className="flex items-center text-sm font-medium text-ink-soft transition-colors hover:text-ink"
             >
               {maskEmails ? (
                 <Eye className="w-4 h-4 mr-1.5" />
@@ -600,7 +604,7 @@ export default function AdminRafflePage() {
             </button>
             <button
               onClick={() => loadEntries()}
-              className="btn-secondary flex items-center"
+              className="flex items-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-50"
               disabled={loadingEntries}
             >
               <RefreshCw className={`w-4 h-4 mr-1.5 ${loadingEntries ? 'animate-spin' : ''}`} />
@@ -611,7 +615,7 @@ export default function AdminRafflePage() {
       )}
 
       {entriesError && (
-        <div className="mb-6 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
           {entriesError}
         </div>
       )}
@@ -619,20 +623,20 @@ export default function AdminRafflePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* QR Panel */}
         {raffleMode === 'event' && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center">
+          <div className="flex flex-col items-center rounded-2xl border border-border bg-card p-6">
             <h2 className="font-display text-lg font-medium tracking-tight text-ink mb-1 flex items-center self-start">
               <QrCode className="w-5 h-5 mr-2" />
               Scan to Enter
             </h2>
-            <p className="text-xs text-gray-500 dark:text-slate-500 mb-4 self-start">
+            <p className="mb-4 self-start text-xs text-ink-soft">
               Completing the survey via this code enters them into the wheel.
             </p>
-            <div className="bg-white p-4 rounded-xl border border-gray-200">
+            <div className="rounded-xl border border-border bg-white p-4">
               <QRCodeCanvas value={qrUrl} size={200} level="M" marginSize={4} />
             </div>
             <button
               onClick={copyUrl}
-              className="mt-3 text-xs text-gray-500 dark:text-slate-400 hover:text-[var(--color-cyc-primary)] flex items-center"
+              className="mt-3 flex items-center text-xs text-ink-soft transition-colors hover:text-ink"
             >
               {copied ? (
                 <>
@@ -646,7 +650,7 @@ export default function AdminRafflePage() {
             </button>
             <button
               onClick={() => setFullscreenQr(true)}
-              className="mt-4 btn-primary flex items-center text-sm"
+              className="mt-4 flex items-center rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-cream transition-opacity hover:opacity-90"
             >
               <Maximize2 className="w-4 h-4 mr-1.5" />
               Display fullscreen
@@ -656,20 +660,23 @@ export default function AdminRafflePage() {
 
         {/* Wheel Panel */}
         <div
-          className={`${raffleMode === 'general' ? 'lg:col-span-3' : 'lg:col-span-2'} bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6 flex flex-col items-center`}
+          className={`${raffleMode === 'general' ? 'lg:col-span-3' : 'lg:col-span-2'} flex flex-col items-center rounded-2xl border border-border bg-card p-6`}
         >
           <button
             onClick={() => setFullscreenWheel(true)}
-            className="self-end btn-secondary flex items-center text-sm mb-2"
+            className="mb-2 flex items-center self-end rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink"
           >
             <Maximize2 className="w-4 h-4 mr-1.5" />
             Fullscreen
           </button>
 
           {fullscreenWheel ? (
-            <div className="py-20 text-center text-gray-400 dark:text-slate-500">
+            <div className="py-20 text-center text-ink-soft">
               <p>Spinner is displayed in fullscreen.</p>
-              <button onClick={() => setFullscreenWheel(false)} className="btn-secondary mt-4">
+              <button
+                onClick={() => setFullscreenWheel(false)}
+                className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-ink hover:border-ink"
+              >
                 Exit fullscreen
               </button>
             </div>
@@ -678,7 +685,7 @@ export default function AdminRafflePage() {
               {wheelStage(false)}
 
               {entries.length > 0 && (
-                <p className="text-xs text-gray-400 dark:text-slate-500 mt-3 text-center">
+                <p className="mt-3 text-center text-xs text-ink-soft">
                   {uniqueRemaining.length > MAX_WHEEL_SEGMENTS
                     ? `Showing ${MAX_WHEEL_SEGMENTS} of ${uniqueRemaining.length} remaining people on the wheel. `
                     : ''}
@@ -687,14 +694,14 @@ export default function AdminRafflePage() {
                 </p>
               )}
               {remainingPool.length === 0 && entries.length > 0 && (
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-3">
-                  All entries have been drawn.
-                </p>
+                <p className="mt-3 text-sm text-ink-soft">All entries have been drawn.</p>
               )}
               {entries.length === 0 && !loadingEntries && (
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-3 text-center">
+                <p className="mt-3 text-center text-sm text-ink-soft">
                   {raffleMode === 'general'
-                    ? 'No raffle tickets exist yet for your team surveys.'
+                    ? role === 'admin'
+                      ? 'No raffle tickets exist yet.'
+                      : 'No raffle tickets exist yet for your team surveys.'
                     : 'No entries yet. Display the QR code so attendees can complete the survey.'}
                 </p>
               )}
@@ -705,8 +712,8 @@ export default function AdminRafflePage() {
 
       {/* Winner reveal */}
       {currentWinner && !spinning && (
-        <div className="mt-6 bg-gradient-to-r from-[var(--color-cyc-accent)]/20 to-[var(--color-cyc-primary)]/20 border-2 border-[var(--color-cyc-accent)] rounded-2xl p-6 text-center">
-          <p className="text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+        <div className="mt-6 rounded-2xl border border-gold bg-gold-soft p-6 text-center">
+          <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-ink-soft">
             🎉 Winner 🎉
           </p>
           <p className="font-display text-3xl font-semibold tracking-tight text-ink break-all">
@@ -717,7 +724,7 @@ export default function AdminRafflePage() {
 
       {/* Past winners */}
       {winners.length > 0 && (
-        <div className="mt-6 bg-white dark:bg-slate-800 rounded-2xl shadow border border-gray-200 dark:border-slate-700 p-6">
+        <div className="mt-6 rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-medium tracking-tight text-ink flex items-center">
               <Trophy className="w-5 h-5 mr-2 text-[var(--color-cyc-accent)]" />
@@ -735,7 +742,7 @@ export default function AdminRafflePage() {
             {winners.map((email, idx) => (
               <li
                 key={email}
-                className="flex items-center bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-lg p-3"
+                className="flex items-center rounded-lg border border-border bg-cream-deep p-3"
               >
                 <span className="font-bold w-8 text-center text-[var(--color-cyc-accent)]">
                   #{idx + 1}
@@ -749,10 +756,10 @@ export default function AdminRafflePage() {
 
       {/* Fullscreen spinner */}
       {fullscreenWheel && (
-        <div className="fixed inset-0 bg-white dark:bg-slate-900 z-50 flex flex-col items-center justify-center p-6">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-cream p-6">
           <button
             onClick={() => setFullscreenWheel(false)}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-700 dark:hover:text-slate-200"
+            className="absolute right-6 top-6 text-ink-soft transition-colors hover:text-ink"
           >
             <X className="w-8 h-8" />
           </button>
@@ -764,10 +771,10 @@ export default function AdminRafflePage() {
                 setFullscreenWheel(false);
                 setFullscreenQr(true);
               }}
-              className="group absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 text-gray-400 hover:text-[var(--color-cyc-primary)] transition-colors"
+              className="group absolute left-4 top-1/2 flex -translate-y-1/2 flex-col items-center gap-1 text-ink-soft transition-colors hover:text-teal sm:left-8"
               title="Show the QR code"
             >
-              <span className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-[var(--color-cyc-primary)]/10 shadow-md">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-cute-sm group-hover:bg-teal-soft">
                 <ChevronLeft className="w-8 h-8" />
               </span>
               <span className="text-xs font-semibold">QR code</span>
@@ -782,8 +789,8 @@ export default function AdminRafflePage() {
           {wheelStage(true)}
 
           {currentWinner && !spinning && (
-            <div className="mt-6 border-2 border-[var(--color-cyc-accent)] bg-[var(--color-cyc-accent)]/10 rounded-2xl px-8 py-4 text-center max-w-2xl">
-              <p className="text-sm uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-1">
+            <div className="mt-6 max-w-2xl rounded-2xl border border-gold bg-gold-soft px-8 py-4 text-center">
+              <p className="mb-1 text-sm font-semibold uppercase tracking-wider text-ink-soft">
                 🎉 Winner 🎉
               </p>
               <p className="font-display text-3xl font-semibold tracking-tight text-ink break-all">
@@ -818,12 +825,12 @@ export default function AdminRafflePage() {
       {/* Fullscreen QR modal */}
       {fullscreenQr && (
         <div
-          className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-8"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-cream p-8"
           onClick={() => setFullscreenQr(false)}
         >
           <button
             onClick={() => setFullscreenQr(false)}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-700"
+            className="absolute right-6 top-6 text-ink-soft transition-colors hover:text-ink"
           >
             <X className="w-8 h-8" />
           </button>
@@ -835,10 +842,10 @@ export default function AdminRafflePage() {
               setFullscreenQr(false);
               setFullscreenWheel(true);
             }}
-            className="group absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 text-gray-400 hover:text-[var(--color-cyc-primary)] transition-colors"
+            className="group absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center gap-1 text-ink-soft transition-colors hover:text-teal sm:right-8"
             title="Show the spinner"
           >
-            <span className="flex items-center justify-center w-14 h-14 rounded-full bg-gray-100 group-hover:bg-[var(--color-cyc-primary)]/10 shadow-md">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-cute-sm group-hover:bg-teal-soft">
               <ChevronRight className="w-8 h-8" />
             </span>
             <span className="text-xs font-semibold">Spinner</span>
@@ -847,10 +854,10 @@ export default function AdminRafflePage() {
           <h2 className="font-display text-4xl font-normal tracking-tighter text-ink mb-2 text-center">
             {selectedTitle}
           </h2>
-          <p className="text-xl text-gray-600 mb-8 text-center">
+          <p className="mb-8 text-center text-xl text-ink-soft">
             Scan to complete the survey & enter the raffle 🎉
           </p>
-          <div className="bg-white p-6 rounded-2xl border-4 border-[var(--color-cyc-secondary)]">
+          <div className="rounded-2xl border-4 border-ink bg-white p-6">
             <QRCodeCanvas
               value={qrUrl}
               size={Math.min(typeof window !== 'undefined' ? window.innerHeight - 320 : 480, 560)}
@@ -858,7 +865,7 @@ export default function AdminRafflePage() {
               marginSize={4}
             />
           </div>
-          <p className="text-gray-400 mt-6 text-lg break-all text-center">{qrUrl}</p>
+          <p className="mt-6 break-all text-center text-lg text-ink-soft">{qrUrl}</p>
         </div>
       )}
     </div>

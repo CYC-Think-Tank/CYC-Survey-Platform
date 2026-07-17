@@ -32,6 +32,14 @@ def _team_survey_ids(team_id: str) -> list[str]:
     return [row["id"] for row in response.data or [] if row.get("id")]
 
 
+def _raffle_survey_ids(context: AdminContext) -> list[str]:
+    """Return the survey scope the current raffle administrator may draw from."""
+    if getattr(context, "is_admin", False):
+        response = supabase.table("surveys").select("id").execute()
+        return [row["id"] for row in response.data or [] if row.get("id")]
+    return _team_survey_ids(_require_team_leader(context))
+
+
 def _fetch_all_raffle_rows(
     table: str,
     columns: str,
@@ -58,9 +66,8 @@ def _fetch_all_raffle_rows(
     return rows
 
 
-def _team_raffle_emails(context: AdminContext) -> list[str]:
-    team_id = _require_team_leader(context)
-    rows = _fetch_all_raffle_rows("raffle_entries", "email", _team_survey_ids(team_id))
+def _raffle_emails(context: AdminContext) -> list[str]:
+    rows = _fetch_all_raffle_rows("raffle_entries", "email", _raffle_survey_ids(context))
     return [row["email"] for row in rows if row.get("email")]
 
 
@@ -72,7 +79,7 @@ async def get_raffle_email(request: Request):
     """
     try:
         context = await require_admin_context(request)
-        emails = _team_raffle_emails(context)
+        emails = _raffle_emails(context)
         if not emails:
             raise HTTPException(status_code=404, detail="No raffle entries found")
         return {"emails": random.sample(emails, min(9, len(emails)))}
@@ -87,7 +94,7 @@ async def get_raffle_entries(request: Request):
     """Return the current team raffle's weighted email ticket pool."""
     try:
         context = await require_admin_context(request)
-        emails = _team_raffle_emails(context)
+        emails = _raffle_emails(context)
         return {
             "entries": emails,
             "count": len(emails),
@@ -112,11 +119,10 @@ async def get_event_raffle_entries(event_code: str, request: Request):
     """
     try:
         context = await require_admin_context(request)
-        team_id = _require_team_leader(context)
         rows = _fetch_all_raffle_rows(
             "event_raffle_entries",
             "email",
-            _team_survey_ids(team_id),
+            _raffle_survey_ids(context),
             event_code=event_code,
         )
         emails = [r["email"] for r in rows if r.get("email")]
@@ -136,11 +142,10 @@ async def get_event_codes(request: Request):
     """List existing event codes with their participant counts (newest first)."""
     try:
         context = await require_admin_context(request)
-        team_id = _require_team_leader(context)
         rows = _fetch_all_raffle_rows(
             "event_raffle_entries",
             "event_code, email, created_at",
-            _team_survey_ids(team_id),
+            _raffle_survey_ids(context),
         )
         events: dict[str, dict] = {}
         for r in rows:

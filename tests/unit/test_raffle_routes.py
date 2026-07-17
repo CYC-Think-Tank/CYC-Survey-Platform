@@ -41,9 +41,12 @@ class FakeSupabase:
         return FakeQuery(self.rows_by_table[name], self.calls)
 
 
-def context(role="team_leader"):
+def context(role="team_leader", *, is_admin=False):
     return SimpleNamespace(
-        default_team=SimpleNamespace(team_id="team-1", role=role),
+        default_team=None
+        if role is None
+        else SimpleNamespace(team_id="team-1", role=role),
+        is_admin=is_admin,
     )
 
 
@@ -89,6 +92,35 @@ async def test_regular_member_cannot_read_raffle_emails(monkeypatch):
 
     assert error.value.status_code == 403
     assert error.value.detail == "Team leader permission required"
+
+
+@pytest.mark.asyncio
+async def test_global_admin_raffle_includes_all_surveys(monkeypatch):
+    fake = FakeSupabase(
+        {
+            "surveys": [{"id": "survey-1"}, {"id": "survey-2"}],
+            "raffle_entries": [
+                {"email": "one@example.com"},
+                {"email": "two@example.com"},
+            ],
+        }
+    )
+
+    async def require_context(_request):
+        return context(None, is_admin=True)
+
+    monkeypatch.setattr(results, "supabase", fake)
+    monkeypatch.setattr(results, "require_admin_context", require_context)
+
+    payload = await results.get_raffle_entries(SimpleNamespace())
+
+    assert payload == {
+        "entries": ["one@example.com", "two@example.com"],
+        "count": 2,
+        "participants": 2,
+    }
+    assert ("in", "survey_id", ["survey-1", "survey-2"]) in fake.calls
+    assert not any(call[:2] == ("eq", "team_id") for call in fake.calls)
 
 
 @pytest.mark.asyncio

@@ -16,6 +16,7 @@ import {
   Newspaper,
   Home,
   UserCog,
+  Trophy,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -30,6 +31,7 @@ function buildNavItems(basePath: string) {
       match: (p: string) => p === basePath,
       adminOnly: false,
       studentOnly: false,
+      raffleOnly: false,
     },
     {
       href: `${basePath}/surveys`,
@@ -41,6 +43,7 @@ function buildNavItems(basePath: string) {
         p.startsWith(`${basePath}/results`),
       adminOnly: false,
       studentOnly: false,
+      raffleOnly: false,
     },
     {
       href: '/admin/blog',
@@ -49,6 +52,7 @@ function buildNavItems(basePath: string) {
       match: (p: string) => p.startsWith('/admin/blog'),
       adminOnly: true,
       studentOnly: false,
+      raffleOnly: false,
     },
     {
       href: `${basePath}/analytics`,
@@ -57,6 +61,7 @@ function buildNavItems(basePath: string) {
       match: (p: string) => p.startsWith(`${basePath}/analytics`),
       adminOnly: false,
       studentOnly: false,
+      raffleOnly: false,
     },
     {
       href: `${basePath}/audience`,
@@ -65,6 +70,16 @@ function buildNavItems(basePath: string) {
       match: (p: string) => p.startsWith(`${basePath}/audience`),
       adminOnly: false,
       studentOnly: false,
+      raffleOnly: false,
+    },
+    {
+      href: `${basePath}/raffle`,
+      label: 'Raffle',
+      icon: Trophy,
+      match: (p: string) => p.startsWith(`${basePath}/raffle`),
+      adminOnly: false,
+      studentOnly: false,
+      raffleOnly: true,
     },
     {
       href: `${basePath}/settings`,
@@ -73,6 +88,7 @@ function buildNavItems(basePath: string) {
       match: (p: string) => p.startsWith(`${basePath}/settings`),
       adminOnly: false,
       studentOnly: true,
+      raffleOnly: false,
     },
   ];
 }
@@ -88,12 +104,16 @@ export function DashboardShell({ children }: { children: ReactNode }) {
     adminEmail,
     handleLogout,
     openAccountSettings,
+    isTeamLeader,
   } = useDashboard();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   const initials = adminEmail ? adminEmail.slice(0, 2).toUpperCase() : '··';
   const navItems = buildNavItems(basePath).filter(
-    (item) => (!item.adminOnly || role === 'admin') && (!item.studentOnly || role === 'student')
+    (item) =>
+      (!item.adminOnly || role === 'admin') &&
+      (!item.studentOnly || role === 'student') &&
+      (!item.raffleOnly || role === 'admin' || isTeamLeader)
   );
 
   return (

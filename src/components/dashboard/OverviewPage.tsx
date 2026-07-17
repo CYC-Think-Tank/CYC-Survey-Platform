@@ -194,6 +194,13 @@ export function OverviewPage() {
                   <Share2 className="h-4 w-4" />
                   Global Share Links
                 </button>
+                <Link
+                  href={`${basePath}/raffle`}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-cream-deep dark:hover:bg-white/5"
+                >
+                  <Trophy className="h-4 w-4" />
+                  Raffle Wheel
+                </Link>
               </>
             ) : (
               <>
